@@ -54,7 +54,7 @@ export default async function DashboardPage() {
   // Profile this user owns (claim approved, or self-created).
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, name, slug, is_trusted")
+    .select("id, name, slug, is_trusted, source, visibility")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -173,26 +173,42 @@ export default async function DashboardPage() {
             <p className="mt-3 text-base leading-7 text-slate-700">
               Your claim for <span className="font-semibold">{pendingClaim.name}</span> is waiting for an admin to
               review it. You&apos;ll get an email once it&apos;s approved, and then you can manage your events here.
+              This usually takes a day or two.
             </p>
           </section>
         ) : !profile ? (
           <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-8 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
             <h2 className="font-serif text-2xl text-slate-950">Find your profile</h2>
             <p className="mt-3 text-base leading-7 text-slate-700">
-              To manage events, first claim your organizer or teacher profile — or create a new one if you&apos;re
-              not listed yet. Once your claim is approved you&apos;ll be able to edit your events and submit new ones.
+              To manage events, tell us whether you&apos;re already listed here or you&apos;re new.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/dashboard/claim"
                 className="rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist)"
               >
-                Claim your profile
+                There&apos;s already a profile of me
+              </Link>
+              <Link
+                href="/dashboard/new-profile"
+                className="rounded-full border border-(--color-sand-strong) px-5 py-3 text-sm font-semibold text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
+              >
+                There&apos;s no profile of me yet
               </Link>
             </div>
           </section>
         ) : (
           <div className="flex flex-col gap-6">
+            {profile.source === "self_submitted" && profile.visibility === "shadow" ? (
+              <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-6">
+                <h2 className="font-serif text-xl text-slate-950">Your profile is in review</h2>
+                <p className="mt-2 text-sm text-slate-700">
+                  You can use your dashboard now, but your profile won&apos;t appear in the public directory until
+                  an admin reviews it. This usually takes a day or two.
+                </p>
+              </section>
+            ) : null}
+
             {pendingEventClaims && pendingEventClaims.length > 0 ? (
               <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-6">
                 <h2 className="font-serif text-xl text-slate-950">Event claims pending review</h2>

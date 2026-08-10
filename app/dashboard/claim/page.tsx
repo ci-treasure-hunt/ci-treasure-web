@@ -63,12 +63,11 @@ export default async function ClaimPage({
             </>
           ) : (
             <>
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--color-pine)">Claim your profile</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--color-pine)">Already listed</p>
               <h1 className="mt-3 font-serif text-4xl text-slate-950">Find yourself in the directory</h1>
               <p className="mt-4 text-base leading-7 text-slate-700">
-                Search for your name below. If we already list you as an organizer or teacher, claim that profile —
-                an admin will review it and you&apos;ll get an email once it&apos;s approved. If you&apos;re not
-                listed, create a new profile instead.
+                Search for your name below. If you find yourself, claim it, an admin will review the claim. If you
+                don&apos;t see yourself, you can add a new profile instead.
               </p>
               <div className="mt-8">
                 <ClaimSearch />

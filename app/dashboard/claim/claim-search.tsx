@@ -87,13 +87,14 @@ export function ClaimSearch() {
             </ul>
           )}
 
-          <p className="mt-6 text-sm text-slate-600">
-            Not listed here?{" "}
-            <Link href="/dashboard/new-profile" className="font-semibold text-(--color-pine) underline">
-              Create a new profile
+          <div className="mt-6">
+            <Link
+              href="/dashboard/new-profile"
+              className="inline-block rounded-full border border-(--color-sand-strong) px-5 py-3 text-sm font-semibold text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
+            >
+              None of these are me, add a new profile
             </Link>
-            .
-          </p>
+          </div>
         </div>
       ) : null}
     </div>

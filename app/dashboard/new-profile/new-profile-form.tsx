@@ -55,7 +55,8 @@ export function NewProfileForm() {
     return (
       <div>
         <p className="text-base leading-7 text-slate-700">
-          We found existing profile{similar.length > 1 ? "s" : ""} with a similar name. Is one of these you?
+          {similar.length > 1 ? "A couple of profiles have" : "A profile has"} a similar name. Just double-checking,
+          is one of these you?
         </p>
         <ul className="mt-4 space-y-3">
           {similar.map((profile) => (
@@ -86,7 +87,7 @@ export function NewProfileForm() {
             disabled={pending}
             className="rounded-full border border-(--color-sand-strong) px-5 py-3 text-sm font-semibold text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine) disabled:opacity-50"
           >
-            {pending ? "…" : "None of these are me — create a new profile"}
+            {pending ? "…" : "None of these are me, create a new profile"}
           </button>
         </div>
       </div>
