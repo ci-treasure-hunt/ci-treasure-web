@@ -19,7 +19,7 @@ export async function getPendingProfilePhotos(): Promise<PendingProfilePhoto[]> 
 
   const { data } = await admin
     .from("profiles")
-    .select("id, slug, name, image_url, image_credit")
+    .select("id, slug, name, image_url, image_credit, updated_at")
     .eq("image_status", "pending")
     .not("image_url", "is", null)
     .order("updated_at", { ascending: true });
@@ -28,7 +28,14 @@ export async function getPendingProfilePhotos(): Promise<PendingProfilePhoto[]> 
     id: row.id as string,
     slug: row.slug as string,
     name: row.name as string,
-    imageUrl: row.image_url as string,
+    // Cache-bust: upload always writes to the same deterministic path
+    // (`${slug}.jpg`) with upsert, so a re-upload after a rejected/broken
+    // photo keeps the identical URL — browsers and Cloudflare's edge (30-day
+    // Cache-Control) will keep serving the old cached bytes at that URL
+    // forever without this. Found live 2026-08-10: a re-upload that fixed a
+    // corrupted photo still displayed broken in the admin panel purely from
+    // browser cache, not the actual stored file.
+    imageUrl: `${row.image_url as string}?v=${new Date(row.updated_at as string).getTime()}`,
     imageCredit: (row.image_credit as string) ?? null,
   }));
 }

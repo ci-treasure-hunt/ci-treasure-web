@@ -33,6 +33,7 @@ type ProfileRow = {
   is_teacher: boolean;
   is_musician: boolean;
   discipline: string[] | null;
+  updated_at: string;
 };
 
 type LockedRoles = {
@@ -169,6 +170,7 @@ export function ProfileEditForm({
     <div className="space-y-6">
       <PhotoUploadSection
         imageUrl={profile.image_url}
+        imageUpdatedAt={profile.updated_at}
         imageCredit={profile.image_credit}
         imageStatus={profile.image_status}
       />
@@ -494,10 +496,12 @@ export function ProfileEditForm({
 
 function PhotoUploadSection({
   imageUrl,
+  imageUpdatedAt,
   imageCredit,
   imageStatus,
 }: {
   imageUrl: string | null;
+  imageUpdatedAt: string;
   imageCredit: string | null;
   imageStatus: string;
 }) {
@@ -564,7 +568,11 @@ function PhotoUploadSection({
     });
   }
 
-  const displayUrl = previewUrl || imageUrl;
+  // Cache-bust with updated_at: upload always writes to the same deterministic path
+  // (upsert), so after a re-upload the browser would otherwise keep showing whatever
+  // it cached at that exact URL from the previous attempt (found live 2026-08-10 —
+  // same bug as app/admin/profile-photos/actions.ts).
+  const displayUrl = previewUrl || (imageUrl ? `${imageUrl}?v=${new Date(imageUpdatedAt).getTime()}` : null);
 
   return (
     <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
