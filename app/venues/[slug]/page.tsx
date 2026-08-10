@@ -20,7 +20,7 @@ import { EntityImage } from "@/components/entity-image";
 import { CommunitySpotlightCard } from "@/components/entity-cards";
 import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
-import { GENERIC_ACCENT_GRADIENT, getCountryLabel } from "@/lib/event-display";
+import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
 import { getAllVenueSlugs, getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect } from "@/lib/venues";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
@@ -47,10 +47,9 @@ export async function generateMetadata({ params }: VenuePageProps): Promise<Meta
   if (!venue) return {};
 
   const countryLabel = getCountryLabel(venue.country);
-  const description = (
-    venue.description ??
-    `${venue.name} is a Contact Improvisation venue in ${venue.city}, ${countryLabel}, part of the CI Treasure Hunt directory of spaces hosting jams, workshops, and festivals.`
-  ).slice(0, 160);
+  const description = venue.description
+    ? padShortDescription(venue.description, "venues")
+    : `${venue.name} is a Contact Improvisation venue in ${venue.city}, ${countryLabel}, part of the CI Treasure Hunt directory of spaces hosting jams, workshops, and festivals.`.slice(0, 160);
   return {
     title: buildEntityTitle(venue.name, { city: venue.city, country: countryLabel }),
     description,

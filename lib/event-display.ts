@@ -106,16 +106,24 @@ export function buildEventFallbackDescription(type: string, city: string, countr
 
 // Meta-description padding for entities with real but short (< ~110 char) content of their own
 // (a community's one-line note, a teacher's short bio). The original text is never altered or
-// truncated — only appended to, one sentence at a time, so it never gets cut mid-sentence either.
+// truncated — only appended to. Bug found via Ahrefs re-crawl 2026-08-11: dropping sentence2
+// outright whenever it didn't fit could leave the result still under `min` (e.g. a 90-char base +
+// sentence1 alone landing at ~99 chars) — now trimmed to fit at a word boundary instead of
+// skipped, so the floor is always met when the combined text is long enough to reach it.
 export function padShortDescription(text: string, subject: string, min = 110, max = 160) {
   const trimmed = text.trim();
   const base = /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
   if (base.length >= min) return base.slice(0, max);
   const sentence1 = " Listed on CI Treasure Hunt.";
+  const withSentence1 = base + sentence1;
   const sentence2 = ` The global directory of Contact Improvisation ${subject} worldwide.`;
-  let out = base + sentence1;
-  if ((out + sentence2).length <= max) out += sentence2;
-  return out;
+  const full = withSentence1 + sentence2;
+  if (full.length <= max) return full;
+  if (withSentence1.length >= min) return withSentence1;
+  let trimmedFull = full.slice(0, max);
+  trimmedFull = trimmedFull.slice(0, trimmedFull.lastIndexOf(" ")).trimEnd();
+  if (!/[.!?]$/.test(trimmedFull)) trimmedFull += ".";
+  return trimmedFull;
 }
 
 // Acronyms that shouldn't be title-cased word-by-word. Add here as new short-form

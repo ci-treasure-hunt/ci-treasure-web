@@ -6,7 +6,7 @@ import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site";
 
 const TITLE = "Teachers — CI Treasure Hunt";
 const DESCRIPTION =
-  "A searchable directory of Contact Improvisation teachers is coming soon. In the meantime, every teacher's own profile page is already live and linked from their event listings.";
+  "A searchable directory of Contact Improvisation teachers is coming soon. Every teacher already has a live profile page, linked from their event listings.";
 
 export const metadata: Metadata = {
   title: TITLE,
