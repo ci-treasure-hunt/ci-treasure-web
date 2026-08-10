@@ -3,15 +3,14 @@ import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, toStorageBody } from "@/lib/supabase/admin";
 import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 
-// Route Handler, not a Server Action ("use server") — see lib/upload-action.ts for the full
-// writeup: Next.js 16.2's Server Actions payload decoder silently corrupts binary File
-// content on this stack, reproduced and confirmed byte-for-byte via SHA-256 on two upload
-// paths. Found live via Tanja Striezel's teacher photo upload landing as a UTF-8-mangled
-// JPEG (2026-08-10).
+// Route Handler rather than a Server Action, matching lib/upload-action.ts's other upload
+// routes for consistency — not required for correctness (see toStorageBody in
+// lib/supabase/admin.ts for the actual corruption fix, which was in the Storage upload call,
+// not the transport into this function).
 const MIN_LONG_EDGE = 200;
 // I-129 Phase 2: also produce a small tile-sized photo alongside the large +
 // medium ones. 0 profiles have an approved photo yet, so there's nothing to
@@ -116,7 +115,7 @@ export async function POST(request: NextRequest) {
     .from("profile-images")
     // 30 days, not longer — see rehost-image.ts for the same reasoning
     // (upsert overwrites in place on re-upload, so this bounds staleness).
-    .upload(path, largeBuffer, { contentType: "image/jpeg", upsert: true, cacheControl: "2592000" });
+    .upload(path, toStorageBody(largeBuffer, "image/jpeg"), { contentType: "image/jpeg", upsert: true, cacheControl: "2592000" });
 
   if (uploadError) {
     return NextResponse.json({ success: false, error: uploadError.message }, { status: 500 });
@@ -128,7 +127,7 @@ export async function POST(request: NextRequest) {
   // for why this isn't a DB column).
   const { error: mediumError } = await admin.storage
     .from("profile-images")
-    .upload(mediumPath, mediumBuffer, { contentType: "image/webp", upsert: true, cacheControl: "2592000" });
+    .upload(mediumPath, toStorageBody(mediumBuffer, "image/webp"), { contentType: "image/webp", upsert: true, cacheControl: "2592000" });
 
   if (mediumError) {
     await admin.storage.from("profile-images").remove([path]);
@@ -137,7 +136,7 @@ export async function POST(request: NextRequest) {
 
   const { error: smallError } = await admin.storage
     .from("profile-images")
-    .upload(smallPath, smallBuffer, { contentType: "image/webp", upsert: true, cacheControl: "2592000" });
+    .upload(smallPath, toStorageBody(smallBuffer, "image/webp"), { contentType: "image/webp", upsert: true, cacheControl: "2592000" });
 
   if (smallError) {
     await admin.storage.from("profile-images").remove([path, mediumPath]);

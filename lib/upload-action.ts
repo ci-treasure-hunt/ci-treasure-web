@@ -1,24 +1,14 @@
 import sharp from "sharp";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, toStorageBody } from "@/lib/supabase/admin";
 import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 
 // Plain server-only helper, called from app/api/admin/event-image and
-// app/api/organizer/event-image route handlers. NOT a Server Action ("use server") —
-// on this Next 16.2.12/React 19.2.3 stack, the Server Actions payload decoder
-// (react-server-dom-turbopack) silently mangles binary File content passed through a
-// server action's FormData, replacing non-ASCII bytes with UTF-8 U+FFFD sequences.
-// Reproduced independently on two upload paths (this one and profile-photo) and
-// confirmed byte-for-byte via SHA-256: identical through a Route Handler, corrupted
-// through a Server Action. (A related react-server-dom-turbopack FormData regression
-// from the CVE-2026-23870 DoS fix is documented in vercel/next.js#93754, but that
-// report describes FormData arriving empty, not binary content being mangled — treat
-// this as the same buggy subsystem, not a confirmed match to that specific report.)
-// A Route Handler reading request.formData() from a plain Request never goes through
-// that decoder, so it isn't affected. See app/api/dashboard/profile-photo for the
-// profile-photo equivalent — found via a corrupted teacher photo upload
-// (Tanja Striezel, 2026-08-10).
+// app/api/organizer/event-image route handlers (Route Handlers, not Server Actions —
+// consistent with the rest of this app's upload routes, though that choice turned out to
+// be unrelated to the actual corruption bug; see toStorageBody in lib/supabase/admin.ts
+// for the real fix and docs/issues/i-122-image-handling.md for the full investigation).
 const ALLOWED_TYPES = ["image/jpeg", "image/webp"];
 // Same conventions as lib/rehost-image.ts / app/api/dashboard/profile-photo (I-122/I-129): this
 // path previously uploaded whatever the admin picked completely unprocessed — a real,
@@ -77,7 +67,7 @@ export async function resizeAndUploadEventImage(file: File): Promise<string> {
     .from('event-images')
     // 30 days — Supabase's default is 1h, which PageSpeed Insights flagged as
     // ~14.7MB in avoidable re-fetches across the homepage's event images.
-    .upload(filePath, largeBuffer, { contentType: "image/jpeg", cacheControl: '2592000' });
+    .upload(filePath, toStorageBody(largeBuffer, "image/jpeg"), { contentType: "image/jpeg", cacheControl: '2592000' });
 
   if (error) {
     throw error;
@@ -89,7 +79,7 @@ export async function resizeAndUploadEventImage(file: File): Promise<string> {
   // for why this isn't a DB column).
   const { error: mediumError } = await supabase.storage
     .from('event-images')
-    .upload(mediumPath, mediumBuffer, { contentType: "image/webp", cacheControl: '2592000' });
+    .upload(mediumPath, toStorageBody(mediumBuffer, "image/webp"), { contentType: "image/webp", cacheControl: '2592000' });
 
   if (mediumError) {
     await supabase.storage.from('event-images').remove([filePath]);
@@ -98,7 +88,7 @@ export async function resizeAndUploadEventImage(file: File): Promise<string> {
 
   const { error: smallError } = await supabase.storage
     .from('event-images')
-    .upload(smallPath, smallBuffer, { contentType: "image/webp", cacheControl: '2592000' });
+    .upload(smallPath, toStorageBody(smallBuffer, "image/webp"), { contentType: "image/webp", cacheControl: '2592000' });
 
   if (smallError) {
     await supabase.storage.from('event-images').remove([filePath, mediumPath]);
