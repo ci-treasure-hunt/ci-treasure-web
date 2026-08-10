@@ -99,6 +99,11 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const [shouldRenderMap, setShouldRenderMap] = useState(false);
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
+    // Can't compute this via a lazy useState initializer instead: window doesn't exist during
+    // SSR, so the server-rendered and first-client-render values must both start false to
+    // avoid a hydration mismatch — the effect correcting it post-mount is the actual fix, not
+    // a workaround for one.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (mql.matches) setShouldRenderMap(true);
     const onChange = (e: MediaQueryListEvent) => {
       if (e.matches) setShouldRenderMap(true);
@@ -106,9 +111,6 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
-  useEffect(() => {
-    if (mobileView === "map") setShouldRenderMap(true);
-  }, [mobileView]);
 
   // Rendering all ~140 filtered events into the DOM on mount was the dominant contributor to
   // Total Blocking Time (confirmed via a CDP CPU profile, see I-136) — the map still gets every
@@ -118,6 +120,10 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const EVENTS_PAGE_SIZE = 20;
   const [visibleEventCount, setVisibleEventCount] = useState(EVENTS_PAGE_SIZE);
   const listScrollRef = useRef<HTMLDivElement>(null);
+  // Reset pagination whenever the filtered set actually changes — adjusted during render
+  // (React's documented pattern for "reset state when a value changes") rather than in an
+  // effect, so the reset lands in the same commit instead of costing an extra render pass.
+  const [prevFilteredEvents, setPrevFilteredEvents] = useState<EventListItem[] | null>(null);
 
   const activeFilterCount = [selectedCountry, selectedType, selectedMonth, soonOnly ? "1" : ""].filter(Boolean).length;
 
@@ -250,9 +256,10 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
     });
   }, [events, searchQuery, selectedCountry, selectedType, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines]);
 
-  useEffect(() => {
+  if (filteredEvents !== prevFilteredEvents) {
+    setPrevFilteredEvents(filteredEvents);
     setVisibleEventCount(EVENTS_PAGE_SIZE);
-  }, [filteredEvents]);
+  }
 
   const visibleEvents = useMemo(
     () => filteredEvents.slice(0, visibleEventCount),
@@ -364,7 +371,10 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
                 List
               </button>
               <button
-                onClick={() => setMobileView("map")}
+                onClick={() => {
+                  setMobileView("map");
+                  setShouldRenderMap(true);
+                }}
                 className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition ${
                   mobileView === "map"
                     ? "bg-violet-100 text-violet-700"

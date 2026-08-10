@@ -36,10 +36,7 @@ export function VenueForm({
     if (dedupTimer.current) clearTimeout(dedupTimer.current);
 
     const name = form.name.trim();
-    if (name.length < 3) {
-      setDedupMatches([]);
-      return;
-    }
+    if (name.length < 3) return;
 
     dedupTimer.current = setTimeout(async () => {
       try {
@@ -109,7 +106,7 @@ export function VenueForm({
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Name">
                 <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={inputClassName} />
-                {dedupMatches.length > 0 ? (
+                {form.name.trim().length >= 3 && dedupMatches.length > 0 ? (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                     <p className="font-semibold">Possible existing match — check before creating a duplicate:</p>
                     <ul className="mt-1 space-y-0.5">

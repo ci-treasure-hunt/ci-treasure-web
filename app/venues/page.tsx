@@ -74,8 +74,6 @@ export default async function VenuesPage() {
           <VenuesClient
             initialVenues={venues}
             initialCountries={countries}
-            initialVenueCount={venueCount}
-            initialCountryCount={countryCount}
             initialError={error}
           />
         </Suspense>

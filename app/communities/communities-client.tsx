@@ -18,8 +18,6 @@ const WORLDWIDE_VALUE = "__worldwide";
 type CommunitiesClientProps = {
   initialCommunities: Community[];
   initialCountries: Array<{ value: string; label: string }>;
-  initialCommunityCount: number;
-  initialCountryCount: number;
   initialError: string | null;
 };
 
@@ -39,8 +37,6 @@ const CommunityMap = dynamic(() => import("@/components/community-map"), {
 export function CommunitiesClient({
   initialCommunities,
   initialCountries,
-  initialCommunityCount,
-  initialCountryCount,
   initialError,
 }: CommunitiesClientProps) {
   const searchParams = useSearchParams();
@@ -145,9 +141,14 @@ export function CommunitiesClient({
   const [visibleCommunityCount, setVisibleCommunityCount] = useState(COMMUNITIES_PAGE_SIZE);
   const listScrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Reset pagination whenever the filtered set actually changes — adjusted during render
+  // (React's documented pattern for "reset state when a value changes") rather than in an
+  // effect, so the reset lands in the same commit instead of costing an extra render pass.
+  const [prevFilteredCommunities, setPrevFilteredCommunities] = useState<Community[] | null>(null);
+  if (filteredCommunities !== prevFilteredCommunities) {
+    setPrevFilteredCommunities(filteredCommunities);
     setVisibleCommunityCount(COMMUNITIES_PAGE_SIZE);
-  }, [filteredCommunities]);
+  }
 
   const visibleCommunities = useMemo(
     () => filteredCommunities.slice(0, visibleCommunityCount),

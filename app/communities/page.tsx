@@ -87,8 +87,6 @@ export default async function CommunitiesPage() {
           <CommunitiesClient
             initialCommunities={communities}
             initialCountries={countries}
-            initialCommunityCount={communityCount}
-            initialCountryCount={countryCount}
             initialError={error}
           />
         </Suspense>

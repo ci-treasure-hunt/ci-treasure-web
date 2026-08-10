@@ -74,7 +74,14 @@ export default async function EditEventPage({
     .select("role, profiles(id, name, city, country)")
     .eq("event_id", event.id);
 
-  const initialTeachers = (teachers ?? []).map((t: any) => ({
+  type EventTeacherRow = {
+    role: string;
+    profiles: { id: string; name: string; city: string | null; country: string | null };
+  };
+  // profiles(...) is a to-one join, but the untyped Supabase client infers it as an array —
+  // same friction lib/geocode.ts documents. Runtime shape (and the .profiles.id access below)
+  // is a single object, so cast rather than fight the generic client's inferred type.
+  const initialTeachers = ((teachers ?? []) as unknown as EventTeacherRow[]).map((t) => ({
     id: t.profiles.id,
     name: t.profiles.name,
     role: t.role,

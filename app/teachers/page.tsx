@@ -51,7 +51,7 @@ export default function TeachersPage() {
           <p className="text-lg text-slate-600">
             A searchable teacher directory is coming soon. In the meantime, every teacher already
             has their own profile page, listing their bio, location, and links, linked from the
-            events they're teaching. Browse the calendar and follow a teacher's name from any
+            events they&apos;re teaching. Browse the calendar and follow a teacher&apos;s name from any
             event to find them.
           </p>
         </div>

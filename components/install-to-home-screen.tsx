@@ -31,12 +31,17 @@ function isStandalone() {
 export function InstallToHomeScreen() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [ios, setIos] = useState(true);
+  // visible and ios are always set together after mount (both read browser-only APIs that
+  // don't exist during SSR) — one state object, one setState call, instead of two.
+  const [{ visible, ios }, setPlatform] = useState({ visible: false, ios: true });
 
   useEffect(() => {
-    setVisible(!isStandalone());
-    setIos(isIos());
+    // Can't compute this via a lazy useState initializer instead: window/navigator don't exist
+    // during SSR, so the server-rendered and first-client-render values must both start at the
+    // defaults above to avoid a hydration mismatch — this effect correcting them post-mount is
+    // the actual fix, not a workaround for one.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPlatform({ visible: !isStandalone(), ios: isIos() });
   }, []);
 
   if (!visible || pathname !== "/") return null;

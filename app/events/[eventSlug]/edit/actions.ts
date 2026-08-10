@@ -11,7 +11,7 @@ import { notifyAdminTeacherAdded } from "@/app/events/actions";
 
 type TeacherActionResult = { success: boolean; error?: string };
 
-async function isAuthorized(supabase: any, eventId: string, userId: string) {
+async function isAuthorized(supabase: Awaited<ReturnType<typeof createClient>>, eventId: string, userId: string) {
   // Authorization check: owner, or linked as an organizer via an owned profile.
   const { data: event } = await supabase
     .from("events")

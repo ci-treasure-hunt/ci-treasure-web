@@ -226,7 +226,7 @@ export function OrganizerEventForm({
               />
             </Field>
             <p className="mt-1 text-xs text-slate-500">
-              Pick an existing venue if it's already listed, or type a name/address — used to
+              Pick an existing venue if it&apos;s already listed, or type a name/address — used to
               place the event on the map.
             </p>
           </div>

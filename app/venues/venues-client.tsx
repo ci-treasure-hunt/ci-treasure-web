@@ -15,8 +15,6 @@ import { getMediumUrl } from "@/lib/image-url";
 type VenuesClientProps = {
   initialVenues: VenueListItem[];
   initialCountries: Array<{ value: string; label: string }>;
-  initialVenueCount: number;
-  initialCountryCount: number;
   initialError: string | null;
 };
 
@@ -34,8 +32,6 @@ function channelIcon(type: string) {
 export function VenuesClient({
   initialVenues,
   initialCountries,
-  initialVenueCount,
-  initialCountryCount,
   initialError,
 }: VenuesClientProps) {
   const searchParams = useSearchParams();

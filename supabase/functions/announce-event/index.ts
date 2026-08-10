@@ -187,11 +187,13 @@ Deno.serve(async (req) => {
       .from('event_teachers')
       .select('role, profiles(name)')
       .eq('event_id', event.id)
+    // profiles(name) is a to-one join, but the untyped Supabase client infers it as an array —
+    // runtime shape is a single object (per the ?.name access), so cast rather than fight it.
+    type TeacherRow = { role: string; profiles: { name: string } | null }
     const teacherNames = [...new Set(
-      (teacherRows ?? [])
-        .filter((row: { role: string }) => TEACHER_ROLES.has(row.role))
-        // deno-lint-ignore no-explicit-any
-        .map((row: any) => row.profiles?.name)
+      ((teacherRows ?? []) as unknown as TeacherRow[])
+        .filter(row => TEACHER_ROLES.has(row.role))
+        .map(row => row.profiles?.name)
         .filter(Boolean),
     )]
     const caption = buildRichCaption(event, teacherNames, location)

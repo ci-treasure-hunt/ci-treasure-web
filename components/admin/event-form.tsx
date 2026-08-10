@@ -261,6 +261,7 @@ export function EventForm({
                 <div className="space-y-2">
                   <span className="text-sm font-medium text-slate-700">Preview</span>
                   <div className="relative aspect-video rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={form.imageUrl}
                       alt="Preview"
