@@ -223,21 +223,11 @@ export function EventForm({
 
                           try {
                             const compressed = await compressImageForUpload(file);
-                            // TEMP diagnostic (2026-08-10): confirm the compressed Blob is
-                            // intact before it ever leaves the browser, to isolate whether
-                            // corruption happens client-side (canvas re-encode) or server-side.
-                            const compressedBytes = new Uint8Array(await compressed.arrayBuffer());
-                            const digest = await crypto.subtle.digest("SHA-256", compressedBytes);
-                            const hashHex = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
-                            const magicHex = Array.from(compressedBytes.slice(0, 8)).map((b) => b.toString(16).padStart(2, "0")).join("");
-                            console.log("[diag] compressed blob", { size: compressed.size, type: compressed.type, magicHex, hashHex });
-
                             const formData = new FormData();
                             formData.append("file", compressed);
                             const response = await fetch("/api/admin/event-image", { method: "POST", body: formData });
                             const result = await response.json();
                             if (!response.ok) throw new Error(result.error || "Failed to upload image.");
-                            console.log("[diag] server responded", result);
                             setForm({ ...form, imageUrl: result.url });
                           } catch (error) {
                             setSaveError("Failed to upload image.");
