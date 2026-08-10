@@ -6,12 +6,12 @@ export type AdminUser = {
   email: string;
 };
 
+// Returns null rather than throwing when unset: isAdminEmail() below is called from
+// /dashboard on every page load (not just admin pages), so a missing env var must fail
+// closed (nobody is admin) instead of crashing the dashboard for every signed-in user.
 function getAdminEmail() {
   const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  if (!adminEmail) {
-    throw new Error("ADMIN_EMAIL is not configured.");
-  }
-  return adminEmail;
+  return adminEmail || null;
 }
 
 export async function getSessionUserEmail() {
