@@ -3,10 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 
 // Authenticated e2e coverage for the I-118 claim flows. Signs in via a real magic link
 // (generated through the Admin API instead of an email inbox — same verifyOtp path a real
-// click hits, just without needing to read email) against the account behind CI Treasure
-// Hunt's own long-standing "test" profile (hello@citreasurehunt.com). Requires
-// SUPABASE_SERVICE_ROLE_KEY; skips entirely if it's not set rather than failing CI runs
-// that don't have it configured.
+// click hits, just without needing to read email) against throwaway accounts created per
+// test run, not a fixed shared account: this suite runs across multiple Playwright projects
+// (chromium, Mobile Safari) in parallel, and a shared account's profile/claim state collides
+// across workers. Requires SUPABASE_SERVICE_ROLE_KEY; skips entirely if it's not set rather
+// than failing CI runs that don't have it configured.
 
 const hasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL);
 
@@ -19,7 +20,7 @@ test.describe('I-118 claim flows (authenticated)', () => {
 
   let testEventId: string;
   let testEventShortId: string;
-  let newProfileUserId: string | null = null;
+  const cleanupUserIds: string[] = [];
 
   test.beforeAll(async () => {
     if (!admin) return;
@@ -55,11 +56,37 @@ test.describe('I-118 claim flows (authenticated)', () => {
       await admin.from('event_teachers').delete().eq('event_id', testEventId);
       await admin.from('events').delete().eq('id', testEventId);
     }
-    if (newProfileUserId) {
-      await admin.from('profiles').delete().eq('user_id', newProfileUserId);
-      await admin.auth.admin.deleteUser(newProfileUserId);
+    for (const userId of cleanupUserIds) {
+      await admin.from('profiles').delete().eq('user_id', userId);
+      await admin.auth.admin.deleteUser(userId);
     }
   });
+
+  // Throwaway account + owned profile, cleaned up in afterAll via cleanupUserIds. Each test
+  // gets its own so parallel projects (chromium, Mobile Safari) never share mutable account
+  // state — that's what caused the flakiness a shared "test" account had.
+  async function createTestAccountWithProfile(opts: { isOrganizer?: boolean } = {}) {
+    const email = `hello+pwtest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@citreasurehunt.com`;
+    const { data: created, error: createError } = await admin!.auth.admin.createUser({
+      email,
+      email_confirm: true,
+    });
+    if (createError || !created.user) throw createError ?? new Error('createUser failed');
+    cleanupUserIds.push(created.user.id);
+
+    if (opts.isOrganizer) {
+      const { error: profileError } = await admin!.from('profiles').insert({
+        name: 'Playwright Test Profile — safe to delete',
+        slug: `playwright-test-profile-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        user_id: created.user.id,
+        visibility: 'public',
+        is_organizer: true,
+      });
+      if (profileError) throw profileError;
+    }
+
+    return email;
+  }
 
   async function signInViaMagicLink(page: import('@playwright/test').Page, email: string, baseURL: string) {
     // generateLink's action_link is Supabase's own /verify redirect, which returns tokens in
@@ -75,7 +102,11 @@ test.describe('I-118 claim flows (authenticated)', () => {
   }
 
   test('claiming a no-organizer event: CTA -> submit -> dashboard shows pending', async ({ page, baseURL }) => {
-    await signInViaMagicLink(page, 'hello@citreasurehunt.com', baseURL!);
+    // /dashboard/claim-event only renders the Organizer/Teacher form when the signed-in user
+    // owns a profile, so this account needs one up front.
+    const email = await createTestAccountWithProfile({ isOrganizer: true });
+
+    await signInViaMagicLink(page, email, baseURL!);
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.goto(`/events/${testEventShortId}`);
@@ -95,13 +126,7 @@ test.describe('I-118 claim flows (authenticated)', () => {
   });
 
   test('new-profile duplicate warning: similar name surfaces existing profile', async ({ page, baseURL }) => {
-    const email = `hello+pwtest-${Date.now()}@citreasurehunt.com`;
-    const { data: created, error: createError } = await admin!.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    });
-    if (createError || !created.user) throw createError ?? new Error('createUser failed');
-    newProfileUserId = created.user.id;
+    const email = await createTestAccountWithProfile();
 
     await signInViaMagicLink(page, email, baseURL!);
     await page.goto('/dashboard/new-profile');
@@ -110,7 +135,7 @@ test.describe('I-118 claim flows (authenticated)', () => {
     await page.getByLabel('Name *').fill('Irene Sposetty');
     await page.getByRole('button', { name: 'Create profile' }).click();
 
-    await expect(page.getByText('We found existing profile')).toBeVisible();
+    await expect(page.getByText('a similar name')).toBeVisible();
     await expect(page.getByRole('link', { name: 'This is me' })).toBeVisible();
 
     // Don't actually claim someone else's real profile from a throwaway account — confirm
