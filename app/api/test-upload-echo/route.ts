@@ -49,6 +49,34 @@ export async function POST(request: NextRequest) {
 
   await admin.storage.from("profile-images").remove([testPath]);
 
+  // Second leg: bypass the supabase-js SDK entirely, PUT the same buffer straight to the
+  // Storage REST endpoint via a raw fetch call, to isolate whether the SDK's upload()
+  // wrapper (its body/isPlainObject handling) is the corrupting step, or whether raw fetch
+  // with a Node Buffer body misbehaves on this runtime regardless of the SDK.
+  const rawPath = `_diagnostic-raw-${Date.now()}.jpg`;
+  const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const rawUploadRes = await fetch(`${projectUrl}/storage/v1/object/profile-images/${rawPath}`, {
+    method: "POST",
+    headers: {
+      apikey: serviceKey!,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "image/jpeg",
+      "x-upsert": "true",
+    },
+    body: new Uint8Array(sharpBuf),
+  });
+  const rawUploadOk = rawUploadRes.ok;
+  const rawUploadStatus = rawUploadRes.status;
+  const rawRefetchRes = await fetch(`${projectUrl}/storage/v1/object/public/profile-images/${rawPath}`, { cache: "no-store" });
+  const rawRefetchBuf = Buffer.from(await rawRefetchRes.arrayBuffer());
+  const rawRefetchSha256 = sha256(rawRefetchBuf);
+  const rawRefetchFirstBytes = rawRefetchBuf.subarray(0, 8).toString("hex");
+  await fetch(`${projectUrl}/storage/v1/object/profile-images/${rawPath}`, {
+    method: "DELETE",
+    headers: { apikey: serviceKey!, Authorization: `Bearer ${serviceKey}` },
+  });
+
   return NextResponse.json({
     rawSha256,
     rawFirstBytes,
@@ -56,9 +84,19 @@ export async function POST(request: NextRequest) {
     sharpFirstBytes,
     sharpValidJpegHeader,
     sharpBufLength: sharpBuf.length,
-    refetchSha256,
-    refetchFirstBytes,
-    refetchLength: refetchBuf.length,
-    sharpMatchesRefetch: sharpSha256 === refetchSha256,
+    sdkUpload: {
+      refetchSha256,
+      refetchFirstBytes,
+      refetchLength: refetchBuf.length,
+      matches: sharpSha256 === refetchSha256,
+    },
+    rawFetchUpload: {
+      uploadOk: rawUploadOk,
+      uploadStatus: rawUploadStatus,
+      refetchSha256: rawRefetchSha256,
+      refetchFirstBytes: rawRefetchFirstBytes,
+      refetchLength: rawRefetchBuf.length,
+      matches: sharpSha256 === rawRefetchSha256,
+    },
   });
 }
