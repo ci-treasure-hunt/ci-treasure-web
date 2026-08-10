@@ -1,7 +1,7 @@
 import { promises as dns } from "dns";
 import { isIP } from "net";
 import sharp from "sharp";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, toStorageBody } from "@/lib/supabase/admin";
 import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
 
 // Same conventions as app/dashboard/profile/edit/photo-actions.ts (I-122): resize long edge,
@@ -190,23 +190,19 @@ export async function rehostExternalImage(
   const mediumPath = getMediumUrl(path);
   const smallPath = getSmallUrl(path);
 
-  // Found live 2026-07-22 (second occurrence, after the fetch-header fix): the *fetched*
-  // bytes now pass the magic-byte check cleanly, but the file that lands in Storage is
-  // still corrupted (leading bytes replaced with U+FFFD) — proving the corruption happens
-  // in this upload step, not the fetch. storage-js sends a raw Node Buffer as the fetch
-  // body when given one (see uploadOrUpdate in @supabase/storage-js), which on Vercel's
-  // serverless Node runtime may go through a different body-handling path than a Blob/
-  // FormData body. Wrapping in a Blob forces storage-js down its FormData branch instead,
-  // a well-defined binary-safe path — untested against this exact bug (couldn't reproduce
-  // locally to verify before deploying), but it's the concrete mechanism this new evidence
-  // points to.
+  // Found live 2026-07-22, confirmed 2026-08-10: storage-js's upload() corrupts binary
+  // content when given a raw Buffer on this stack (independent of which fetch
+  // implementation it uses — see toStorageBody in lib/supabase/admin.ts). Wrapping in a
+  // Blob forces storage-js down its FormData branch instead, a binary-safe path — verified
+  // via a direct reproduction (SHA-256 byte comparison) during the 2026-08-10 investigation,
+  // not just theorized.
   const { error: uploadError } = await admin.storage
     .from(bucket)
     // 30 days, not longer: upsert overwrites in place on re-save, so this caps
     // how stale a browser's cached copy can get after an organizer swaps their
     // event image. Supabase's default was 1h — PageSpeed Insights flagged
     // ~14.7MB in avoidable re-fetches across the homepage at that TTL.
-    .upload(path, new Blob([new Uint8Array(largeBuffer)], { type: "image/jpeg" }), { upsert: true, cacheControl: "2592000" });
+    .upload(path, toStorageBody(largeBuffer, "image/jpeg"), { upsert: true, cacheControl: "2592000" });
   if (uploadError) {
     return { error: uploadError.message };
   }
@@ -217,7 +213,7 @@ export async function rehostExternalImage(
   // for why this isn't a DB column).
   const { error: mediumError } = await admin.storage
     .from(bucket)
-    .upload(mediumPath, new Blob([new Uint8Array(mediumBuffer)], { type: "image/webp" }), { upsert: true, cacheControl: "2592000" });
+    .upload(mediumPath, toStorageBody(mediumBuffer, "image/webp"), { upsert: true, cacheControl: "2592000" });
   if (mediumError) {
     await admin.storage.from(bucket).remove([path]);
     return { error: mediumError.message };
@@ -225,7 +221,7 @@ export async function rehostExternalImage(
 
   const { error: smallError } = await admin.storage
     .from(bucket)
-    .upload(smallPath, new Blob([new Uint8Array(smallBuffer)], { type: "image/webp" }), { upsert: true, cacheControl: "2592000" });
+    .upload(smallPath, toStorageBody(smallBuffer, "image/webp"), { upsert: true, cacheControl: "2592000" });
   if (smallError) {
     await admin.storage.from(bucket).remove([path, mediumPath]);
     return { error: smallError.message };

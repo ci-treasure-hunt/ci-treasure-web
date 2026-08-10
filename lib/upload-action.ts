@@ -1,19 +1,17 @@
-"use server";
-
 import sharp from "sharp";
 
-import { requireAdminUser } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, toStorageBody } from "@/lib/supabase/admin";
 import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 
-// Reachable from both the admin event form and the organizer event form — each exported
-// function below has its own auth gate (requireAdminUser vs. signed-in-with-a-profile), since
-// a server action is an independently callable endpoint regardless of which UI renders it.
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+// Plain server-only helper, called from app/api/admin/event-image and
+// app/api/organizer/event-image route handlers (Route Handlers, not Server Actions —
+// consistent with the rest of this app's upload routes, though that choice turned out to
+// be unrelated to the actual corruption bug; see toStorageBody in lib/supabase/admin.ts
+// for the real fix and docs/issues/i-122-image-handling.md for the full investigation).
 const ALLOWED_TYPES = ["image/jpeg", "image/webp"];
-// Same conventions as lib/rehost-image.ts / photo-actions.ts (I-122/I-129): this path
-// previously uploaded whatever the admin picked completely unprocessed — a real,
+// Same conventions as lib/rehost-image.ts / app/api/dashboard/profile-photo (I-122/I-129): this
+// path previously uploaded whatever the admin picked completely unprocessed — a real,
 // uncompressed 4000px camera photo would sail straight through the type/size
 // checks above. Resize + recompress here the same way the other upload paths do.
 // I-129 Phase 2: `large` always stays JPEG (the only size feeding og:image/JSON-LD,
@@ -30,8 +28,8 @@ const SMALL_QUALITY = 70;
 // lib/rehost-image.ts — storage.objects has RLS enabled with no policies defined for
 // event-images, so the plain session client has no INSERT grant here. Callers still gate
 // on the session client for who's allowed to call this at all.
-async function resizeAndUploadEventImage(file: File): Promise<string> {
-  if (file.size > MAX_UPLOAD_BYTES) throw new Error("File too large (max 8MB)");
+export async function resizeAndUploadEventImage(file: File): Promise<string> {
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error(`File too large (max ${MAX_UPLOAD_MB}MB)`);
   if (!ALLOWED_TYPES.includes(file.type)) throw new Error("File must be JPEG or WEBP");
 
   const inputBuffer = Buffer.from(await file.arrayBuffer());
@@ -69,7 +67,7 @@ async function resizeAndUploadEventImage(file: File): Promise<string> {
     .from('event-images')
     // 30 days — Supabase's default is 1h, which PageSpeed Insights flagged as
     // ~14.7MB in avoidable re-fetches across the homepage's event images.
-    .upload(filePath, largeBuffer, { contentType: "image/jpeg", cacheControl: '2592000' });
+    .upload(filePath, toStorageBody(largeBuffer, "image/jpeg"), { contentType: "image/jpeg", cacheControl: '2592000' });
 
   if (error) {
     throw error;
@@ -81,7 +79,7 @@ async function resizeAndUploadEventImage(file: File): Promise<string> {
   // for why this isn't a DB column).
   const { error: mediumError } = await supabase.storage
     .from('event-images')
-    .upload(mediumPath, mediumBuffer, { contentType: "image/webp", cacheControl: '2592000' });
+    .upload(mediumPath, toStorageBody(mediumBuffer, "image/webp"), { contentType: "image/webp", cacheControl: '2592000' });
 
   if (mediumError) {
     await supabase.storage.from('event-images').remove([filePath]);
@@ -90,7 +88,7 @@ async function resizeAndUploadEventImage(file: File): Promise<string> {
 
   const { error: smallError } = await supabase.storage
     .from('event-images')
-    .upload(smallPath, smallBuffer, { contentType: "image/webp", cacheControl: '2592000' });
+    .upload(smallPath, toStorageBody(smallBuffer, "image/webp"), { contentType: "image/webp", cacheControl: '2592000' });
 
   if (smallError) {
     await supabase.storage.from('event-images').remove([filePath, mediumPath]);
@@ -102,34 +100,4 @@ async function resizeAndUploadEventImage(file: File): Promise<string> {
     .getPublicUrl(filePath);
 
   return publicUrl;
-}
-
-export async function uploadEventImage(formData: FormData) {
-  await requireAdminUser();
-  const file = formData.get("file") as File;
-  if (!file) throw new Error("No file provided");
-  return resizeAndUploadEventImage(file);
-}
-
-// Found live 2026-07-22: the organizer event form only had a paste-a-URL field, no direct file
-// upload — the admin form got this dropzone but organizers never did. Same processing, gated by
-// "signed in with a claimed profile" (the same requirement createEvent already enforces) instead
-// of admin-only.
-export async function uploadOrganizerEventImage(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!profile) throw new Error("Claim or create your profile before uploading images");
-
-  const file = formData.get("file") as File;
-  if (!file) throw new Error("No file provided");
-  return resizeAndUploadEventImage(file);
 }
