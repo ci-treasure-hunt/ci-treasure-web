@@ -44,7 +44,7 @@ export default function PrivacyPage() {
             requested pages, and access time may be logged by Vercel for security and stability purposes. We do not
             use these logs for profiling or tracking. See{" "}
             <a
-              href="https://vercel.com/legal/privacy-policy"
+              href="https://vercel.com/legal/privacy-notice"
               className="underline"
               target="_blank"
               rel="noopener noreferrer"
