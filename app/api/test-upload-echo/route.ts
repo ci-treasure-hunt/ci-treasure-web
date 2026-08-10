@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import crypto from "crypto";
 import sharp from "sharp";
 
+import { createClient } from "@supabase/supabase-js";
+
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function sha256(buf: Buffer) {
@@ -77,6 +79,34 @@ export async function POST(request: NextRequest) {
     headers: { apikey: serviceKey!, Authorization: `Bearer ${serviceKey}` },
   });
 
+  // Third leg: same SDK, same upload() call, but the client is constructed with an explicit
+  // `global: { fetch }` pointing at the platform's native fetch — tests whether the SDK's
+  // own internally-resolved fetch implementation (not the SDK's request-building logic
+  // itself) is the actual corrupting layer.
+  const nativeFetchPath = `_diagnostic-nativefetch-${Date.now()}.jpg`;
+  const adminNativeFetch = createClient(projectUrl!, serviceKey!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: globalThis.fetch },
+  });
+  const { error: nativeFetchUploadError } = await adminNativeFetch.storage
+    .from("profile-images")
+    .upload(nativeFetchPath, sharpBuf, { contentType: "image/jpeg", upsert: true });
+  let nativeFetchResult;
+  if (nativeFetchUploadError) {
+    nativeFetchResult = { error: nativeFetchUploadError.message };
+  } else {
+    const { data: { publicUrl: nativeFetchPublicUrl } } = adminNativeFetch.storage.from("profile-images").getPublicUrl(nativeFetchPath);
+    const nfRes = await fetch(nativeFetchPublicUrl, { cache: "no-store" });
+    const nfBuf = Buffer.from(await nfRes.arrayBuffer());
+    nativeFetchResult = {
+      refetchSha256: sha256(nfBuf),
+      refetchFirstBytes: nfBuf.subarray(0, 8).toString("hex"),
+      refetchLength: nfBuf.length,
+      matches: sharpSha256 === sha256(nfBuf),
+    };
+    await adminNativeFetch.storage.from("profile-images").remove([nativeFetchPath]);
+  }
+
   return NextResponse.json({
     rawSha256,
     rawFirstBytes,
@@ -98,5 +128,6 @@ export async function POST(request: NextRequest) {
       refetchLength: rawRefetchBuf.length,
       matches: sharpSha256 === rawRefetchSha256,
     },
+    sdkWithNativeFetch: nativeFetchResult,
   });
 }
