@@ -5,11 +5,11 @@ import { useState, useTransition } from "react";
 
 import { createEvent, updateEvent } from "@/app/events/actions";
 import { disciplineLabel } from "@/lib/event-display";
-import { uploadOrganizerEventImage } from "@/lib/upload-action";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { CurrencyPicker } from "@/components/shared/currency-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
 import { InlineTeacherPicker } from "@/components/organizer/inline-teacher-picker";
+import { compressImageForUpload } from "@/lib/client-image-compress";
 import {
   EVENT_TYPE_OPTIONS,
   LEVEL_OPTIONS,
@@ -260,10 +260,13 @@ export function OrganizerEventForm({
                     if (!file) return;
                     setImageUploadError(null);
                     try {
+                      const compressed = await compressImageForUpload(file);
                       const uploadData = new FormData();
-                      uploadData.append("file", file);
-                      const url = await uploadOrganizerEventImage(uploadData);
-                      set("imageUrl", url);
+                      uploadData.append("file", compressed);
+                      const response = await fetch("/api/organizer/event-image", { method: "POST", body: uploadData });
+                      const result = await response.json();
+                      if (!response.ok) throw new Error(result.error || "Failed to upload image.");
+                      set("imageUrl", result.url);
                     } catch (err) {
                       setImageUploadError(err instanceof Error ? err.message : "Failed to upload image.");
                     }

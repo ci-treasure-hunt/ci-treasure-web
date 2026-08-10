@@ -3,15 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile, setProfileDeactivated, requestProfileDeletion, type ProfileUpdateData } from "./actions";
-import { uploadProfilePhoto } from "./photo-actions";
 import { CONTINENT_COUNTRIES } from "@/lib/continents";
 import { getCountryLabel, disciplineLabel } from "@/lib/event-display";
 import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
+import { compressImageForUpload } from "@/lib/client-image-compress";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 
 const inputClassName =
   "w-full rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm text-slate-950 outline-none ring-0 transition focus:border-(--color-pine)";
-
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 type ProfileRow = {
   name: string;
@@ -509,8 +508,9 @@ function PhotoUploadSection({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [credit, setCredit] = useState(imageCredit || "");
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setError(null);
     setSuccess(false);
     const file = e.target.files?.[0] ?? null;
@@ -519,14 +519,22 @@ function PhotoUploadSection({
       setPreviewUrl(null);
       return;
     }
-    if (file.size > MAX_UPLOAD_BYTES) {
-      setError("File too large (max 8MB)");
+
+    setIsCompressing(true);
+    const compressed = await compressImageForUpload(file).finally(() => setIsCompressing(false));
+
+    // Checked after compression, not before: the raw file off a phone camera is routinely
+    // well over MAX_UPLOAD_BYTES on its own, but the resized/re-encoded version almost
+    // always isn't. Rejecting on the original size would turn away photos that are actually
+    // fine to upload.
+    if (compressed.size > MAX_UPLOAD_BYTES) {
+      setError(`File too large (max ${MAX_UPLOAD_MB}MB after compression)`);
       setSelectedFile(null);
       setPreviewUrl(null);
       return;
     }
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setSelectedFile(compressed);
+    setPreviewUrl(URL.createObjectURL(compressed));
   }
 
   function handleUpload() {
@@ -540,7 +548,8 @@ function PhotoUploadSection({
 
     startTransition(async () => {
       try {
-        const result = await uploadProfilePhoto(formData);
+        const response = await fetch("/api/dashboard/profile-photo", { method: "POST", body: formData });
+        const result = await response.json();
         if (result.success) {
           setSuccess(true);
           setSelectedFile(null);
@@ -589,7 +598,7 @@ function PhotoUploadSection({
               onChange={handleFileChange}
               className="w-full text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-(--color-ink) file:px-4 file:py-2 file:text-xs file:font-semibold file:text-(--color-mist)"
             />
-            <p className="mt-1 text-xs text-slate-500">JPEG, PNG, or WEBP. Max 8MB.</p>
+            <p className="mt-1 text-xs text-slate-500">JPEG, PNG, or WEBP. Resized automatically before upload.</p>
           </Field>
           <Field label="Credit (optional)">
             <input
@@ -612,10 +621,10 @@ function PhotoUploadSection({
           <button
             type="button"
             onClick={handleUpload}
-            disabled={!selectedFile || isPending}
+            disabled={!selectedFile || isPending || isCompressing}
             className="rounded-full bg-(--color-ink) px-6 py-2.5 text-sm font-semibold text-(--color-mist) shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
           >
-            {isPending ? "Uploading..." : "Upload photo"}
+            {isPending ? "Uploading..." : isCompressing ? "Processing..." : "Upload photo"}
           </button>
         </div>
       </div>

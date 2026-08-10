@@ -1,19 +1,27 @@
-"use server";
-
 import sharp from "sharp";
 
-import { requireAdminUser } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 
-// Reachable from both the admin event form and the organizer event form — each exported
-// function below has its own auth gate (requireAdminUser vs. signed-in-with-a-profile), since
-// a server action is an independently callable endpoint regardless of which UI renders it.
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+// Plain server-only helper, called from app/api/admin/event-image and
+// app/api/organizer/event-image route handlers. NOT a Server Action ("use server") —
+// on this Next 16.2.12/React 19.2.3 stack, the Server Actions payload decoder
+// (react-server-dom-turbopack) silently mangles binary File content passed through a
+// server action's FormData, replacing non-ASCII bytes with UTF-8 U+FFFD sequences.
+// Reproduced independently on two upload paths (this one and profile-photo) and
+// confirmed byte-for-byte via SHA-256: identical through a Route Handler, corrupted
+// through a Server Action. (A related react-server-dom-turbopack FormData regression
+// from the CVE-2026-23870 DoS fix is documented in vercel/next.js#93754, but that
+// report describes FormData arriving empty, not binary content being mangled — treat
+// this as the same buggy subsystem, not a confirmed match to that specific report.)
+// A Route Handler reading request.formData() from a plain Request never goes through
+// that decoder, so it isn't affected. See app/api/dashboard/profile-photo for the
+// profile-photo equivalent — found via a corrupted teacher photo upload
+// (Tanja Striezel, 2026-08-10).
 const ALLOWED_TYPES = ["image/jpeg", "image/webp"];
-// Same conventions as lib/rehost-image.ts / photo-actions.ts (I-122/I-129): this path
-// previously uploaded whatever the admin picked completely unprocessed — a real,
+// Same conventions as lib/rehost-image.ts / app/api/dashboard/profile-photo (I-122/I-129): this
+// path previously uploaded whatever the admin picked completely unprocessed — a real,
 // uncompressed 4000px camera photo would sail straight through the type/size
 // checks above. Resize + recompress here the same way the other upload paths do.
 // I-129 Phase 2: `large` always stays JPEG (the only size feeding og:image/JSON-LD,
@@ -30,8 +38,8 @@ const SMALL_QUALITY = 70;
 // lib/rehost-image.ts — storage.objects has RLS enabled with no policies defined for
 // event-images, so the plain session client has no INSERT grant here. Callers still gate
 // on the session client for who's allowed to call this at all.
-async function resizeAndUploadEventImage(file: File): Promise<string> {
-  if (file.size > MAX_UPLOAD_BYTES) throw new Error("File too large (max 8MB)");
+export async function resizeAndUploadEventImage(file: File): Promise<string> {
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error(`File too large (max ${MAX_UPLOAD_MB}MB)`);
   if (!ALLOWED_TYPES.includes(file.type)) throw new Error("File must be JPEG or WEBP");
 
   const inputBuffer = Buffer.from(await file.arrayBuffer());
@@ -102,34 +110,4 @@ async function resizeAndUploadEventImage(file: File): Promise<string> {
     .getPublicUrl(filePath);
 
   return publicUrl;
-}
-
-export async function uploadEventImage(formData: FormData) {
-  await requireAdminUser();
-  const file = formData.get("file") as File;
-  if (!file) throw new Error("No file provided");
-  return resizeAndUploadEventImage(file);
-}
-
-// Found live 2026-07-22: the organizer event form only had a paste-a-URL field, no direct file
-// upload — the admin form got this dropzone but organizers never did. Same processing, gated by
-// "signed in with a claimed profile" (the same requirement createEvent already enforces) instead
-// of admin-only.
-export async function uploadOrganizerEventImage(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!profile) throw new Error("Claim or create your profile before uploading images");
-
-  const file = formData.get("file") as File;
-  if (!file) throw new Error("No file provided");
-  return resizeAndUploadEventImage(file);
 }

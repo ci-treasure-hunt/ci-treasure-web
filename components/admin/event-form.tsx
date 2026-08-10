@@ -4,10 +4,10 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X } from "lucide-react";
 
-import { uploadEventImage } from "@/lib/upload-action";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { CurrencyPicker } from "@/components/shared/currency-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
+import { compressImageForUpload } from "@/lib/client-image-compress";
 import {
   EVENT_STATUS_OPTIONS,
   EVENT_TYPE_OPTIONS,
@@ -222,10 +222,13 @@ export function EventForm({
                           if (!file) return;
 
                           try {
+                            const compressed = await compressImageForUpload(file);
                             const formData = new FormData();
-                            formData.append("file", file);
-                            const url = await uploadEventImage(formData);
-                            setForm({ ...form, imageUrl: url });
+                            formData.append("file", compressed);
+                            const response = await fetch("/api/admin/event-image", { method: "POST", body: formData });
+                            const result = await response.json();
+                            if (!response.ok) throw new Error(result.error || "Failed to upload image.");
+                            setForm({ ...form, imageUrl: result.url });
                           } catch (error) {
                             setSaveError("Failed to upload image.");
                             console.error(error);
