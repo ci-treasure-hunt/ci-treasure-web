@@ -127,9 +127,11 @@ Deno.serve(async (req) => {
   // escaped since they sit inside the link label syntax itself.
   const escapeMarkdown = (s: string) => s.replace(/\[/g, '(').replace(/\]/g, ')').replace(/([_*`])/g, '\\$1')
 
-  // Use "announce_name (if set) or venue name, City" for known venues; city otherwise —
-  // found live 2026-07-23: a venue-name-only location (e.g. "Community Central Hall" with
-  // no "Glasgow") reads as incomplete on its own, city is always worth keeping alongside it.
+  // Use "announce_name (if set) or venue name" for known venues; city otherwise. Revised
+  // 2026-08-10 (NLit/Fools' Valley): dropped the ", City" suffix that was here from
+  // 2026-07-23 — a venue distinctive enough to be flagged show_in_announce is, by definition,
+  // more recognizable than the town it happens to sit in, so appending the city read as
+  // redundant. Matches announce-event-cancelled's location logic, which never had the suffix.
   let location: string = event.city
   if (event.venue_id) {
     const { data: venue } = await supabase
@@ -138,7 +140,7 @@ Deno.serve(async (req) => {
       .eq('id', event.venue_id)
       .single()
     if (venue?.show_in_announce) {
-      location = `${venue.announce_name ?? venue.name}, ${event.city}`
+      location = venue.announce_name ?? venue.name
     }
   }
 
