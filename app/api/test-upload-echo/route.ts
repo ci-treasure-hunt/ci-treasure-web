@@ -107,6 +107,30 @@ export async function POST(request: NextRequest) {
     await adminNativeFetch.storage.from("profile-images").remove([nativeFetchPath]);
   }
 
+  // Fourth leg: same SDK's upload(), but the buffer is wrapped in a Blob first — this is
+  // the exact workaround lib/rehost-image.ts applied on 2026-07-22 for this same bug
+  // (comment there: "untested against this exact bug, couldn't reproduce locally to verify
+  // before deploying"). Confirms or refutes it now against a real reproduction.
+  const blobPath = `_diagnostic-blob-${Date.now()}.jpg`;
+  const { error: blobUploadError } = await admin.storage
+    .from("profile-images")
+    .upload(blobPath, new Blob([new Uint8Array(sharpBuf)], { type: "image/jpeg" }), { upsert: true });
+  let blobResult;
+  if (blobUploadError) {
+    blobResult = { error: blobUploadError.message };
+  } else {
+    const { data: { publicUrl: blobPublicUrl } } = admin.storage.from("profile-images").getPublicUrl(blobPath);
+    const blobRes = await fetch(blobPublicUrl, { cache: "no-store" });
+    const blobBuf = Buffer.from(await blobRes.arrayBuffer());
+    blobResult = {
+      refetchSha256: sha256(blobBuf),
+      refetchFirstBytes: blobBuf.subarray(0, 8).toString("hex"),
+      refetchLength: blobBuf.length,
+      matches: sharpSha256 === sha256(blobBuf),
+    };
+    await admin.storage.from("profile-images").remove([blobPath]);
+  }
+
   return NextResponse.json({
     rawSha256,
     rawFirstBytes,
@@ -129,5 +153,6 @@ export async function POST(request: NextRequest) {
       matches: sharpSha256 === rawRefetchSha256,
     },
     sdkWithNativeFetch: nativeFetchResult,
+    sdkUploadWithBlob: blobResult,
   });
 }
