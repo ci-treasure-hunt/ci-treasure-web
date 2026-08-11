@@ -28,12 +28,14 @@ export default async function AdminProfilePhotosPage() {
           {photos.map((photo) => (
             <li key={photo.id} className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.imageUrl}
-                  alt={photo.name}
-                  className="h-20 w-20 rounded-2xl border border-(--color-sand-strong) object-cover"
-                />
+                <a href={photo.imageUrl} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.imageUrl}
+                    alt={photo.name}
+                    className="h-20 w-20 rounded-2xl border border-(--color-sand-strong) object-cover transition hover:opacity-80"
+                  />
+                </a>
                 <div>
                   <p className="font-semibold text-slate-950">{photo.name}</p>
                   {photo.imageCredit && (
