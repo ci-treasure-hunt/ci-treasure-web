@@ -626,7 +626,7 @@ export function getLinkLabel(type: string, label?: string) {
     telegram_group: "Telegram Group",
     telegram_channel: "Telegram Channel",
     whatsapp: "WhatsApp",
-    whatsapp_channel: "WhatsApp",
+    whatsapp_channel: "WhatsApp Channel",
     instagram: "Instagram",
     youtube: "YouTube",
     newsletter: "Newsletter",
