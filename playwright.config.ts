@@ -45,5 +45,17 @@ export default defineConfig({
     timeout: 180_000,
     stdout: 'pipe',
     stderr: 'pipe',
+    // e2e tests (claim-flows.spec.ts) exercise real claim/profile-creation code paths that
+    // fire admin Telegram notifications as a side effect. Blank these out regardless of what
+    // .env.local provides — the notification helpers already no-op safely on empty
+    // credentials — so a local test run can never spam the real admin group again (this
+    // happened: repeated runs sent real "New profile submitted" messages for the suite's
+    // synthetic "Irene Sposetty" test profile).
+    env: {
+      TELEGRAM_BOT_TOKEN: '',
+      TELEGRAM_ADMIN_CHAT_ID: '',
+      TELEGRAM_CLAIM_THREAD_ID: '',
+      TELEGRAM_PROFILE_THREAD_ID: '',
+    },
   },
 });
