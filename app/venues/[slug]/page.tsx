@@ -21,12 +21,13 @@ import { CommunitySpotlightCard } from "@/components/entity-cards";
 import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
-import { getAllVenueSlugs, getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect } from "@/lib/venues";
+import { getAllVenueSlugs, getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect, getVenueRingNeighbors } from "@/lib/venues";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
+import { AlsoBrowse } from "@/components/also-browse";
 
 export const revalidate = 3600;
 
@@ -85,10 +86,11 @@ export default async function VenuePage({ params }: VenuePageProps) {
     notFound();
   }
 
-  const [{ upcoming, past }, countryLink, associations] = await Promise.all([
+  const [{ upcoming, past }, countryLink, associations, ringNeighbors] = await Promise.all([
     getVenueEvents(venue.id),
     getCountryPageLink(venue.country),
     getVenueAssociations(venue.id),
+    getVenueRingNeighbors(venue.slug, venue.country),
   ]);
 
   const ensureHttps = (url: string) => url.startsWith("http") ? url : `https://${url}`;
@@ -277,6 +279,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
             entity_slug={venue.slug}
           />
         </div>
+        <AlsoBrowse basePath="/venues" items={ringNeighbors} />
       </div>
     </main>
   );

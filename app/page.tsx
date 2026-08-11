@@ -9,6 +9,7 @@ import { getVenueCountries } from "@/lib/venues";
 import { getCommunityCountries } from "@/lib/communities";
 import { getAllCountrySummaries } from "@/lib/country-pages";
 import { SITE_URL } from "@/lib/site";
+import { EntityIndex } from "@/components/entity-index";
 
 export const revalidate = 3600;
 
@@ -117,6 +118,16 @@ export default async function Home() {
         <Suspense fallback={<div className="h-[calc(100vh-270px)] min-h-[500px]" />}>
           <EventsDashboard events={events} />
         </Suspense>
+
+        <EntityIndex
+          basePath="/events"
+          label="upcoming events"
+          items={events.map((e) => ({
+            slug: e.slug,
+            name: e.title,
+            country: getCountryLabel(e.country),
+          }))}
+        />
 
         <section className="mx-auto max-w-3xl border-t border-(--color-sand-strong) pt-8 text-slate-700">
           <h2 className="mb-4 font-serif text-2xl text-slate-950">What is Contact Improvisation?</h2>

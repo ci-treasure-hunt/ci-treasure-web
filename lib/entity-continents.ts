@@ -59,3 +59,8 @@ export function getContinent(countryIso: string | null | undefined): Continent |
   if (!countryIso) return null;
   return ISO_TO_CONTINENT.get(countryIso.toUpperCase()) ?? null;
 }
+
+// I-150 ring: widen a country-scoped pool to every country sharing the same continent.
+export function getContinentCountries(continent: Continent): string[] {
+  return CONTINENT_COUNTRIES[continent];
+}

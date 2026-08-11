@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { type SupabaseEventRow, mapEventRow } from "./events";
 import { type EventListItem } from "./event-display";
+import { getContinent, getContinentCountries } from "./entity-continents";
+import { buildRing, RING_MIN_POOL, type RingEntity } from "./entity-ring";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -83,6 +86,26 @@ export async function getAllPublicTeachers(): Promise<TeacherProfile[]> {
     ...t,
     event_count: countsMap[t.id] || 0
   })) as TeacherProfile[];
+}
+
+// I-150: lightweight list for the /teachers page's plain server-rendered index (EntityIndex),
+// which pulls the Suspense-equivalent /teachers "coming soon" stub out of a JS-only dead end.
+// Uses the static (cookie-free) client — same reasoning as getCommunities()/getVenues(): no
+// auth-dependent RLS branch here, and the cookie-aware client would force this list page dynamic
+// on every request instead of the ISR it had before (confirmed via a real prod build: switching
+// this to createClient() flipped /teachers from ○ static to ƒ dynamic).
+export async function getAllPublicTeachersForIndex(): Promise<Pick<TeacherProfile, "slug" | "name" | "country">[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = createStaticClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("slug, name, country")
+    .eq("is_teacher", true)
+    .eq("visibility", "public")
+    .eq("show_in_list", true);
+
+  if (error || !data) return [];
+  return data;
 }
 
 export async function getTeacherBySlug(slug: string): Promise<TeacherProfile | null> {
@@ -225,6 +248,47 @@ export async function getTeacherEvents(profileId: string): Promise<{
       .filter(e => e.endDate < today)
       .sort((a, b) => b.startDate.localeCompare(a.startDate)),
   };
+}
+
+// I-150 ring: same scope as getAllPublicTeacherSlugs (is_teacher + public), optionally narrowed
+// to one or more country ISO codes. Reused across the country/continent/global tiers.
+async function fetchTeacherRingPool(countryIsos: string[] | null): Promise<RingEntity[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = await createClient();
+  let query = supabase
+    .from("profiles")
+    .select("slug, name")
+    .eq("is_teacher", true)
+    .eq("visibility", "public");
+  if (countryIsos) query = query.in("country", countryIsos);
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data;
+}
+
+// I-150: "also browse" ring neighbors for a teacher's own detail page. Widens from the teacher's
+// country to its continent to global whenever the narrower pool is too small to yield RING_WIDTH
+// distinct neighbors on each side (see entity-ring.ts for the full reasoning).
+export async function getTeacherRingNeighbors(
+  slug: string,
+  country: string | null,
+): Promise<RingEntity[]> {
+  let pool: RingEntity[] = country ? await fetchTeacherRingPool([country]) : [];
+
+  if (pool.length < RING_MIN_POOL) {
+    const continent = getContinent(country);
+    if (continent) {
+      const continentPool = await fetchTeacherRingPool(getContinentCountries(continent));
+      if (continentPool.length > pool.length) pool = continentPool;
+    }
+  }
+
+  if (pool.length < RING_MIN_POOL) {
+    pool = await fetchTeacherRingPool(null);
+  }
+
+  return buildRing(pool, slug);
 }
 
 export async function getAllPublicTeacherSlugs(): Promise<string[]> {

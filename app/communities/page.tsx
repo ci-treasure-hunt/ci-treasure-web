@@ -4,6 +4,7 @@ import { Globe, MapPin } from "lucide-react";
 import { getCommunities } from "@/lib/communities";
 import { CommunitiesClient } from "./communities-client";
 import { SITE_URL, SITE_OG_IMAGE, TELEGRAM_URL } from "@/lib/site";
+import { EntityIndex } from "@/components/entity-index";
 
 const TITLE = "CI Communities Worldwide";
 const DESCRIPTION =
@@ -90,6 +91,12 @@ export default async function CommunitiesPage() {
             initialError={error}
           />
         </Suspense>
+
+        <EntityIndex
+          basePath="/communities"
+          label="communities"
+          items={communities.map((c) => ({ slug: c.slug, name: c.name, country: c.country }))}
+        />
       </div>
     </main>
   );

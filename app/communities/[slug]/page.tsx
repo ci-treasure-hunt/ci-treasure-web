@@ -45,6 +45,7 @@ import {
   isMessengerUrl,
   isPrivateGroupInvite,
   resolveCommunitySlugRedirect,
+  getCommunityRingNeighbors,
 } from "@/lib/communities";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
@@ -52,6 +53,7 @@ import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
 import { InviteButtons } from "@/components/invite-buttons";
+import { AlsoBrowse } from "@/components/also-browse";
 
 export const revalidate = 3600;
 
@@ -113,11 +115,12 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     notFound();
   }
 
-  const [publishedInvitePlatforms, ownEvents, relatedEventsRaw, countryLink] = await Promise.all([
+  const [publishedInvitePlatforms, ownEvents, relatedEventsRaw, countryLink, ringNeighbors] = await Promise.all([
     getPublishedInvitePlatforms(community.id),
     getCommunityOwnEvents(community.id),
     getCommunityEventsByCountry(community.country),
     getCountryPageLink(community.country),
+    getCommunityRingNeighbors(community.slug, community.country),
   ]);
   const hasPublishedInvites = Object.keys(publishedInvitePlatforms).length > 0;
   const ownEventIds = new Set(ownEvents.map((e) => e.id));
@@ -348,6 +351,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
             entity_slug={community.slug}
           />
         </div>
+        <AlsoBrowse basePath="/communities" items={ringNeighbors} />
       </div>
     </main>
   );

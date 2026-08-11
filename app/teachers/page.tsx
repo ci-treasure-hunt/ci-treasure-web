@@ -3,6 +3,9 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site";
+import { getAllPublicTeachersForIndex } from "@/lib/teachers";
+import { getCountryLabel } from "@/lib/event-display";
+import { EntityIndex } from "@/components/entity-index";
 
 const TITLE = "Teachers — CI Treasure Hunt";
 const DESCRIPTION =
@@ -31,7 +34,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function TeachersPage() {
+export const revalidate = 3600;
+
+export default async function TeachersPage() {
+  const teachers = await getAllPublicTeachersForIndex();
+
   return (
     <main className="min-h-screen bg-(--color-mist) px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="mx-auto w-full max-w-5xl space-y-8">
@@ -55,6 +62,16 @@ export default function TeachersPage() {
             event to find them.
           </p>
         </div>
+
+        <EntityIndex
+          basePath="/teachers"
+          label="teachers"
+          items={teachers.map((t) => ({
+            slug: t.slug,
+            name: t.name,
+            country: t.country ? getCountryLabel(t.country) : null,
+          }))}
+        />
       </div>
     </main>
   );

@@ -16,11 +16,13 @@ import {
   getTeacherEvents,
   getAllPublicTeacherSlugs,
   resolveTeacherSlugRedirect,
-  getProfileAssociations
+  getProfileAssociations,
+  getTeacherRingNeighbors
 } from "@/lib/teachers";
 import { ReportButton } from "@/components/report-button";
 import BackButton from "@/components/back-button";
 import { EntityBreadcrumb } from "@/components/entity-breadcrumb";
+import { AlsoBrowse } from "@/components/also-browse";
 import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
 import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
@@ -100,10 +102,11 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
     notFound();
   }
 
-  const [{ upcoming, past }, countryLink, associations] = await Promise.all([
+  const [{ upcoming, past }, countryLink, associations, ringNeighbors] = await Promise.all([
     getTeacherEvents(teacher.id),
     getCountryPageLink(teacher.country),
     getProfileAssociations(teacher.id),
+    getTeacherRingNeighbors(teacher.slug, teacher.country),
   ]);
   const allEvents = [...upcoming, ...past];
 
@@ -329,6 +332,7 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
             entity_slug={teacher.slug}
           />
         </div>
+        <AlsoBrowse basePath="/teachers" items={ringNeighbors} />
       </div>
     </main>
   );

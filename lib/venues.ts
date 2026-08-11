@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, SupabaseEventRow, LinkItem, getLinkLabel, linkSortKey } from "./events";
+import { getContinent, getContinentCountries } from "./entity-continents";
+import { buildRing, RING_MIN_POOL, type RingEntity } from "./entity-ring";
 
 // I-153: associated communities (community_venues) and people (venue_profiles, e.g. an owner or
 // resident teacher). Separate call, same reasoning as lib/teachers.ts's getProfileAssociations.
@@ -310,6 +312,46 @@ export async function getVenues(): Promise<VenuesResponse> {
         error instanceof Error ? error.message : "Failed to load venues. Please try again later.",
     };
   }
+}
+
+// I-150 ring: same scope as getVenues (public + show_in_list), optionally narrowed to one or
+// more country ISO codes. Reused across the country/continent/global tiers.
+async function fetchVenueRingPool(countryIsos: string[] | null): Promise<RingEntity[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = await createClient();
+  let query = supabase
+    .from("venues")
+    .select("slug, name")
+    .eq("visibility", "public")
+    .eq("show_in_list", true);
+  if (countryIsos) query = query.in("country", countryIsos);
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data;
+}
+
+// I-150: "also browse" ring neighbors for a venue's own detail page. Same country -> continent
+// -> global widening as getTeacherRingNeighbors (lib/teachers.ts).
+export async function getVenueRingNeighbors(
+  slug: string,
+  country: string | null,
+): Promise<RingEntity[]> {
+  let pool: RingEntity[] = country ? await fetchVenueRingPool([country]) : [];
+
+  if (pool.length < RING_MIN_POOL) {
+    const continent = getContinent(country);
+    if (continent) {
+      const continentPool = await fetchVenueRingPool(getContinentCountries(continent));
+      if (continentPool.length > pool.length) pool = continentPool;
+    }
+  }
+
+  if (pool.length < RING_MIN_POOL) {
+    pool = await fetchVenueRingPool(null);
+  }
+
+  return buildRing(pool, slug);
 }
 
 export async function getAllVenueSlugs(): Promise<string[]> {

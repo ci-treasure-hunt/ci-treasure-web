@@ -4,6 +4,7 @@ import { Globe, MapPin } from "lucide-react";
 import { getVenues } from "@/lib/venues";
 import { VenuesClient } from "./venues-client";
 import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site";
+import { EntityIndex } from "@/components/entity-index";
 
 const TITLE = "CI Venues Worldwide";
 const DESCRIPTION =
@@ -77,6 +78,12 @@ export default async function VenuesPage() {
             initialError={error}
           />
         </Suspense>
+
+        <EntityIndex
+          basePath="/venues"
+          label="venues"
+          items={venues.map((v) => ({ slug: v.slug, name: v.name, country: v.country }))}
+        />
       </div>
     </main>
   );

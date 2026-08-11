@@ -2,6 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, type SupabaseEventRow } from "./events";
+import { getContinent, getContinentCountries } from "./entity-continents";
+import { buildRing, RING_MIN_POOL, type RingEntity } from "./entity-ring";
 
 export type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
 
@@ -408,6 +410,44 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
         linkUrl: p.website ?? p.instagram ?? p.facebook ?? null,
       })),
   } as unknown as CommunityDetail;
+}
+
+// I-150 ring: same scope as getCommunities (not deleted), optionally narrowed to one or more
+// country ISO codes. Reused across the country/continent/global tiers.
+async function fetchCommunityRingPool(countryIsos: string[] | null): Promise<RingEntity[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = await createClient();
+  let query = supabase.from("communities").select("slug, name").is("deleted_at", null);
+  if (countryIsos) query = query.in("country", countryIsos);
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data;
+}
+
+// I-150: "also browse" ring neighbors for a community's own detail page. Same country ->
+// continent -> global widening as getTeacherRingNeighbors (lib/teachers.ts) — deliberately not
+// using the communities.continent column directly, to keep the tiering logic and its thresholds
+// identical across all three entity types (see entity-ring.ts).
+export async function getCommunityRingNeighbors(
+  slug: string,
+  country: string | null,
+): Promise<RingEntity[]> {
+  let pool: RingEntity[] = country ? await fetchCommunityRingPool([country]) : [];
+
+  if (pool.length < RING_MIN_POOL) {
+    const continent = getContinent(country);
+    if (continent) {
+      const continentPool = await fetchCommunityRingPool(getContinentCountries(continent));
+      if (continentPool.length > pool.length) pool = continentPool;
+    }
+  }
+
+  if (pool.length < RING_MIN_POOL) {
+    pool = await fetchCommunityRingPool(null);
+  }
+
+  return buildRing(pool, slug);
 }
 
 export async function getAllCommunitySlugs(): Promise<string[]> {
