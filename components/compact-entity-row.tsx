@@ -38,6 +38,25 @@ export function CompactCommunityRow({ community }: { community: Community }) {
   );
 }
 
+// I-150 ring: same dense row as CompactCommunityRow, minus the join-link icon — that icon means
+// "here's how to contact this community", which doesn't apply to a same-type ring neighbor (an
+// alphabetically-adjacent community, not a known relationship).
+export function CompactCommunityRingRow({ community }: { community: { name: string; slug: string; city: string | null } }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_140px]">
+      <Link href={`/communities/${community.slug}`} className="truncate font-serif text-base text-slate-900 hover:underline">
+        {community.name}
+      </Link>
+      {community.city && (
+        <p className="col-start-1 row-start-2 flex items-center gap-1 text-xs text-slate-500 sm:col-start-2 sm:row-start-1 sm:text-sm">
+          <MapPin className="size-3 shrink-0 text-slate-400" />
+          {community.city}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function CompactTeacherRow({ teacher }: { teacher: { name: string; slug: string; city: string | null; bio: string | null; imageUrl?: string | null; linkUrl?: string | null; role?: string | null } }) {
   const imageUrl = teacher.imageUrl?.trim() ?? "";
   return (

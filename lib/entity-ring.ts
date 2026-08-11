@@ -16,6 +16,22 @@ export const RING_MIN_POOL = RING_WIDTH * 2 + 1;
 
 export type RingEntity = { slug: string; name: string };
 
+// Which pool tier a ring's neighbors actually came from — surfaced so the render side can label
+// the section honestly ("More teachers in Germany" vs "in Europe" vs "worldwide") instead of a
+// generic "Also browse" that doesn't say why these 4.
+export type RingTier = "country" | "continent" | "global";
+
+export function ringSectionHeading(
+  entityLabelPlural: string,
+  tier: RingTier,
+  countryLabel: string | null,
+  continentLabel: string | null,
+): string {
+  if (tier === "country" && countryLabel) return `More ${entityLabelPlural} in ${countryLabel}`;
+  if (tier === "continent" && continentLabel) return `More ${entityLabelPlural} in ${continentLabel}`;
+  return `More ${entityLabelPlural} worldwide`;
+}
+
 // Pure — sorts the pool by slug (stable, per I-117) and returns up to RING_WIDTH entities before
 // and after the current one, wrapping around at the ends. Self-healing on add/remove: no
 // first/last special-casing, no stored state.

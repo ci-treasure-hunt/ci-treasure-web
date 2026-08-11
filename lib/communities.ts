@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, type SupabaseEventRow } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
-import { buildRing, RING_MIN_POOL, type RingEntity } from "./entity-ring";
+import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 
 export type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
 
@@ -412,12 +412,17 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
   } as unknown as CommunityDetail;
 }
 
-// I-150 ring: same scope as getCommunities (not deleted), optionally narrowed to one or more
-// country ISO codes. Reused across the country/continent/global tiers.
-async function fetchCommunityRingPool(countryIsos: string[] | null): Promise<RingEntity[]> {
+// I-150 ring: like CompactCommunityRow's row shape minus the join-link icon (that's for actual
+// invite links; ring neighbors are alphabetically-adjacent, not a known relationship) — just
+// enough (city) for a scannable row. Communities have no photos yet, unlike venues/teachers.
+export type CommunityRingItem = RingEntity & { city: string | null };
+
+// Same scope as getCommunities (not deleted), optionally narrowed to one or more country ISO
+// codes. Reused across the country/continent/global tiers.
+async function fetchCommunityRingPool(countryIsos: string[] | null): Promise<CommunityRingItem[]> {
   if (!hasSupabaseEnv()) return [];
   const supabase = await createClient();
-  let query = supabase.from("communities").select("slug, name").is("deleted_at", null);
+  let query = supabase.from("communities").select("slug, name, city").is("deleted_at", null);
   if (countryIsos) query = query.in("country", countryIsos);
 
   const { data, error } = await query;
@@ -432,22 +437,27 @@ async function fetchCommunityRingPool(countryIsos: string[] | null): Promise<Rin
 export async function getCommunityRingNeighbors(
   slug: string,
   country: string | null,
-): Promise<RingEntity[]> {
-  let pool: RingEntity[] = country ? await fetchCommunityRingPool([country]) : [];
+): Promise<{ tier: RingTier; items: CommunityRingItem[] }> {
+  let pool: CommunityRingItem[] = country ? await fetchCommunityRingPool([country]) : [];
+  let tier: RingTier = "country";
 
   if (pool.length < RING_MIN_POOL) {
     const continent = getContinent(country);
     if (continent) {
       const continentPool = await fetchCommunityRingPool(getContinentCountries(continent));
-      if (continentPool.length > pool.length) pool = continentPool;
+      if (continentPool.length > pool.length) {
+        pool = continentPool;
+        tier = "continent";
+      }
     }
   }
 
   if (pool.length < RING_MIN_POOL) {
     pool = await fetchCommunityRingPool(null);
+    tier = "global";
   }
 
-  return buildRing(pool, slug);
+  return { tier, items: buildRing(pool, slug) };
 }
 
 export async function getAllCommunitySlugs(): Promise<string[]> {

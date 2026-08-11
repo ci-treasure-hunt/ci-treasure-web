@@ -22,8 +22,9 @@ import {
 import { ReportButton } from "@/components/report-button";
 import BackButton from "@/components/back-button";
 import { EntityBreadcrumb } from "@/components/entity-breadcrumb";
-import { AlsoBrowse } from "@/components/also-browse";
+import { RingSection } from "@/components/also-browse";
 import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
+import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
 import { EntityEventCard } from "@/components/entity-event-card";
@@ -35,6 +36,8 @@ import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
+import { getContinent } from "@/lib/entity-continents";
+import { ringSectionHeading } from "@/lib/entity-ring";
 
 export const revalidate = 3600;
 
@@ -102,12 +105,18 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
     notFound();
   }
 
-  const [{ upcoming, past }, countryLink, associations, ringNeighbors] = await Promise.all([
+  const [{ upcoming, past }, countryLink, associations, ring] = await Promise.all([
     getTeacherEvents(teacher.id),
     getCountryPageLink(teacher.country),
     getProfileAssociations(teacher.id),
     getTeacherRingNeighbors(teacher.slug, teacher.country),
   ]);
+  const ringHeading = ringSectionHeading(
+    "teachers",
+    ring.tier,
+    teacher.country ? getCountryLabel(teacher.country) : null,
+    getContinent(teacher.country),
+  );
   const allEvents = [...upcoming, ...past];
 
   // Derive roles from both stored flags and linked events (I-115)
@@ -301,6 +310,16 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                   )}
                 </div>
               </section>
+
+              {ring.items.length > 0 && (
+                <RingSection heading={ringHeading}>
+                  <div className="divide-y divide-(--color-sand-strong) overflow-hidden rounded-xl border border-(--color-sand-strong) bg-white">
+                    {ring.items.map((t) => (
+                      <CompactTeacherRow key={t.slug} teacher={{ ...t, bio: null }} />
+                    ))}
+                  </div>
+                </RingSection>
+              )}
             </div>
 
             <aside className="space-y-6">
@@ -332,7 +351,6 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
             entity_slug={teacher.slug}
           />
         </div>
-        <AlsoBrowse basePath="/teachers" items={ringNeighbors} />
       </div>
     </main>
   );

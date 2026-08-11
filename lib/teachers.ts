@@ -3,7 +3,7 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { type SupabaseEventRow, mapEventRow } from "./events";
 import { type EventListItem } from "./event-display";
 import { getContinent, getContinentCountries } from "./entity-continents";
-import { buildRing, RING_MIN_POOL, type RingEntity } from "./entity-ring";
+import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -250,21 +250,32 @@ export async function getTeacherEvents(profileId: string): Promise<{
   };
 }
 
-// I-150 ring: same scope as getAllPublicTeacherSlugs (is_teacher + public), optionally narrowed
-// to one or more country ISO codes. Reused across the country/continent/global tiers.
-async function fetchTeacherRingPool(countryIsos: string[] | null): Promise<RingEntity[]> {
+// I-150 ring: like CompactTeacherRow's prop shape, minus the fields the ring doesn't have/use
+// (bio, external linkUrl, role) — city + image so the row visually matches every other place
+// CompactTeacherRow already appears (Community/Venue "People" sections).
+export type TeacherRingItem = RingEntity & { city: string | null; imageUrl: string | null };
+
+// Same scope as getAllPublicTeacherSlugs (is_teacher + public), optionally narrowed to one or
+// more country ISO codes. Reused across the country/continent/global tiers. Only surfaces the
+// image when approved (image_status), same gate as the teacher's own detail page.
+async function fetchTeacherRingPool(countryIsos: string[] | null): Promise<TeacherRingItem[]> {
   if (!hasSupabaseEnv()) return [];
   const supabase = await createClient();
   let query = supabase
     .from("profiles")
-    .select("slug, name")
+    .select("slug, name, city, image_url, image_status")
     .eq("is_teacher", true)
     .eq("visibility", "public");
   if (countryIsos) query = query.in("country", countryIsos);
 
   const { data, error } = await query;
   if (error || !data) return [];
-  return data;
+  return data.map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    city: row.city,
+    imageUrl: row.image_status === "approved" ? row.image_url : null,
+  }));
 }
 
 // I-150: "also browse" ring neighbors for a teacher's own detail page. Widens from the teacher's
@@ -273,22 +284,27 @@ async function fetchTeacherRingPool(countryIsos: string[] | null): Promise<RingE
 export async function getTeacherRingNeighbors(
   slug: string,
   country: string | null,
-): Promise<RingEntity[]> {
-  let pool: RingEntity[] = country ? await fetchTeacherRingPool([country]) : [];
+): Promise<{ tier: RingTier; items: TeacherRingItem[] }> {
+  let pool: TeacherRingItem[] = country ? await fetchTeacherRingPool([country]) : [];
+  let tier: RingTier = "country";
 
   if (pool.length < RING_MIN_POOL) {
     const continent = getContinent(country);
     if (continent) {
       const continentPool = await fetchTeacherRingPool(getContinentCountries(continent));
-      if (continentPool.length > pool.length) pool = continentPool;
+      if (continentPool.length > pool.length) {
+        pool = continentPool;
+        tier = "continent";
+      }
     }
   }
 
   if (pool.length < RING_MIN_POOL) {
     pool = await fetchTeacherRingPool(null);
+    tier = "global";
   }
 
-  return buildRing(pool, slug);
+  return { tier, items: buildRing(pool, slug) };
 }
 
 export async function getAllPublicTeacherSlugs(): Promise<string[]> {

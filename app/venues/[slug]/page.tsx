@@ -17,7 +17,7 @@ import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
 import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
-import { CommunitySpotlightCard } from "@/components/entity-cards";
+import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
 import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
@@ -27,7 +27,9 @@ import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
-import { AlsoBrowse } from "@/components/also-browse";
+import { RingSection } from "@/components/also-browse";
+import { getContinent } from "@/lib/entity-continents";
+import { ringSectionHeading } from "@/lib/entity-ring";
 
 export const revalidate = 3600;
 
@@ -86,12 +88,18 @@ export default async function VenuePage({ params }: VenuePageProps) {
     notFound();
   }
 
-  const [{ upcoming, past }, countryLink, associations, ringNeighbors] = await Promise.all([
+  const [{ upcoming, past }, countryLink, associations, ring] = await Promise.all([
     getVenueEvents(venue.id),
     getCountryPageLink(venue.country),
     getVenueAssociations(venue.id),
     getVenueRingNeighbors(venue.slug, venue.country),
   ]);
+  const ringHeading = ringSectionHeading(
+    "venues",
+    ring.tier,
+    getCountryLabel(venue.country),
+    getContinent(venue.country),
+  );
 
   const ensureHttps = (url: string) => url.startsWith("http") ? url : `https://${url}`;
   type LinkRow = { type: string; href: string; label: string; icon: React.ReactNode };
@@ -253,6 +261,16 @@ export default async function VenuePage({ params }: VenuePageProps) {
                   </div>
                 </section>
               )}
+
+              {ring.items.length > 0 && (
+                <RingSection heading={ringHeading}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {ring.items.map((v) => (
+                      <VenueCard key={v.slug} venue={{ ...v, description: null }} />
+                    ))}
+                  </div>
+                </RingSection>
+              )}
             </div>
 
             <aside className="space-y-6">
@@ -279,7 +297,6 @@ export default async function VenuePage({ params }: VenuePageProps) {
             entity_slug={venue.slug}
           />
         </div>
-        <AlsoBrowse basePath="/venues" items={ringNeighbors} />
       </div>
     </main>
   );

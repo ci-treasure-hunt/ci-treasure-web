@@ -21,7 +21,7 @@ import BackButton from "@/components/back-button";
 import { EntityBreadcrumb } from "@/components/entity-breadcrumb";
 import VenueMap from "@/components/venue-map";
 import { ExpandableList } from "@/components/expandable-list";
-import { CompactTeacherRow } from "@/components/compact-entity-row";
+import { CompactTeacherRow, CompactCommunityRingRow } from "@/components/compact-entity-row";
 import { VenueCard } from "@/components/entity-cards";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import {
@@ -53,7 +53,9 @@ import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
 import { InviteButtons } from "@/components/invite-buttons";
-import { AlsoBrowse } from "@/components/also-browse";
+import { RingSection } from "@/components/also-browse";
+import { getContinent } from "@/lib/entity-continents";
+import { ringSectionHeading } from "@/lib/entity-ring";
 
 export const revalidate = 3600;
 
@@ -115,13 +117,19 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     notFound();
   }
 
-  const [publishedInvitePlatforms, ownEvents, relatedEventsRaw, countryLink, ringNeighbors] = await Promise.all([
+  const [publishedInvitePlatforms, ownEvents, relatedEventsRaw, countryLink, ring] = await Promise.all([
     getPublishedInvitePlatforms(community.id),
     getCommunityOwnEvents(community.id),
     getCommunityEventsByCountry(community.country),
     getCountryPageLink(community.country),
     getCommunityRingNeighbors(community.slug, community.country),
   ]);
+  const ringHeading = ringSectionHeading(
+    "communities",
+    ring.tier,
+    community.country ? getCountryLabel(community.country) : null,
+    getContinent(community.country),
+  );
   const hasPublishedInvites = Object.keys(publishedInvitePlatforms).length > 0;
   const ownEventIds = new Set(ownEvents.map((e) => e.id));
   const relatedEvents = relatedEventsRaw.filter((e) => !ownEventIds.has(e.id));
@@ -312,6 +320,16 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
                   )}
                 </section>
               )}
+
+              {ring.items.length > 0 && (
+                <RingSection heading={ringHeading}>
+                  <div className="divide-y divide-(--color-sand-strong) overflow-hidden rounded-xl border border-(--color-sand-strong) bg-white">
+                    {ring.items.map((c) => (
+                      <CompactCommunityRingRow key={c.slug} community={c} />
+                    ))}
+                  </div>
+                </RingSection>
+              )}
             </div>
 
             <aside className="space-y-6">
@@ -351,7 +369,6 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
             entity_slug={community.slug}
           />
         </div>
-        <AlsoBrowse basePath="/communities" items={ringNeighbors} />
       </div>
     </main>
   );

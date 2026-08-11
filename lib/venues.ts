@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, SupabaseEventRow, LinkItem, getLinkLabel, linkSortKey } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
-import { buildRing, RING_MIN_POOL, type RingEntity } from "./entity-ring";
+import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 
 // I-153: associated communities (community_venues) and people (venue_profiles, e.g. an owner or
 // resident teacher). Separate call, same reasoning as lib/teachers.ts's getProfileAssociations.
@@ -314,21 +314,26 @@ export async function getVenues(): Promise<VenuesResponse> {
   }
 }
 
-// I-150 ring: same scope as getVenues (public + show_in_list), optionally narrowed to one or
-// more country ISO codes. Reused across the country/continent/global tiers.
-async function fetchVenueRingPool(countryIsos: string[] | null): Promise<RingEntity[]> {
+// I-150 ring: like VenueCard's prop shape minus description (ring neighbors aren't a curated
+// relationship, no blurb to show) — city + image so the tiles visually match every other place
+// VenueCard already appears (Community "Venues" section, country pages).
+export type VenueRingItem = RingEntity & { city: string | null; imageUrl: string | null };
+
+// Same scope as getVenues (public + show_in_list), optionally narrowed to one or more country
+// ISO codes. Reused across the country/continent/global tiers.
+async function fetchVenueRingPool(countryIsos: string[] | null): Promise<VenueRingItem[]> {
   if (!hasSupabaseEnv()) return [];
   const supabase = await createClient();
   let query = supabase
     .from("venues")
-    .select("slug, name")
+    .select("slug, name, city, image_url")
     .eq("visibility", "public")
     .eq("show_in_list", true);
   if (countryIsos) query = query.in("country", countryIsos);
 
   const { data, error } = await query;
   if (error || !data) return [];
-  return data;
+  return data.map((row) => ({ slug: row.slug, name: row.name, city: row.city, imageUrl: row.image_url }));
 }
 
 // I-150: "also browse" ring neighbors for a venue's own detail page. Same country -> continent
@@ -336,22 +341,27 @@ async function fetchVenueRingPool(countryIsos: string[] | null): Promise<RingEnt
 export async function getVenueRingNeighbors(
   slug: string,
   country: string | null,
-): Promise<RingEntity[]> {
-  let pool: RingEntity[] = country ? await fetchVenueRingPool([country]) : [];
+): Promise<{ tier: RingTier; items: VenueRingItem[] }> {
+  let pool: VenueRingItem[] = country ? await fetchVenueRingPool([country]) : [];
+  let tier: RingTier = "country";
 
   if (pool.length < RING_MIN_POOL) {
     const continent = getContinent(country);
     if (continent) {
       const continentPool = await fetchVenueRingPool(getContinentCountries(continent));
-      if (continentPool.length > pool.length) pool = continentPool;
+      if (continentPool.length > pool.length) {
+        pool = continentPool;
+        tier = "continent";
+      }
     }
   }
 
   if (pool.length < RING_MIN_POOL) {
     pool = await fetchVenueRingPool(null);
+    tier = "global";
   }
 
-  return buildRing(pool, slug);
+  return { tier, items: buildRing(pool, slug) };
 }
 
 export async function getAllVenueSlugs(): Promise<string[]> {
