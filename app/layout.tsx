@@ -113,11 +113,10 @@ export default async function RootLayout({
           {countryLinks.length > 0 && (
             <nav aria-label="Contact Improvisation by country" className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-center sm:px-8 lg:px-10">
               <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-500">
-                <span>
+                <span className="mr-2">
                   <Link href="/countries" className="font-medium text-slate-600 hover:text-slate-800 hover:underline">
                     Contact Improvisation Worldwide:
                   </Link>
-                  <span className="mr-2 ml-2 text-slate-300">|</span>
                 </span>
                 {countryLinks.map((c, i) => (
                   <span key={c.iso}>
