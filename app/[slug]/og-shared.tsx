@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 
 import { getCountryPageData } from "@/lib/country-pages";
+import { getCountryLabelWithArticle } from "@/lib/event-display";
 import { getCountryFlag } from "@/lib/utils";
 
 export const size = { width: 1200, height: 630 };
@@ -36,7 +37,7 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
 // rather than drifting between two near-duplicate files.
 export async function renderCountryOgImage(slug: string) {
   const country = await getCountryPageData(slug);
-  const label = country?.label ?? slug;
+  const label = country ? getCountryLabelWithArticle(country.iso) : slug;
   const flag = country ? getCountryFlag(country.iso) : "";
 
   const communityCount = (country?.communities.length ?? 0) + (country?.nationalCommunities.length ?? 0);

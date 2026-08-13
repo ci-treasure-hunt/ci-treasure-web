@@ -6,7 +6,7 @@ import { CommunitiesClient } from "./communities-client";
 import { SITE_URL, SITE_OG_IMAGE, TELEGRAM_URL } from "@/lib/site";
 import { EntityIndex } from "@/components/entity-index";
 
-const TITLE = "CI Communities Worldwide";
+const TITLE = "Contact Improvisation Communities Worldwide";
 const DESCRIPTION =
   "Discover Contact Improvisation communities around the world, find local jams, teacher networks, and groups, plus the channels that connect you locally.";
 
@@ -50,7 +50,7 @@ export default async function CommunitiesPage() {
             execute client JS still see the H1 and page content — see I-150 (Ahrefs H1 finding). */}
         <header className="mb-8">
           <h1 className="mb-3 font-serif text-3xl text-slate-900 md:text-5xl">
-            CI Communities Worldwide
+            Contact Improvisation Communities Worldwide
           </h1>
           <p className="mb-6 max-w-2xl text-lg text-slate-600">
             Explore Contact Improvisation communities around the globe and find the public channels, websites, and resources that help you connect locally.

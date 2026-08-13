@@ -10,12 +10,24 @@ import "./globals.css";
 import NavigationTracker from "@/components/navigation-tracker";
 import ServiceWorkerRegistration from "@/components/service-worker-registration";
 import { SiteHeader } from "@/components/site-header";
+import { getAllCountrySummaries } from "@/lib/country-pages";
+import { getCountryLabelWithArticle } from "@/lib/event-display";
 import {
   FACEBOOK_URL,
   INSTAGRAM_URL,
   SITE_URL,
   TELEGRAM_URL,
 } from "@/lib/site";
+
+// I-132 Step 3: sitewide internal-linking band, one "Contact Improvisation in {country}" link per
+// live country page. Anchor text deliberately matches each country page's own <title>/H1 verbatim
+// (not a bare country name) — anchor text is a real relevance signal, and this reinforces it
+// instead of wasting it. Shown on every page including country pages themselves: that doubles up
+// with the in-page "Explore other countries" chip section on app/[slug]/page.tsx, which is a
+// deliberate keep-both call (2026-08-13) rather than an oversight — the two differ in styling and
+// job, and suppressing one per-route would cost more than the duplication does.
+// revalidate is required here because the layout itself now fetches; 1h matches every other page.
+export const revalidate = 3600;
 
 const sans = Manrope({
   variable: "--font-sans",
@@ -71,11 +83,13 @@ const organizationJsonLd = {
   sameAs: [TELEGRAM_URL, FACEBOOK_URL, INSTAGRAM_URL],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const countryLinks = (await getAllCountrySummaries()).sort((a, b) => a.label.localeCompare(b.label));
+
   return (
     <html lang="en">
       {/* Half the homepage/entity-page images load from this origin — preconnecting lets the
@@ -96,6 +110,20 @@ export default function RootLayout({
         <div className="min-h-screen">
           <SiteHeader />
           {children}
+          {countryLinks.length > 0 && (
+            <nav aria-label="Contact Improvisation by country" className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-center sm:px-8 lg:px-10">
+              <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                {countryLinks.map((c, i) => (
+                  <span key={c.iso}>
+                    {i > 0 && <span className="mr-2 text-slate-300">|</span>}
+                    <Link href={`/${c.slug}`} className="hover:text-slate-800 hover:underline">
+                      Contact Improvisation in {getCountryLabelWithArticle(c.iso)}
+                    </Link>
+                  </span>
+                ))}
+              </div>
+            </nav>
+          )}
           <footer className="border-t border-slate-200 bg-white">
             <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-6 px-5 py-8 text-sm text-slate-700 sm:px-8 lg:grid lg:grid-cols-3 lg:items-center lg:px-10">
               <div className="flex flex-col items-center gap-4 lg:items-start">

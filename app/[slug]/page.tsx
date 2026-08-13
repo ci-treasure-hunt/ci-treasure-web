@@ -10,6 +10,7 @@ import { CompactCommunityRow, CompactTeacherRow } from "@/components/compact-ent
 import { VenueCard } from "@/components/entity-cards";
 import { COMMUNITY_SUBMIT_URL, getPrimaryJoinUrl, type Community } from "@/lib/communities";
 import { getAllCountrySlugs, getAllCountrySummaries, getCountryPageData } from "@/lib/country-pages";
+import { getCountryLabelWithArticle } from "@/lib/event-display";
 import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL } from "@/lib/site";
 
@@ -37,8 +38,9 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   // Sliced to 160 as a safety net: length varies with the country name (e.g. "Bosnia and
   // Herzegovina" alone pushes this past the target band), and nothing currently populated is
   // long enough to matter, but a future long country name shouldn't silently regress this.
-  const description = `Contact Improvisation in ${country.label}: find local communities, teachers, upcoming events, and venues, the full CI Treasure Hunt directory for ${country.label}.`.slice(0, 160);
-  const title = `Contact Improvisation in ${country.label}`;
+  const labelWithArticle = getCountryLabelWithArticle(country.iso);
+  const description = `Contact Improvisation in ${labelWithArticle}: find local communities, teachers, upcoming events, and venues, the full CI Treasure Hunt directory for ${labelWithArticle}.`.slice(0, 160);
+  const title = `Contact Improvisation in ${labelWithArticle}`;
   return {
     title: `${title} — CI Treasure Hunt`,
     description,
@@ -76,6 +78,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
   const { label, iso, summaryText, summaryUpdatedAt, nationalCommunities, communities, teachers, events, venues, mapMarkers } = country;
   const flag = getCountryFlag(iso);
+  const labelWithArticle = getCountryLabelWithArticle(iso);
 
   // Cross-links to other live country guides — same "comma-separated, 'and' before the last"
   // pattern as the homepage's own country-guide sentence (app/page.tsx), so it scales the same
@@ -108,7 +111,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
       <div className="mx-auto max-w-5xl">
         <header className="mb-10">
           <h1 className="mb-4 font-serif text-3xl text-slate-900 md:text-5xl">
-            {flag ? `${flag} ` : ""}Contact Improvisation in {label}
+            {flag ? `${flag} ` : ""}Contact Improvisation in {labelWithArticle}
           </h1>
 
           {/* Stat strip: bold counts + small labels, not a plain inline text row — gives
@@ -215,7 +218,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
                   />
                 </div>
                 <p className="mt-3 text-sm text-slate-500">
-                  Know a community in {label} we&apos;re missing?{" "}
+                  Know a community in {labelWithArticle} we&apos;re missing?{" "}
                   <a href={COMMUNITY_SUBMIT_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-(--color-pine) hover:underline">
                     Suggest it →
                   </a>
@@ -255,7 +258,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
               ))}
             </div>
             <p className="mt-3 text-sm text-slate-500">
-              Missing your event in {label}?{" "}
+              Missing your event in {labelWithArticle}?{" "}
               <Link href="/events/new" className="font-medium text-(--color-pine) hover:underline">
                 Add it →
               </Link>
@@ -272,7 +275,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
               ))}
             </div>
             <p className="mt-3 text-sm text-slate-500">
-              Know a venue in {label} that should be here?{" "}
+              Know a venue in {labelWithArticle} that should be here?{" "}
               <a href="mailto:hello@citreasurehunt.com" className="font-medium text-(--color-pine) hover:underline">
                 Let us know →
               </a>
@@ -305,9 +308,9 @@ export default async function CountryPage({ params }: CountryPageProps) {
               don't rename this again without checking), not another one-off correction prompt, so
               it gets its own card rather than blending into that stack. */}
           <div className={`rounded-xl border border-(--color-sand-strong) border-l-4 border-l-(--color-pine) bg-(--color-sand) p-5 ${otherCountries.length === 0 ? "sm:col-span-2" : ""}`}>
-            <h2 className="mb-1.5 font-serif text-lg text-slate-900">Become {label}&apos;s CI Ambassador</h2>
+            <h2 className="mb-1.5 font-serif text-lg text-slate-900">Become a CI Ambassador for {labelWithArticle}</h2>
             <p className="mb-3 text-sm leading-6 text-slate-700">
-              We&apos;re looking for someone connected to the {label} CI scene to help keep this
+              We&apos;re looking for someone connected to the CI scene in {labelWithArticle} to help keep this
               page accurate over time — new events, missing teachers or venues, corrections as the
               community grows.
             </p>

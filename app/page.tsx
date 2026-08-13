@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { EventsDashboard } from "@/components/events-dashboard";
 import { getUpcomingEvents } from "@/lib/events";
-import { getCountryLabel } from "@/lib/event-display";
+import { getCountryLabel, getCountryLabelWithArticle } from "@/lib/event-display";
 import { getVenueCountries } from "@/lib/venues";
 import { getCommunityCountries } from "@/lib/communities";
 import { getAllCountrySummaries } from "@/lib/country-pages";
@@ -171,7 +171,7 @@ export default async function Home() {
                     <span key={c.iso}>
                       {i > 0 && (i === countryPages.length - 1 ? " and " : ", ")}
                       <Link href={`/${c.slug}`} className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
-                        {c.label}
+                        {getCountryLabelWithArticle(c.iso)}
                       </Link>
                     </span>
                   ))}

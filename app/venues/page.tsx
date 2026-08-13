@@ -6,7 +6,7 @@ import { VenuesClient } from "./venues-client";
 import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site";
 import { EntityIndex } from "@/components/entity-index";
 
-const TITLE = "CI Venues Worldwide";
+const TITLE = "Contact Improvisation Venues Worldwide";
 const DESCRIPTION =
   "Discover Contact Improvisation venues around the world, a curated, hand-maintained directory of spaces that host CI jams, classes, workshops, and festivals.";
 
@@ -47,7 +47,7 @@ export default async function VenuesPage() {
             execute client JS still see the H1 and page content — see I-150 (Ahrefs H1 finding). */}
         <header className="mb-8">
           <h1 className="mb-3 font-serif text-3xl text-slate-900 md:text-5xl">
-            CI Venues Worldwide
+            Contact Improvisation Venues Worldwide
           </h1>
           <p className="mb-6 max-w-2xl text-lg text-slate-600">
             A curated directory of spaces that regularly host Contact Improvisation, jams, classes,

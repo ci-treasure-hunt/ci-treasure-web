@@ -34,6 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${SITE_URL}/communities`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/venues`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/teachers`, changeFrequency: "weekly", priority: 0.7 },
+      { url: `${SITE_URL}/countries`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.4 },
       { url: `${SITE_URL}/feedback`, changeFrequency: "monthly", priority: 0.3 },
     ];
@@ -69,6 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/communities`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/venues`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/teachers`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${SITE_URL}/countries`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/feedback`, changeFrequency: "monthly", priority: 0.3 },
   ];
