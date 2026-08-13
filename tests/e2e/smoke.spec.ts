@@ -91,7 +91,7 @@ test.describe('Public Smoke Tests', () => {
   test('communities page renders', async ({ page }) => {
     await page.goto('/communities');
 
-    const heading = page.getByRole('heading', { name: /CI Communities Worldwide/i });
+    const heading = page.getByRole('heading', { name: /Contact Improvisation Communities Worldwide/i });
     const errorHeading = page.getByRole('heading', { name: /Unable to load communities/i });
 
     // toBeVisible() auto-retries until the client-side fetch resolves; a plain

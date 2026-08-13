@@ -69,7 +69,7 @@ export default async function CountryGuidesPage() {
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="border-l-4 border-(--color-pine) py-1 pl-5">
             <h1 className="font-serif text-4xl tracking-tight text-slate-950 sm:text-5xl">
-              Contact Improvisation around the world
+              Contact Improvisation Around the World
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               Contact Improvisation is a small, scattered, wonderfully international practice, and
