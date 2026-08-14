@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — CI Treasure Hunt",
+  title: "Terms of Service - CI Treasure Hunt",
   description:
     "The terms of service governing use of CI Treasure Hunt, a directory of Contact Improvisation events, teachers, communities, and venues worldwide.",
 };
@@ -11,7 +11,7 @@ export default function TermsPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-5 py-14 sm:px-8">
       <h1 className="font-serif text-4xl text-slate-950">Terms of Service</h1>
       <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-        <p className="text-sm text-slate-500">Last updated: July 2026</p>
+        <p className="text-sm text-slate-500">Last updated: August 2026</p>
         <section>
           <h2 className="font-semibold text-slate-950">1. Scope</h2>
           <p>
@@ -56,23 +56,43 @@ export default function TermsPage() {
         <section>
           <h2 className="font-semibold text-slate-950">6. Accounts and submissions</h2>
           <p>
-            Organisers may create an account (by email magic link) to claim a profile and submit or edit their own
+            Organizers may create an account (by email magic link) to claim a profile and submit or edit their own
             event listings. You are responsible for activity under your account and for keeping your email access
             secure. You may only submit content you have the right to publish, and it must be accurate and not
             misleading. Submitted events are reviewed before publication unless your account is marked trusted; we
-            may edit, decline, unpublish, or remove any listing at our discretion — for example if it is
+            may edit, decline, unpublish, or remove any listing at our discretion, for example if it is
             inaccurate, off-topic, or violates these terms. Claiming a profile that is not yours is not permitted.
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">7. Changes</h2>
+          <h2 className="font-semibold text-slate-950">7. Content you submit</h2>
+          <p>
+            You keep ownership of anything you submit. By submitting content, such as event details, descriptions,
+            images and links, you grant us a non-exclusive, worldwide, royalty-free licence to store, display,
+            reproduce and adapt it for the purpose of running this directory. Adapting means things like resizing or
+            cropping an image so that it displays correctly on different devices.
+          </p>
+          <p className="mt-2">
+            This licence also covers announcing your listing in our own channels. When an event is published it is
+            posted automatically to our Telegram channel and group, including its image and the people credited on
+            it.
+          </p>
+          <p className="mt-2">
+            You confirm that you hold the rights to the content you submit, including photographs, and that
+            publishing it here does not infringe anyone else&apos;s rights. Past events stay online as an archive
+            rather than being deleted, so this licence lasts for as long as the listing remains on the site. You can
+            ask us to remove a listing at any time.
+          </p>
+        </section>
+        <section>
+          <h2 className="font-semibold text-slate-950">8. Changes</h2>
           <p>
             We may update these terms when new features are added. Continued use of the site after changes constitutes
             acceptance of the updated terms.
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">8. Governing law</h2>
+          <h2 className="font-semibold text-slate-950">9. Governing law</h2>
           <p>These terms are governed by the laws of the Federal Republic of Germany.</p>
         </section>
       </div>

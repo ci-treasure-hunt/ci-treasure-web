@@ -135,7 +135,7 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     await admin.from("events").update({ status: "published" }).eq("id", inserted.id);
     revalidatePath("/");
   } else {
-    notifyAdminNewEvent(inserted.title, user.email ?? "unknown").catch(() => {});
+    notifyAdminNewEvent(inserted.title).catch(() => {});
   }
 
   revalidatePath("/dashboard");
@@ -209,14 +209,16 @@ export async function updateEvent(
 // Admin group topic for pending-event submissions (env-overridable).
 const EVENT_THREAD_ID = Number(process.env.TELEGRAM_EVENT_THREAD_ID ?? 685);
 
-async function notifyAdminNewEvent(title: string, email: string) {
+// No submitter email here by design, same reasoning as the claims and report notifiers: a nudge
+// to go look, not a record of who did what. Keeps account holders' email addresses out of
+// Telegram entirely (I-159) — the review page shows who submitted it.
+async function notifyAdminNewEvent(title: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
   if (!token || !chatId) return;
 
   const text = [
     `🆕 New event submitted: ${title}`,
-    `From: ${email}`,
     `Review: https://citreasurehunt.com/admin/events/pending`,
   ].join("\n");
 

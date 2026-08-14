@@ -5,7 +5,18 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const VALID_ENTITY_TYPES = ["event", "venue", "profile", "community"] as const;
-const VALID_REASONS = ["incorrect_info", "spam_fake", "copyright", "inappropriate_photo", "illegal_other"] as const;
+// I-159: privacy_objection is the Art. 21 GDPR right to object, exercised from the page itself.
+// Offered on profiles only (see report-button.tsx) — an event or venue carries no data-subject
+// right, so the option must not appear there.
+const VALID_REASONS = [
+  "incorrect_info",
+  "spam_fake",
+  "copyright",
+  "inappropriate_photo",
+  "illegal_other",
+  "privacy_objection",
+] as const;
+const PRIVACY_OBJECTION = "privacy_objection";
 const RATE_LIMIT = 5;
 
 const REASON_LABELS: Record<string, string> = {
@@ -14,6 +25,7 @@ const REASON_LABELS: Record<string, string> = {
   copyright: "Copyright infringement",
   inappropriate_photo: "Inappropriate photo",
   illegal_other: "Other / illegal content",
+  privacy_objection: "Removal of my personal data (Art. 21 GDPR objection)",
 };
 
 export type ReportInput = {
@@ -23,6 +35,8 @@ export type ReportInput = {
   entity_slug: string;
   reason: string;
   details?: string;
+  /** Required for privacy_objection only, so we can confirm the request and reply to it. */
+  reporter_email?: string;
 };
 
 export async function submitReport(
@@ -33,6 +47,18 @@ export async function submitReport(
   }
   if (!VALID_REASONS.includes(input.reason as (typeof VALID_REASONS)[number])) {
     return { success: false, error: "invalid" };
+  }
+
+  // Re-checked server-side, not just in the form: an objection is a data-subject right, so it only
+  // applies to a profile, and it needs a reply address before we can act on it (Art. 12(6)).
+  const email = input.reporter_email?.trim() ?? "";
+  if (input.reason === PRIVACY_OBJECTION) {
+    if (input.entity_type !== "profile") {
+      return { success: false, error: "invalid" };
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { success: false, error: "invalid_email" };
+    }
   }
 
   const headersList = await headers();
@@ -61,6 +87,7 @@ export async function submitReport(
     entity_slug: input.entity_slug,
     reason: input.reason,
     details: input.details?.trim() || null,
+    reporter_email: input.reason === PRIVACY_OBJECTION ? email : null,
     ip_hash: ipHash,
     source: "web_form",
   });
@@ -85,12 +112,23 @@ async function notifyTelegram(input: ReportInput) {
     input.entity_type === "profile" ? "teachers" : `${input.entity_type}s`;
   const url = `https://citreasurehunt.com/${basePath}/${input.entity_slug}`;
 
-  const text = [
-    `🚩 Report · ${input.entity_type}: ${input.entity_title}`,
-    `Reason: ${REASON_LABELS[input.reason] ?? input.reason}`,
-    `Details: ${input.details?.trim() || "—"}`,
-    `→ ${url}`,
-  ].join("\n");
+  // Privacy objections get a deliberately bare ping: the reporter's email and whatever they typed
+  // in the details box (often their own name, or why they want off the site) stay in the database
+  // and out of Telegram. Same convention as the other admin notifiers (I-159). The profile name is
+  // already public on the site, so naming the listing itself is within the line we hold.
+  const text =
+    input.reason === PRIVACY_OBJECTION
+      ? [
+          `🚩 Privacy objection · profile: ${input.entity_title}`,
+          "Reporter email and details are in the admin view, not here.",
+          `→ ${url}`,
+        ].join("\n")
+      : [
+          `🚩 Report · ${input.entity_type}: ${input.entity_title}`,
+          `Reason: ${REASON_LABELS[input.reason] ?? input.reason}`,
+          `Details: ${input.details?.trim() || "—"}`,
+          `→ ${url}`,
+        ].join("\n");
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",

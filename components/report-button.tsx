@@ -12,28 +12,46 @@ const REASONS = [
   { value: "illegal_other", label: "Other / illegal content" },
 ] as const;
 
-type Props = Omit<ReportInput, "reason" | "details">;
+// I-159: the Art. 21 GDPR right to object, offered from the page the data is on. Profiles only —
+// ReportButton is shared with events, venues and communities, none of which carry a data-subject
+// right, and offering "remove my data" there would invite requests that aren't Art. 21 requests.
+const PRIVACY_OBJECTION = {
+  value: "privacy_objection",
+  label: "This is my profile, please remove it",
+} as const;
 
-type State = "idle" | "submitting" | "success" | "rate_limited" | "error";
+type Props = Omit<ReportInput, "reason" | "details" | "reporter_email">;
+
+type State = "idle" | "submitting" | "success" | "rate_limited" | "invalid_email" | "error";
 
 export function ReportButton(props: Props) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
+  const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
+
+  const reasons = props.entity_type === "profile" ? [...REASONS, PRIVACY_OBJECTION] : REASONS;
+  const isObjection = reason === PRIVACY_OBJECTION.value;
 
   function handleOpen() {
     setOpen(true);
     setState("idle");
     setReason("");
     setDetails("");
+    setEmail("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!reason) return;
     setState("submitting");
-    const result = await submitReport({ ...props, reason, details });
+    const result = await submitReport({
+      ...props,
+      reason,
+      details,
+      ...(isObjection ? { reporter_email: email } : {}),
+    });
     setState(result.success ? "success" : (result.error as State) ?? "error");
   }
 
@@ -60,7 +78,9 @@ export function ReportButton(props: Props) {
             {state === "success" ? (
               <div className="mt-4 space-y-4">
                 <p className="text-slate-600">
-                  Thank you — we&apos;ll review this.
+                  {isObjection
+                    ? "Thank you. We'll remove your profile and email you to confirm."
+                    : "Thank you, we'll review this."}
                 </p>
                 <button
                   onClick={() => setOpen(false)}
@@ -94,13 +114,33 @@ export function ReportButton(props: Props) {
                     className="w-full rounded-xl border border-(--color-sand-strong) bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-(--color-pine)"
                   >
                     <option value="">Select a reason…</option>
-                    {REASONS.map((r) => (
+                    {reasons.map((r) => (
                       <option key={r.value} value={r.value}>
                         {r.label}
                       </option>
                     ))}
                   </select>
                 </div>
+
+                {isObjection && (
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                      Your email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-(--color-sand-strong) bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-(--color-pine)"
+                      placeholder="you@example.com"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      So we can confirm the request is yours and let you know once it&apos;s done. We
+                      won&apos;t add you to anything.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -115,6 +155,12 @@ export function ReportButton(props: Props) {
                     placeholder="Any additional context…"
                   />
                 </div>
+
+                {state === "invalid_email" && (
+                  <p className="text-sm text-red-600">
+                    Please enter a valid email address so we can reply.
+                  </p>
+                )}
 
                 {state === "error" && (
                   <p className="text-sm text-red-600">

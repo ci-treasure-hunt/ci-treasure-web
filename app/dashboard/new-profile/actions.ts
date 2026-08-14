@@ -106,7 +106,7 @@ export async function createProfile(input: {
 
   // Fire-and-forget admin notification (same pattern as app/events/actions.ts's
   // notifyAdminNewEvent). Best-effort: a failed notification must never block signup.
-  notifyAdminNewProfile(name, user.email ?? "unknown").catch(() => {});
+  notifyAdminNewProfile().catch(() => {});
 
   return { success: true };
 }
@@ -118,14 +118,17 @@ const PROFILE_THREAD_ID = process.env.TELEGRAM_PROFILE_THREAD_ID
   ? Number(process.env.TELEGRAM_PROFILE_THREAD_ID)
   : undefined;
 
-async function notifyAdminNewProfile(name: string, email: string) {
+// No personal data at all here by design (I-159), same as the events/claims/report notifiers: a
+// nudge to go look, not a record of who did what. Dropping the submitted name matters because a
+// pending profile is not public yet — with it gone, every name this project sends to Telegram is
+// one already published on the site.
+async function notifyAdminNewProfile() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
   if (!token || !chatId) return;
 
   const text = [
-    `New profile submitted: ${name}`,
-    `From: ${email}`,
+    "New profile submitted.",
     "Review: https://citreasurehunt.com/admin/profiles/pending",
   ].join("\n");
 
