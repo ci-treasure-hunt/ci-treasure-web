@@ -74,10 +74,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Venue name (if flagged show_in_announce) replaces the city entirely — same convention as
-  // announce-event and announce-event-cancelled. Revised 2026-08-10 (NLit/Fools' Valley):
-  // dropped the ", City" suffix — a venue distinctive enough to be flagged show_in_announce is,
-  // by definition, more recognizable than the town it happens to sit in.
+  // Venue name (if flagged show_in_announce) is shown alongside the city — same convention as
+  // announce-event and announce-event-cancelled. Revised 2026-08-12: restored the ", City"
+  // suffix dropped 2026-08-10 (NLit/Fools' Valley) — that assumed a show_in_announce venue is
+  // always more recognizable than its town, which broke down for venues like Dance Base/Laban
+  // Building whose name doesn't place them for readers outside that local CI scene.
   let location: string = event.city
   if (event.venue_id) {
     const { data: venue } = await supabase
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
       .eq('id', event.venue_id)
       .single()
     if (venue?.show_in_announce) {
-      location = venue.announce_name ?? venue.name
+      location = `${venue.announce_name ?? venue.name}, ${event.city}`
     }
   }
 

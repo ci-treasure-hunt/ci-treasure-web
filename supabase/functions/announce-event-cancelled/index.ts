@@ -106,7 +106,9 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // Shared location lookup (venue name if flagged show_in_announce, else city).
+  // Shared location lookup (venue name + city if flagged show_in_announce, else city alone).
+  // 2026-08-12: venue name is shown alongside the city, not instead of it — see
+  // announce-event/index.ts for why the venue-only form was reverted.
   let location: string = event.city
   if (event.venue_id) {
     const { data: venue } = await supabase
@@ -115,7 +117,7 @@ Deno.serve(async (req) => {
       .eq('id', event.venue_id)
       .single()
     if (venue?.show_in_announce) {
-      location = venue.announce_name ?? venue.name
+      location = `${venue.announce_name ?? venue.name}, ${event.city}`
     }
   }
 

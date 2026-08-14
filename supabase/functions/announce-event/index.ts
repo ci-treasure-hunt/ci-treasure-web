@@ -128,10 +128,13 @@ Deno.serve(async (req) => {
   const escapeMarkdown = (s: string) => s.replace(/\[/g, '(').replace(/\]/g, ')').replace(/([_*`])/g, '\\$1')
 
   // Use "announce_name (if set) or venue name" for known venues; city otherwise. Revised
-  // 2026-08-10 (NLit/Fools' Valley): dropped the ", City" suffix that was here from
-  // 2026-07-23 — a venue distinctive enough to be flagged show_in_announce is, by definition,
-  // more recognizable than the town it happens to sit in, so appending the city read as
-  // redundant. Matches announce-event-cancelled's location logic, which never had the suffix.
+  // 2026-08-12: restored the ", City" suffix on venue-name locations — dropped 2026-08-10
+  // (NLit/Fools' Valley) on the reasoning that a venue flagged show_in_announce is inherently
+  // more recognizable than its town, but that broke down for venues like Dance Base/Laban
+  // Building whose name alone doesn't place them for readers outside that local CI scene.
+  // A famous one-of-a-kind retreat name may not need the city; a generic-sounding venue name
+  // reads as ambiguous without it. Erring toward always including the city is safer than
+  // re-litigating recognizability per venue.
   let location: string = event.city
   if (event.venue_id) {
     const { data: venue } = await supabase
@@ -140,7 +143,7 @@ Deno.serve(async (req) => {
       .eq('id', event.venue_id)
       .single()
     if (venue?.show_in_announce) {
-      location = venue.announce_name ?? venue.name
+      location = `${venue.announce_name ?? venue.name}, ${event.city}`
     }
   }
 
