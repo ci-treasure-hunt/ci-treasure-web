@@ -83,6 +83,7 @@ const COUNTRIES_WITH_ARTICLE = new Set([
   "PH", // the Philippines
   "BS", // the Bahamas
   "GM", // the Gambia
+  "CZ", // the Czech Republic (needed once CZ was overridden away from "Czechia" above)
   "DO", // the Dominican Republic
   "MV", // the Maldives
   "KM", // the Comoros
