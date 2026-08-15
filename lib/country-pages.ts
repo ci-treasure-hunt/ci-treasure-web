@@ -19,6 +19,11 @@ function hasSupabaseEnv() {
 const NATIONAL_COMMUNITY_SLUGS: Record<string, string[]> = {
   GR: ["contact-improvisation-greece"],
   PT: ["contact-improvisation-portugal"],
+  // The contactimprov.es directory, run by Manu Paredes. Renamed from the placeholder "Overview
+  // Spain" 2026-08-15; its slug was rewritten to match by hand, with the old one kept in
+  // previous_slugs. sync_communities.py reads a row's existing slug back from Supabase and reuses
+  // it, so the rename survives the next sync rather than reverting.
+  ES: ["contact-improvisacion-espana"],
 };
 
 export type CountrySummary = {
@@ -138,7 +143,7 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
       getCommunities(),
       supabase
         .from("profiles")
-        .select("id, name, slug, city, bio, image_url, website, instagram, facebook")
+        .select("id, name, slug, city, bio, image_url, image_status, website, instagram, facebook")
         .eq("country", summary.iso)
         .eq("visibility", "public")
         .eq("is_teacher", true)
@@ -179,7 +184,11 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
     slug: t.slug,
     city: t.city,
     bio: t.bio,
-    imageUrl: t.image_url,
+    // Gate on image_status, not just presence: a photo stays pending until reviewed, and the
+    // privacy policy (section 7) states plainly that it is not publicly visible until then.
+    // No live impact today (1 approved photo across the whole directory) but this breaks that
+    // promise the moment claims start bringing photos in.
+    imageUrl: t.image_status === "approved" ? t.image_url : null,
     // Table row's "links" column — website preferred, social as fallback. Sparse today (only a
     // few of Sweden's 13 teachers have one on file) but graceful when absent, same as
     // getPrimaryJoinUrl() for communities.

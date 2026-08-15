@@ -71,12 +71,24 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   };
 }
 
+// A summary may end with a trailing "Sources:" block citing where its history came from (Spain is
+// the first, backed by two peer-reviewed papers). Kept inside summary_text rather than given its own
+// column: it's prose the author writes and edits in one place, and only a minority of countries will
+// ever have one. Split out here purely so the citations can render smaller and quieter than the body
+// — a country without the marker is unaffected and renders exactly as before.
+function splitSummarySources(text: string): [string, string | null] {
+  const marker = text.lastIndexOf("\n\nSources:");
+  if (marker === -1) return [text, null];
+  return [text.slice(0, marker), text.slice(marker + 2)];
+}
+
 export default async function CountryPage({ params }: CountryPageProps) {
   const { slug } = await params;
   const country = await getCountryPageData(slug);
   if (!country) notFound();
 
   const { label, iso, summaryText, summaryUpdatedAt, nationalCommunities, communities, teachers, events, venues, mapMarkers } = country;
+  const [summaryBody, summarySources] = splitSummarySources(summaryText);
   const flag = getCountryFlag(iso);
   const labelWithArticle = getCountryLabelWithArticle(iso);
 
@@ -167,8 +179,13 @@ export default async function CountryPage({ params }: CountryPageProps) {
             )}
             <h2 className="mb-2 font-serif text-xl text-slate-900">Overview</h2>
             <p className="text-lg leading-8 whitespace-pre-line text-slate-700">
-              {summaryText}
+              {summaryBody}
             </p>
+            {summarySources && (
+              <p className="mt-5 text-xs leading-5 whitespace-pre-line text-slate-500">
+                {summarySources}
+              </p>
+            )}
             <p className="mt-2 text-xs text-slate-400">
               Last updated{" "}
               {new Date(summaryUpdatedAt).toLocaleDateString("en-GB", {
