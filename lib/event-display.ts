@@ -45,8 +45,24 @@ export function getEventHref(event: Pick<EventListItem, "slug">) {
   return `/events/${event.slug}`;
 }
 
+// ISO codes where CLDR's English region name is not the form English speakers actually use or
+// search for. Intl.DisplayNames returns the official short name registered with the UN, which is
+// correct but sometimes uncommon: for CZ it gives "Czechia", while "Czech Republic" is both the
+// higher-volume English search phrase and the form readers recognise faster.
+//
+// This is the single source of the country page's slug, H1, <title> and meta description
+// (lib/country-pages.ts derives `slug` as slugify(getCountryLabel(iso))), so changing an entry
+// here MOVES THE LIVE URL. Country pages have no previous_slugs redirect the way communities do,
+// so only change one before anything links to that country, or add a redirect alongside.
+// Note this is not lib/countries.ts — that list only feeds the admin country-picker dropdown.
+const COUNTRY_LABEL_OVERRIDES: Record<string, string> = {
+  CZ: "Czech Republic",
+};
+
 export function getCountryLabel(country: string) {
   if (/^[A-Z]{2}$/.test(country)) {
+    const override = COUNTRY_LABEL_OVERRIDES[country];
+    if (override) return override;
     try {
       return new Intl.DisplayNames(["en"], { type: "region" }).of(country) ?? country;
     } catch {
