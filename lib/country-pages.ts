@@ -24,6 +24,10 @@ const NATIONAL_COMMUNITY_SLUGS: Record<string, string[]> = {
   // previous_slugs. sync_communities.py reads a row's existing slug back from Supabase and reuses
   // it, so the rename survives the next sync rather than reverting.
   ES: ["contact-improvisacion-espana"],
+  // The national Facebook group (~1,300 members), the largest of the three Czech groups and the
+  // only country-wide one; Prague and Brno have their own separate city groups. No website on
+  // file, same shape as Greece above.
+  CZ: ["contact-improvisation-czech-republic"],
 };
 
 export type CountrySummary = {
