@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapPin } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { CountryCombinedMap } from "@/components/country-combined-map";
 import { EventCard } from "@/components/event-card";
@@ -80,6 +81,36 @@ function splitSummarySources(text: string): [string, string | null] {
   const marker = text.lastIndexOf("\n\nSources:");
   if (marker === -1) return [text, null];
   return [text.slice(0, marker), text.slice(marker + 2)];
+}
+
+// Citations may carry a markdown-style link on the work's title: "[Title](https://...)". The link
+// goes on the title rather than being printed as a bare URL — this block is deliberately small and
+// muted, and a raw URL would be both the longest and highest-contrast string in it, making the
+// plumbing louder than the citation. Only this one pattern is recognised; everything else in the
+// block stays literal text, so a plain unlinked citation renders exactly as it always has.
+const SOURCE_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+function renderSourceCitations(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(SOURCE_LINK_PATTERN)) {
+    const start = match.index ?? cursor;
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+    nodes.push(
+      <a
+        key={start}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 hover:text-slate-700"
+      >
+        {match[1]}
+      </a>,
+    );
+    cursor = start + match[0].length;
+  }
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
 }
 
 export default async function CountryPage({ params }: CountryPageProps) {
@@ -183,7 +214,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
             </p>
             {summarySources && (
               <p className="mt-5 text-xs leading-5 whitespace-pre-line text-slate-500">
-                {summarySources}
+                {renderSourceCitations(summarySources)}
               </p>
             )}
             <p className="mt-2 text-xs text-slate-400">
