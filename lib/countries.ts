@@ -38,7 +38,12 @@ export const COUNTRIES: { code: string; name: string }[] = [
   { code: "HR", name: "Croatia" },
   { code: "CU", name: "Cuba" },
   { code: "CY", name: "Cyprus" },
-  { code: "CZ", name: "Czechia" },
+  // "Czech Republic" over the ISO short name "Czechia": this list follows common English usage
+  // rather than ISO formal names (cf. "South Korea", "Russia", "Vietnam" above/below), and
+  // "Czech Republic" is both the more-searched form in English and the one readers recognise
+  // faster. Changed 2026-08-15, hours after /czechia first went live and before anything linked
+  // to it — country slugs have no previous_slugs redirect the way communities do.
+  { code: "CZ", name: "Czech Republic" },
   { code: "DK", name: "Denmark" },
   { code: "DO", name: "Dominican Republic" },
   { code: "EC", name: "Ecuador" },
