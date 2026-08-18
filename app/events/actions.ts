@@ -7,15 +7,18 @@ import { buildEventSlug } from "@/lib/events";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { resolveVenueLocation } from "@/lib/geocode";
 import {
+  BARE_EMAIL,
   normalizeCountry,
   normalizeJsonItems,
   parseCsvArray,
+  parseLanguages,
   parseLinkItems,
   parsePriceItems,
   validateOrganizerEvent,
   type OrganizerEventFormData,
 } from "@/lib/organizer-events";
 import { createClient } from "@/lib/supabase/server";
+import tzlookup from "tz-lookup";
 
 type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string };
 
@@ -23,19 +26,29 @@ type ActionResult = { success: boolean; error?: string; slug?: string; warning?:
 // organizer can never set it directly. imageUrl is resolved separately (see
 // resolveExternalEventImage, I-126) rather than read straight off data.imageUrl, since a
 // pasted external URL needs to be rehosted first.
-function eventColumns(data: OrganizerEventFormData, imageUrl: string | null) {
+// timezone is resolved by the caller (auto-derived from lat/lng via tz-lookup when the
+// organizer leaves the dropdown blank, see createEvent/updateEvent) rather than read off
+// data.timezone directly.
+function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, timezone: string) {
+  // A bare email typed into a Links URL field ("cicopenhagen@gmail.com" instead of a website)
+  // is routed to contact_email instead of stored as a link — found live 2026-08-18, 3 of 4
+  // submissions from one organizer did this. `links` renders as a plain, public <a> tag on the
+  // event page; contact_email is Turnstile-gated + rate-limited (lib/protected-email-action.ts,
+  // email_reveal_log). Storing the email as a link would silently defeat that protection, so it
+  // only ever fills contact_email when that field was left blank — never overwrites a real one.
+  const bareEmailInLinks = (data.linkItems ?? []).find((i) => BARE_EMAIL.test(i.url.trim()))?.url.trim();
   return {
     title: data.title.trim(),
     type: data.type,
     start_date: data.startDate,
     end_date: data.endDate,
-    timezone: data.timezone.trim(),
+    timezone,
     city: data.city.trim(),
     country: normalizeCountry(data.country),
     description: data.description.trim() || null,
     image_url: imageUrl,
     level: data.level || null,
-    language: parseCsvArray(data.languages),
+    language: parseLanguages(data.languages, data.languagesOther),
     features: parseCsvArray(data.features),
     // Real, user-controlled field (checkbox picker, validated non-empty) — safe to share
     // between create and edit, unlike a silent auto-default would be.
@@ -44,11 +57,26 @@ function eventColumns(data: OrganizerEventFormData, imageUrl: string | null) {
     cancelled_text: data.cancelled ? data.cancelledText.trim() || "" : null,
     price: normalizeJsonItems(parsePriceItems(data.priceItems ?? [])),
     links: normalizeJsonItems(parseLinkItems(data.linkItems ?? [])),
-    contact_email: data.contactEmail.trim() || null,
+    contact_email: data.contactEmail.trim() || bareEmailInLinks || null,
     // venue_id/address/lat/lng are resolved by the caller (createEvent/updateEvent) — a
     // linked venue takes its coordinates from the venues table and skips both the free-text
     // address and a redundant geocode.
   };
+}
+
+// Auto-derive from the resolved lat/lng (tz-lookup, offline IANA boundary data) when the
+// organizer left the dropdown blank — most organizers have no reason to know their own UTC
+// offset, and we already geocode every submission for the map pin. Only asks explicitly when
+// geocoding itself came up empty (no city/country match at all).
+function deriveTimezone(explicit: string, lat: number | undefined, lng: number | undefined): string | null {
+  const trimmed = explicit.trim();
+  if (trimmed) return trimmed;
+  if (lat == null || lng == null) return null;
+  try {
+    return tzlookup(lat, lng);
+  } catch {
+    return null;
+  }
 }
 
 export async function createEvent(data: OrganizerEventFormData): Promise<ActionResult> {
@@ -84,11 +112,19 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     data.country,
   );
 
+  const timezone = deriveTimezone(data.timezone, lat, lng);
+  if (!timezone) {
+    return {
+      success: false,
+      error: "We couldn't auto-detect a timezone for this location — please pick one from the Timezone dropdown.",
+    };
+  }
+
   // Insert as pending. short_id is filled by the generate_short_id() DB trigger.
   const { data: inserted, error: insertError } = await supabase
     .from("events")
     .insert({
-      ...eventColumns(data, imageUrl),
+      ...eventColumns(data, imageUrl, timezone),
       venue_id,
       address,
       ...(lat != null && lng != null ? { lat, lng } : {}),
@@ -175,12 +211,20 @@ export async function updateEvent(
     current,
   );
 
+  const timezone = deriveTimezone(data.timezone, lat ?? undefined, lng ?? undefined);
+  if (!timezone) {
+    return {
+      success: false,
+      error: "We couldn't auto-detect a timezone for this location — please pick one from the Timezone dropdown.",
+    };
+  }
+
   // RLS (events_update) enforces that the user owns or is linked to this event.
   // Status is intentionally not touched — published stays published.
   const { data: updated, error } = await supabase
     .from("events")
     .update({
-      ...eventColumns(data, imageUrl),
+      ...eventColumns(data, imageUrl, timezone),
       venue_id,
       address,
       ...(lat != null && lng != null ? { lat, lng } : {}),

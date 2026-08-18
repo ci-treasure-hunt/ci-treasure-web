@@ -21,6 +21,29 @@ export type OrganizerTeacherItem = {
 // single "everyone welcome" value; open_level/mixed/intermediate_plus were migrated away.
 export const LEVEL_OPTIONS = ["", "all_levels", "beginner", "intermediate", "advanced"] as const;
 
+// Multi-select checkboxes (like discipline) instead of a free-text "en, de" field — the free-text
+// version silently stored whatever the organizer typed ("English") instead of an ISO code, only
+// caught downstream by a name→code guess-map. A closed list removes the guessing entirely. Covers
+// the languages that actually recur across current events/organizers (checked live 2026-08-18);
+// "Other" keeps a free-text escape hatch rather than blocking a genuine gap.
+export const LANGUAGE_OPTIONS = [
+  { code: "en", label: "English" },
+  { code: "de", label: "German" },
+  { code: "fr", label: "French" },
+  { code: "es", label: "Spanish" },
+  { code: "it", label: "Italian" },
+  { code: "pt", label: "Portuguese" },
+  { code: "pl", label: "Polish" },
+  { code: "cs", label: "Czech" },
+  { code: "nl", label: "Dutch" },
+  { code: "he", label: "Hebrew" },
+  { code: "da", label: "Danish" },
+  { code: "hu", label: "Hungarian" },
+  { code: "sv", label: "Swedish" },
+] as const;
+
+const KNOWN_LANGUAGE_CODES: Set<string> = new Set(LANGUAGE_OPTIONS.map((l) => l.code));
+
 // Global timezone coverage, roughly ordered west→east, with Europe first (CI events
 // skew European). The form shows each zone's live UTC offset and keeps the event's
 // current value even if it's not listed, so edits never drop it. IANA names are stored
@@ -92,8 +115,10 @@ export type OrganizerEventFormData = {
   description: string;
   imageUrl: string;
   level: string;
-  // Comma-separated in the form; parsed to text[] on save.
-  languages: string;
+  // Closed multi-select against LANGUAGE_OPTIONS, plus a free-text escape hatch for anything
+  // not in that list (e.g. a language that hasn't come up in the DB yet).
+  languages: string[];
+  languagesOther: string;
   features: string;
   // Multi-select checkboxes against known values only — no free text, so the
   // taxonomy only grows through admin/addevent-vetted additions (2026-07-05 decision).
@@ -114,7 +139,7 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     type: "workshop",
     startDate: "",
     endDate: "",
-    timezone: "Europe/Berlin",
+    timezone: "", // no default — see the blank <option> in event-form.tsx for why
     city: "",
     country: "",
     venueId: null,
@@ -124,7 +149,8 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     description: "",
     imageUrl: "",
     level: "",
-    languages: "",
+    languages: [],
+    languagesOther: "",
     features: "",
     teachers: [],
     discipline: ["contact_improvisation"],
@@ -138,23 +164,46 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
 // ── Parsing (form → DB) ────────────────────────────────────────────────────
 
 // All currencies are stored ×100 (minor units); the display layer divides by 100.
+//
+// No "|| EUR" fallback on a missing currency (removed 2026-08-18) — that silently mislabeled
+// every price as EUR whenever the currency picker was left untouched, which happened across 4
+// real submissions (all DKK/HUF events saved as EUR). A row with an amount but no currency is
+// dropped rather than guessed: a visibly missing price tier gets noticed and fixed on the event
+// page; a wrong-but-plausible-looking currency does not.
 export function parsePriceItems(items: AdminPriceItem[]) {
   return items
+    // A row with an amount but no currency is the broken middle case (see comment above) —
+    // drop it before mapping rather than guess a currency for it.
+    .filter((item) => !(item.amount.trim() && !item.currency.trim()))
     .map((item) => {
       const amount = item.amount.trim();
+      const currency = item.currency.trim();
+      const hasValidAmount = Boolean(amount) && Boolean(currency);
       return {
-        amount: amount ? Math.round(Number.parseFloat(amount) * 100) : null,
-        currency: item.currency.trim() || "EUR",
+        amount: hasValidAmount ? Math.round(Number.parseFloat(amount) * 100) : null,
+        currency: hasValidAmount ? currency : undefined,
         description: item.description.trim() || undefined,
       };
     })
     .filter((item) => item.amount !== null || item.description);
 }
 
+// A bare email address ("cicopenhagen@gmail.com") typed into the URL field — found live
+// 2026-08-18, 3 of 4 submissions from one organizer put contact_email's value here too, since
+// the field is a plain text input with no format hint beyond a placeholder.
+//
+// First fix (same day) auto-prefixed "mailto:" so it wasn't a dead link — wrong: `links` is
+// rendered as a plain, public <a> tag, while contact_email is Turnstile-gated + rate-limited
+// (lib/protected-email-action.ts, email_reveal_log). Silently promoting a bare email into
+// `links` would ship it unprotected, defeating the exact scraping protection that field exists
+// for. extractBareEmailFromLinks() in actions.ts pulls it out and routes it to contact_email
+// instead — parseLinkItems just drops what's left behind (never stores an email as a link).
+export const BARE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function parseLinkItems(items: AdminLinkItem[]) {
   return items
     .map((item) => ({ type: item.type.trim() || "website", url: item.url.trim() }))
-    .filter((item) => item.url);
+    .filter((item) => item.url && !BARE_EMAIL.test(item.url));
 }
 
 export function normalizeJsonItems<T>(items: T[]) {
@@ -167,6 +216,20 @@ export function parseCsvArray(value: string): string[] | null {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  return parts.length ? parts : null;
+}
+
+// languages is already ISO codes from the checkbox picker (LANGUAGE_OPTIONS) — this just merges
+// in the free-text "Other" field, comma-split and lowercased, without re-guessing anything the
+// picker already got right. Replaces the earlier name→code guess-map approach (2026-08-18):
+// organizers typed full names ("English") into a free-text field despite the "en, de"
+// placeholder, so the closed picker removes the guessing rather than papering over it.
+export function parseLanguages(codes: string[], other: string): string[] | null {
+  const extra = other
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const parts = [...new Set([...codes, ...extra])];
   return parts.length ? parts : null;
 }
 
@@ -212,7 +275,8 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     description: row.description ?? "",
     imageUrl: row.image_url ?? "",
     level: row.level ?? "",
-    languages: (row.language ?? []).join(", "),
+    languages: (row.language ?? []).filter((l) => KNOWN_LANGUAGE_CODES.has(l)),
+    languagesOther: (row.language ?? []).filter((l) => !KNOWN_LANGUAGE_CODES.has(l)).join(", "),
     features: (row.features ?? []).join(", "),
     // Defensive fallback only — every real event has discipline set since the 2026-07-04
     // cleanup; a NULL here would mean a new insert path forgot to set it.
@@ -261,7 +325,9 @@ export function validateOrganizerEvent(
   if (!COUNTRIES.some((c) => c.code === data.country.trim().toUpperCase())) {
     return "Select a valid country from the list.";
   }
-  if (!data.timezone.trim()) return "Timezone is required.";
+  // Timezone itself is no longer required here — createEvent/updateEvent auto-derive it
+  // from the resolved lat/lng (tz-lookup) when the organizer leaves it blank, and only
+  // fall back to asking if geocoding also failed. See actions.ts.
   if (!data.discipline || data.discipline.length === 0) {
     return "Select at least one practice.";
   }

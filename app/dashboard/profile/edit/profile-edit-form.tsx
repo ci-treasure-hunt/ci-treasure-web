@@ -139,13 +139,22 @@ export function ProfileEditForm({
     setError(null);
   }
 
+  // Capped at 3 (added 2026-08-18): 573 of 588 teachers who've picked any practice already use
+  // 3 or fewer (351 pick just one), so 3 covers the real distribution — the two outliers seen
+  // live (4 and 7 picks) read as "everything I've ever studied" rather than "what I teach", which
+  // is what this field is actually for. Enforced client-side only (no DB constraint) so an admin
+  // can still hand-set a genuine 4+ case, e.g. a teacher with real diplomas in several modalities.
   function handlePracticeToggle(value: string) {
-    setForm(prev => ({
-      ...prev,
-      discipline: prev.discipline.includes(value)
-        ? prev.discipline.filter((d) => d !== value)
-        : [...prev.discipline, value],
-    }));
+    setForm(prev => {
+      const has = prev.discipline.includes(value);
+      if (!has && prev.discipline.length >= 3) return prev;
+      return {
+        ...prev,
+        discipline: has
+          ? prev.discipline.filter((d) => d !== value)
+          : [...prev.discipline, value],
+      };
+    });
     setSuccess(false);
     setError(null);
   }
@@ -282,32 +291,43 @@ export function ProfileEditForm({
           the same list, so a teacher can only ever store an approved practice (no free text). */}
       {form.is_teacher && (
         <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Practice</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+            What you teach {form.discipline.length > 0 ? `(${form.discipline.length} of 3)` : null}
+          </h3>
           <p className="mt-1 text-sm text-slate-600">
-            Which practice(s) do you teach? This helps people find you by what you actually
-            offer. Missing one? Email us at{" "}
-            <a href="mailto:hello@citreasurehunt.com" className="underline">hello@citreasurehunt.com</a>{" "}
-            and we&apos;ll consider adding it.
+            Pick only the practices you actively teach, the ones you&apos;d be invited for on a
+            workshop or festival programme. Most teachers pick one or two; you can select up to
+            three. Things you&apos;ve trained in but don&apos;t currently teach belong in your
+            bio instead. If you genuinely teach more than three, or a practice you teach
+            isn&apos;t in this list, email us at{" "}
+            <a href="mailto:hello@citreasurehunt.com" className="underline">hello@citreasurehunt.com</a>.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            {SELF_SELECTABLE_PRACTICES.map((p) => (
-              <label
-                key={p}
-                className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  form.discipline.includes(p)
-                    ? "border-(--color-pine) bg-(--color-pine)/10 text-(--color-pine)"
-                    : "border-(--color-sand-strong) text-slate-700 hover:border-(--color-pine)"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={form.discipline.includes(p)}
-                  onChange={() => handlePracticeToggle(p)}
-                  className="sr-only"
-                />
-                {disciplineLabel(p)}
-              </label>
-            ))}
+            {SELF_SELECTABLE_PRACTICES.map((p) => {
+              const checked = form.discipline.includes(p);
+              const disabled = !checked && form.discipline.length >= 3;
+              return (
+                <label
+                  key={p}
+                  className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    checked
+                      ? "cursor-pointer border-(--color-pine) bg-(--color-pine)/10 text-(--color-pine)"
+                      : disabled
+                        ? "cursor-not-allowed border-(--color-sand-strong) text-slate-400"
+                        : "cursor-pointer border-(--color-sand-strong) text-slate-700 hover:border-(--color-pine)"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => handlePracticeToggle(p)}
+                    className="sr-only"
+                  />
+                  {disciplineLabel(p)}
+                </label>
+              );
+            })}
           </div>
         </section>
       )}

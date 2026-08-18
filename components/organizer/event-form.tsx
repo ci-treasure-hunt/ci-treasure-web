@@ -12,6 +12,7 @@ import { InlineTeacherPicker } from "@/components/organizer/inline-teacher-picke
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import {
   EVENT_TYPE_OPTIONS,
+  LANGUAGE_OPTIONS,
   LEVEL_OPTIONS,
   LINK_TYPE_OPTIONS,
   TIMEZONE_OPTIONS,
@@ -24,8 +25,15 @@ import {
 const inputClassName =
   "w-full rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm text-slate-950 outline-none ring-0 transition focus:border-(--color-pine)";
 
+// No default currency: EUR was the default here until 2026-08-18, and because
+// CurrencyPicker renders a filled "Euro (EUR)" chip the instant a value is set (not a blank
+// prompt), organizers who didn't notice/touch the currency field submitted silently-wrong
+// EUR prices for DKK and HUF events — found live across 4 submissions from one organizer,
+// all defaulting to EUR regardless of the event's real currency. Leaving this blank forces
+// CurrencyPicker into its unselected "Search currencies…" state, so a currency has to be a
+// deliberate choice.
 function emptyPriceItem(): AdminPriceItem {
-  return { amount: "", currency: "EUR", description: "" };
+  return { amount: "", currency: "", description: "" };
 }
 function emptyLinkItem(): AdminLinkItem {
   return { type: "registration", url: "" };
@@ -83,6 +91,15 @@ export function OrganizerEventForm({
     }));
   }
 
+  function toggleLanguage(code: string) {
+    setForm((prev) => ({
+      ...prev,
+      languages: prev.languages.includes(code)
+        ? prev.languages.filter((l) => l !== code)
+        : [...prev.languages, code],
+    }));
+  }
+
   function save() {
     setError(null);
     setSuccess(null);
@@ -133,6 +150,13 @@ export function OrganizerEventForm({
           </Field>
           <Field label="Timezone">
             <select value={form.timezone} onChange={(e) => set("timezone", e.target.value)} className={inputClassName}>
+              {/* Left blank, the timezone is auto-detected server-side from the event's
+                  geocoded location (tz-lookup on lat/lng) when you save — was hardcoded to
+                  Europe/Berlin until 2026-08-18, which silently mis-stored Copenhagen/Budapest
+                  events (harmless only by the accident of a shared UTC offset with Berlin).
+                  Only pick one here if the auto-detected zone would be wrong (e.g. an online
+                  event, or a location that doesn't geocode cleanly). */}
+              <option value="">— Auto-detect from location —</option>
               {/* Keep the current value selectable even if it isn't in the curated list. */}
               {(TIMEZONE_OPTIONS as readonly string[]).includes(form.timezone) || !form.timezone
                 ? null
@@ -154,7 +178,37 @@ export function OrganizerEventForm({
             </select>
           </Field>
           <Field label="Languages">
-            <input value={form.languages} onChange={(e) => set("languages", e.target.value)} className={inputClassName} placeholder="en, de" />
+            {/* Closed multi-select against LANGUAGE_OPTIONS instead of a free-text "en, de"
+                field — the free-text version stored whatever was typed ("English") rather
+                than an ISO code, only caught downstream by a name→code guess-map (found live
+                2026-08-18, 4/4 submissions from one organizer). "Other" below is the escape
+                hatch for a genuine gap in the list. */}
+            <div className="flex flex-wrap gap-2">
+              {LANGUAGE_OPTIONS.map((l) => (
+                <label
+                  key={l.code}
+                  className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    form.languages.includes(l.code)
+                      ? "border-(--color-pine) bg-(--color-pine)/10 text-(--color-pine)"
+                      : "border-(--color-sand-strong) text-slate-700 hover:border-(--color-pine)"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.languages.includes(l.code)}
+                    onChange={() => toggleLanguage(l.code)}
+                    className="sr-only"
+                  />
+                  {l.label}
+                </label>
+              ))}
+            </div>
+            <input
+              value={form.languagesOther}
+              onChange={(e) => set("languagesOther", e.target.value)}
+              className={`${inputClassName} mt-2`}
+              placeholder="Other language(s), comma-separated"
+            />
           </Field>
           <Field label="Features">
             <input value={form.features} onChange={(e) => set("features", e.target.value)} className={inputClassName} placeholder="live_music, nature, residential" />
@@ -326,7 +380,7 @@ export function OrganizerEventForm({
 
       <ArraySection
         title="Pricing"
-        description="Amounts in major units (e.g. 150 for €150). Left blank rows are ignored."
+        description="One row per price tier — click + Add for each (Early bird, Regular, Social...). Amounts in major units (e.g. 150 for €150), and pick the real currency you charge in, not your own currency: a Danish workshop priced in DKK stays DKK here, even if you also mention a EUR estimate elsewhere. The third field is a short label for the tier (e.g. 'Early bird'), not a second price. Left blank rows are ignored."
         items={form.priceItems}
         onAdd={() => set("priceItems", [...form.priceItems, emptyPriceItem()])}
         onRemove={(i) => set("priceItems", form.priceItems.filter((_, idx) => idx !== i))}
@@ -338,7 +392,7 @@ export function OrganizerEventForm({
               onChange={(code) => set("priceItems", patch(form.priceItems, i, { currency: code }))}
               inputClassName={inputClassName}
             />
-            <input value={item.description} onChange={(e) => set("priceItems", patch(form.priceItems, i, { description: e.target.value }))} className={inputClassName} placeholder="Standard" />
+            <input value={item.description} onChange={(e) => set("priceItems", patch(form.priceItems, i, { description: e.target.value }))} className={inputClassName} placeholder="Early bird (a label, not a price)" />
           </div>
         )}
       />

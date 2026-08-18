@@ -48,14 +48,21 @@ export function CountryPicker({
           City field) by heuristic, not just the autocomplete attribute — it can insert text
           directly into the DOM without firing React's onChange, so the controlled `value={query}`
           snaps back to stale state on the next render and the just-typed text visibly vanishes.
-          Reported live 2026-08-04 (organizer typing "Poland" watched it disappear mid-type). */}
+          Reported live 2026-08-04 (organizer typing "Poland" watched it disappear mid-type).
+          The 2026-08-04 fix documented this rule but didn't apply it — `name` still contained
+          "country" — so the field kept being autofill-hijacked in Safari specifically (WebKit
+          is known to ignore autocomplete="off" on heuristically-detected address fields; Chrome/
+          Firefox respect it). Reported live 2026-08-18: an organizer on Safari couldn't fill the
+          country field at all, had to redo the whole submission in Firefox. Renamed to something
+          with no semantic connection to "country" or "location" so the heuristic has nothing to
+          match on. */}
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className={inputClassName}
         placeholder="Search countries…"
         autoComplete="off"
-        name="ci-th-country-filter"
+        name="ci-th-field-b2"
       />
       {matches.length ? (
         <div className="flex flex-col gap-2">
