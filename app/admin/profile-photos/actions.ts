@@ -28,14 +28,10 @@ export async function getPendingProfilePhotos(): Promise<PendingProfilePhoto[]> 
     id: row.id as string,
     slug: row.slug as string,
     name: row.name as string,
-    // Cache-bust: upload always writes to the same deterministic path
-    // (`${slug}.jpg`) with upsert, so a re-upload after a rejected/broken
-    // photo keeps the identical URL — browsers and Cloudflare's edge (30-day
-    // Cache-Control) will keep serving the old cached bytes at that URL
-    // forever without this. Found live 2026-08-10: a re-upload that fixed a
-    // corrupted photo still displayed broken in the admin panel purely from
-    // browser cache, not the actual stored file.
-    imageUrl: `${row.image_url as string}?v=${new Date(row.updated_at as string).getTime()}`,
+    // No cache-busting needed here anymore: app/api/dashboard/profile-photo/route.ts now
+    // writes each upload to a random filename rather than the old deterministic `${slug}.jpg`,
+    // so a re-upload is always a URL no cache has seen before.
+    imageUrl: row.image_url as string,
     imageCredit: (row.image_credit as string) ?? null,
   }));
 }

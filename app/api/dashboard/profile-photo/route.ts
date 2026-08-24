@@ -107,14 +107,18 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const path = `${profile.slug}.jpg`;
+  // Random filename per upload (matches lib/upload-action.ts, lib/rehost-image.ts) rather than
+  // the old deterministic `${profile.slug}.jpg` — a replacement now always produces a URL no
+  // cache has seen before, so the CDN Worker in front of Storage (infra-reference.md) never
+  // serves a stale photo. The orphan cleanup below already existed for the legacy-extension edge
+  // case; with a random name it now does the real work of removing the previous file on every
+  // replacement, not just that edge case.
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
   const mediumPath = getMediumUrl(path);
   const smallPath = getSmallUrl(path);
 
   const { error: uploadError } = await admin.storage
     .from("profile-images")
-    // 30 days, not longer — see rehost-image.ts for the same reasoning
-    // (upsert overwrites in place on re-upload, so this bounds staleness).
     .upload(path, toStorageBody(largeBuffer, "image/jpeg"), { contentType: "image/jpeg", upsert: true, cacheControl: "2592000" });
 
   if (uploadError) {
