@@ -55,6 +55,11 @@ export async function POST(request: NextRequest) {
       if (record?.slug) revalidatePath(`/venues/${record.slug as string}`);
       break;
     }
+    case "communities": {
+      revalidatePath("/communities");
+      if (record?.slug) revalidatePath(`/communities/${record.slug as string}`);
+      break;
+    }
     case "country_summaries": {
       // Table only carries `iso`, not a slug — same derivation getAllCountrySummaries() uses
       // (lib/country-pages.ts), kept in sync here since this route can't import a server-only
