@@ -10,7 +10,7 @@ import { GENERIC_ACCENT_GRADIENT } from "@/lib/event-display";
 import { Button } from "@/components/ui/button";
 import { CONTINENT_COUNTRIES, CONTINENT_LABELS } from "@/lib/continents";
 import { PLATFORM_ICON_CLASS, TelegramIcon, WhatsAppIcon, SignalIcon } from "@/components/platform-icons";
-import { getMediumUrl } from "@/lib/image-url";
+import { getMediumUrl, toCdnUrl } from "@/lib/image-url";
 
 type VenuesClientProps = {
   initialVenues: VenueListItem[];
@@ -236,7 +236,7 @@ function VenueCard({ venue }: { venue: VenueListItem }) {
       {renderImage ? (
         <div className="relative h-44 border-b border-(--color-sand-strong)">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={getMediumUrl(imageUrl)} alt={venue.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+          <img src={toCdnUrl(getMediumUrl(imageUrl))} alt={venue.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
         </div>
       ) : (
         <div className={`h-44 border-b border-(--color-sand-strong) ${GENERIC_ACCENT_GRADIENT}`} />

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, MapPin } from "lucide-react";
 
 import { formatEventDateRange, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
-import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
+import { getMediumUrl, getSmallUrl, toCdnUrl } from "@/lib/image-url";
 
 export function EventCard({ event, compact = false }: { event: EventListItem; compact?: boolean }) {
   const imageUrl = event.imageUrl?.trim() ?? "";
@@ -18,7 +18,7 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
           <div className={`h-12 w-12 shrink-0 rounded-md border border-(--color-sand-strong) overflow-hidden ${!renderImage ? event.accentClass : ""}`}>
             {renderImage && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={getSmallUrl(imageUrl)} alt={event.title} className="h-full w-full object-cover" />
+              <img src={toCdnUrl(getSmallUrl(imageUrl))} alt={event.title} className="h-full w-full object-cover" />
             )}
           </div>
           <div className="min-w-0 flex-1 space-y-0.5">
@@ -51,7 +51,7 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
         {renderImage ? (
           <div className="relative h-44 border-b border-(--color-sand-strong)">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={getMediumUrl(imageUrl)} alt={event.title} className="h-full w-full object-cover" />
+            <img src={toCdnUrl(getMediumUrl(imageUrl))} alt={event.title} className="h-full w-full object-cover" />
           </div>
         ) : (
           <div className={`h-44 border-b border-(--color-sand-strong) ${event.accentClass}`} />

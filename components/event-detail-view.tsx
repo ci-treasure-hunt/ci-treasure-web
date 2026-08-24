@@ -20,6 +20,7 @@ import {
   getLinkLabel,
   getOgImageStyle,
 } from "@/lib/events";
+import { toCdnUrl } from "@/lib/image-url";
 import { formatEventDateRange, getEventHref, getEventLocation, getTypeLabel } from "@/lib/event-display";
 import { SITE_URL } from "@/lib/site";
 
@@ -190,7 +191,7 @@ export function EventDetailView({
               <div className="px-6 pb-8 sm:px-8">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={event.imageUrl}
+                  src={toCdnUrl(event.imageUrl)}
                   alt={event.title}
                   className="max-h-120 w-auto max-w-2xl rounded-2xl drop-shadow-lg"
                 />

@@ -3,7 +3,7 @@ import { MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { GENERIC_ACCENT_GRADIENT } from "@/lib/event-display";
-import { getMediumUrl } from "@/lib/image-url";
+import { getMediumUrl, toCdnUrl } from "@/lib/image-url";
 
 // Built for I-132's country pages (Venues section), reused wherever a venue connection deserves
 // real presence rather than a bare link — I-153's community/profile cross-links included, since
@@ -22,7 +22,7 @@ export function VenueCard({ venue, roleLabel }: {
       <Link href={`/venues/${venue.slug}`} className={`h-24 w-24 shrink-0 border-r border-(--color-sand-strong) ${!renderImage ? GENERIC_ACCENT_GRADIENT : ""}`}>
         {renderImage && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={getMediumUrl(imageUrl)} alt={venue.name} className="h-full w-full object-cover" />
+          <img src={toCdnUrl(getMediumUrl(imageUrl))} alt={venue.name} className="h-full w-full object-cover" />
         )}
       </Link>
       <div className="min-w-0 flex-1 p-4">

@@ -22,3 +22,18 @@ export function getMediumUrl(imageUrl: string): string {
 export function getSmallUrl(imageUrl: string): string {
   return imageUrl.replace(/\.[a-zA-Z0-9]+$/, "-small.webp");
 }
+
+const SUPABASE_STORAGE_ORIGIN = "https://ormttcjjsumbmvyennfx.supabase.co/storage/v1/object/public/";
+const CDN_ORIGIN = "https://cdn.citreasurehunt.com/storage/v1/object/public/";
+
+// Rewrites a Supabase Storage URL to the Cloudflare Worker CDN in front of it (see
+// infra-reference.md, "Storage CDN") — every repeat visitor is served from Cloudflare's edge
+// instead of Supabase, which is what the cached-egress quota is billed on. Display/read call
+// sites only: getMediumUrl/getSmallUrl above are also used to derive upload paths (write side),
+// where this rewrite must never be applied, so it lives one layer up instead of inside them.
+// No-ops on anything that isn't a Supabase Storage URL.
+export function toCdnUrl(url: string): string {
+  return url.startsWith(SUPABASE_STORAGE_ORIGIN)
+    ? CDN_ORIGIN + url.slice(SUPABASE_STORAGE_ORIGIN.length)
+    : url;
+}

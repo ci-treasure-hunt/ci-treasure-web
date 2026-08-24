@@ -1,3 +1,5 @@
+import { toCdnUrl } from "@/lib/image-url";
+
 type EntityImageProps = {
   src: string;
   alt: string;
@@ -14,7 +16,7 @@ export function EntityImage({ src, alt, credit }: EntityImageProps) {
     <div>
       <div className="overflow-hidden rounded-2xl border border-(--color-sand-strong)">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className="h-auto max-h-128 w-full object-cover" />
+        <img src={toCdnUrl(src)} alt={alt} className="h-auto max-h-128 w-full object-cover" />
       </div>
       {credit ? (
         <p className="mt-2 inline-block rounded-full bg-white/80 px-2.5 py-0.5 text-xs text-slate-700 backdrop-blur-sm">
