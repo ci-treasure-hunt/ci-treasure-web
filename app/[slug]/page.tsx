@@ -217,6 +217,19 @@ export default async function CountryPage({ params }: CountryPageProps) {
                 {renderSourceCitations(summarySources)}
               </p>
             )}
+            {/* Coverage caveat, deliberately rendered here rather than written into each
+                summary_text row. It is a statement about our own records, not about the country:
+                the earlier per-country wording ("Contact Improvisation is practiced well beyond
+                these two cities") asserted a fact we had never verified — for Czechia we hold
+                records in Prague, Brno and Trstenice and nowhere else. Template-side so it cannot
+                drift between rows, cannot pick up country-specific claims, and lands on country
+                page N+1 for free. Greece's hand-written copy was deleted from its row when this
+                shipped (2026-08-24). Deliberately not another CTA — the four per-section
+                "missing X?" prompts and the Ambassador card below already carry the invitation. */}
+            <p className="mt-4 text-xs leading-5 text-slate-500">
+              This overview covers what we have been able to verify. It is not a complete record of
+              Contact Improvisation activity in {labelWithArticle}.
+            </p>
             <p className="mt-2 text-xs text-slate-400">
               Last updated{" "}
               {new Date(summaryUpdatedAt).toLocaleDateString("en-GB", {
@@ -359,8 +372,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
             <h2 className="mb-1.5 font-serif text-lg text-slate-900">Become a CI Ambassador for {labelWithArticle}</h2>
             <p className="mb-3 text-sm leading-6 text-slate-700">
               We&apos;re looking for someone connected to the CI scene in {labelWithArticle} to help keep this
-              page accurate over time — new events, missing teachers or venues, corrections as the
-              community grows.
+              page accurate over time: new events, missing teachers, venues and communities,
+              corrections as the scene grows.
             </p>
             <a
               href="mailto:hello@citreasurehunt.com"
