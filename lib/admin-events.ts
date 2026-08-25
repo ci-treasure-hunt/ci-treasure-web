@@ -20,14 +20,14 @@ export const EVENT_TYPE_OPTIONS = [
 // 'archived' deliberately excluded -- it's set only by the daily pg_cron job
 // (published -> archived once end_date passes), never manually by an admin.
 export const EVENT_STATUS_OPTIONS = ["draft", "published"] as const;
-// Canonical list per ci-treasure-hunt/scripts/enrichment/LINK_TYPES.md (2026-07-06) — keep in
-// sync. This path was wrong here for a while (said docs/enrichment/, not scripts/enrichment/;
-// fixed 2026-08-24) -- a cross-repo doc reference is exactly the kind of thing that drifts silently.
-// Deprecated
-// values found live 2026-07-22 (facebook/info/program from a stale copy of this list): a
-// self-submitted event picked "facebook" for its FB event link because facebook_event
-// wasn't offered. `facebook_page`/`facebook_group` deliberately excluded here — those
-// belong on the teacher/organizer profile, never the event, per LINK_TYPES.md.
+// Canonical list per ci-treasure-hunt/docs/web/link-types.md (2026-07-06) — keep in sync. This
+// cross-repo reference has drifted twice already: deprecated values found live 2026-07-22
+// (facebook/info/program from a stale copy of this list -- a self-submitted event picked
+// "facebook" for its FB event link because facebook_event wasn't offered), and this comment's own
+// path was wrong for weeks (said docs/enrichment/LINK_TYPES.md, a path that never existed) until
+// the file was moved out of scripts/enrichment/ to docs/web/ on 2026-08-24 specifically to stop
+// this recurring. `facebook_page`/`facebook_group` deliberately excluded here — those
+// belong on the teacher/organizer profile, never the event, per link-types.md.
 export const LINK_TYPE_OPTIONS = ["website", "registration", "info_pack", "schedule", "facebook_event", "video", "telegram", "whatsapp", "instagram", "youtube", "other"] as const;
 export const TEACHER_ROLE_OPTIONS = ["teacher", "assistant", "guest", "musician", "intensive"] as const;
 export const ORGANIZER_ROLE_OPTIONS = ["lead", "co-organizer", "hosting_venue"] as const;
