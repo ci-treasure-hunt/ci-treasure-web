@@ -20,7 +20,10 @@ export const EVENT_TYPE_OPTIONS = [
 // 'archived' deliberately excluded -- it's set only by the daily pg_cron job
 // (published -> archived once end_date passes), never manually by an admin.
 export const EVENT_STATUS_OPTIONS = ["draft", "published"] as const;
-// Canonical list per docs/enrichment/LINK_TYPES.md (2026-07-06) — keep in sync. Deprecated
+// Canonical list per ci-treasure-hunt/scripts/enrichment/LINK_TYPES.md (2026-07-06) — keep in
+// sync. This path was wrong here for a while (said docs/enrichment/, not scripts/enrichment/;
+// fixed 2026-08-24) -- a cross-repo doc reference is exactly the kind of thing that drifts silently.
+// Deprecated
 // values found live 2026-07-22 (facebook/info/program from a stale copy of this list): a
 // self-submitted event picked "facebook" for its FB event link because facebook_event
 // wasn't offered. `facebook_page`/`facebook_group` deliberately excluded here — those
