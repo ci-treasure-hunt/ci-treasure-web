@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ExternalLink, MapPin } from "lucide-react";
 
 import { getPrimaryJoinUrl, type Community } from "@/lib/communities";
-import { getMediumUrl } from "@/lib/image-url";
+import { getMediumUrl, toCdnUrl } from "@/lib/image-url";
 
 // Table-style row: name / city / link as fixed grid columns, not a bordered card — a CSS grid
 // rather than a real <table> so the columns can collapse per-row on narrow screens (name+link on
@@ -64,7 +64,7 @@ export function CompactTeacherRow({ teacher }: { teacher: { name: string; slug: 
       <div className="flex min-w-0 items-center gap-2">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={getMediumUrl(imageUrl)} alt={teacher.name} className="size-7 shrink-0 rounded-full object-cover" />
+          <img src={toCdnUrl(getMediumUrl(imageUrl))} alt={teacher.name} className="size-7 shrink-0 rounded-full object-cover" />
         ) : null}
         <Link href={`/teachers/${teacher.slug}`} className="truncate font-serif text-base text-slate-900 hover:underline">
           {teacher.name}
