@@ -10,7 +10,8 @@ import { InstallToHomeScreen } from "@/components/install-to-home-screen";
 const NAV_LINKS = [
   { label: "Events", href: "/", external: false },
   { label: "Communities", href: "/communities", external: false },
-  { label: "Venues", href: "/venues", external: false, isNew: true },
+  { label: "Teachers", href: "/teachers", external: false, isNew: true },
+  { label: "Venues", href: "/venues", external: false },
   { label: "Newsletter", href: "/newsletter", external: false },
 ];
 

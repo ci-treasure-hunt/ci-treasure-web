@@ -17,7 +17,8 @@ import {
   getAllPublicTeacherSlugs,
   resolveTeacherSlugRedirect,
   getProfileAssociations,
-  getTeacherRingNeighbors
+  getTeacherRingNeighbors,
+  deriveRoles,
 } from "@/lib/teachers";
 import { ReportButton } from "@/components/report-button";
 import BackButton from "@/components/back-button";
@@ -119,17 +120,16 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
   );
   const allEvents = [...upcoming, ...past];
 
-  // Derive roles from both stored flags and linked events (I-115)
-  // getTeacherEvents returns events where teacher is linked as either teacher or organizer.
-  // We need to distinguish roles.
-  const derivedIsTeacher = teacher.is_teacher || allEvents.some(e =>
-    e.teacher_id === teacher.id && e.role !== 'musician'
-  );
-  const derivedIsMusician = teacher.is_musician || allEvents.some(e =>
-    e.teacher_id === teacher.id && e.role === 'musician'
-  );
-  const derivedIsOrganizer = teacher.is_organizer || allEvents.some(e =>
-    e.organizer_id === teacher.id
+  // Derive roles from both stored flags and linked events (I-115). Shared with the /teachers
+  // list's getListedPeople() via deriveRoles() so the two pages can't disagree on someone's role
+  // again — see the comment on deriveRoles for the bug this fixed (I-074 follow-up, 2026-08-14).
+  const { isTeacher: derivedIsTeacher, isMusician: derivedIsMusician, isOrganizer: derivedIsOrganizer } = deriveRoles(
+    teacher,
+    {
+      hasTeacherCredit: allEvents.some(e => e.teacher_id === teacher.id && e.role !== 'musician'),
+      hasMusicianCredit: allEvents.some(e => e.teacher_id === teacher.id && e.role === 'musician'),
+      hasOrganizerCredit: allEvents.some(e => e.organizer_id === teacher.id),
+    },
   );
 
   const ensureHttps = (url: string) => url.startsWith("http") ? url : `https://${url}`;

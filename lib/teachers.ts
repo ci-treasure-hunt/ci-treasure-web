@@ -3,10 +3,50 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { type SupabaseEventRow, mapEventRow } from "./events";
 import { type EventListItem } from "./event-display";
 import { getContinent, getContinentCountries } from "./entity-continents";
+import { getCountryLabel } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
+// Single source of truth for "what role does this person actually hold", shared by the /teachers
+// list (getListedPeople) and the detail page (app/teachers/[slug]/page.tsx), which previously
+// each derived roles independently and drifted: the detail page has derived from event credits
+// since I-115, the list read only the stored is_teacher/is_organizer/is_musician flags. A profile
+// credited via event_teachers but never manually flagged (e.g. Abhishek Rajput, found 2026-08-14)
+// showed "musician" on the list and "teacher, musician" on its own detail page. Both call sites
+// now compute the same three credit booleans from their own event data and pass them here, so a
+// flag left unset can never again disagree with what the event data actually says.
+//
+// Teacher is additionally gated on discipline (2026-08-26): the directory defaults to CI only,
+// and organizers/musicians are defined by role, not practice, so the gate applies to teacher
+// alone — a musician playing a CI festival stays "musician" even though they don't practice CI
+// themselves. No NULL-passthrough: a still-unbackfilled discipline does not count as CI. That
+// costs 10 teacher-only, discipline-NULL profiles their listing until backfilled (accepted
+// tradeoff, self-corrects as discipline gets filled in) rather than showing unconfirmed non-CI
+// teachers by default — deliberately stricter than assuming "no data yet" means "probably CI".
+export function deriveRoles(
+  flags: { is_teacher: boolean; is_musician: boolean; is_organizer: boolean; discipline: string[] | null },
+  credits: { hasTeacherCredit: boolean; hasMusicianCredit: boolean; hasOrganizerCredit: boolean },
+): { isTeacher: boolean; isMusician: boolean; isOrganizer: boolean } {
+  const practicesCI = flags.discipline?.includes("contact_improvisation") ?? false;
+  return {
+    isTeacher: (flags.is_teacher || credits.hasTeacherCredit) && practicesCI,
+    isMusician: flags.is_musician || credits.hasMusicianCredit,
+    isOrganizer: flags.is_organizer || credits.hasOrganizerCredit,
+  };
+}
+
+// Trims a bio to a one-line row snippet without cutting mid-word. Kept short deliberately: this
+// is sent for every listed person (700+), so a generous length would meaningfully grow the page.
+function bioSnippet(bio: string | null, maxLength = 140): string | null {
+  if (!bio) return null;
+  const trimmed = bio.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  const cut = trimmed.slice(0, maxLength);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 export type TeacherProfile = {
@@ -94,6 +134,131 @@ export async function getAllPublicTeachers(): Promise<TeacherProfile[]> {
 // auth-dependent RLS branch here, and the cookie-aware client would force this list page dynamic
 // on every request instead of the ISR it had before (confirmed via a real prod build: switching
 // this to createClient() flipped /teachers from ○ static to ƒ dynamic).
+// I-074: the browsable listing.
+//
+// Inclusion is DERIVED (public + credited on at least one published event), not read from
+// profiles.show_in_list. That column was populated by a one-off bulk UPDATE on 2026-07-10 and
+// nothing has maintained it since: by 2026-08-14 it had drifted to hide 121 qualifying people,
+// four of whom had claimed their profile and created an account. Unlike venues, profiles have no
+// admin toggle for the flag, so a `false` there carries no editorial decision worth respecting —
+// it just means "created after the bulk run". Deriving it means the list can never drift again.
+//
+// Also deliberately NOT filtered on is_teacher: 34 of these are organizer-only or musician-only,
+// and excluding them leaves them reachable only by landing on an event page that credits them.
+export type ListedPerson = {
+  slug: string;
+  name: string;
+  city: string | null;
+  country: string | null;
+  /** getCountryLabel(country) resolved here, server-side only, and never recomputed on the
+   * client: Intl.DisplayNames disagrees between Node's ICU data and the browser's for some
+   * codes (Node says "Hong Kong SAR China", Chrome says "Hong Kong"), which caused a hydration
+   * mismatch when TeachersClient called it live during render. */
+  countryLabel: string | null;
+  isNomadic: boolean;
+  /** Every role held, e.g. ["teacher","organizer"]. Drives both the row label and the role filter.
+   * Derived via deriveRoles(), same as the detail page — see the comment on that function. */
+  roles: string[];
+  imageUrl: string | null;
+  linkUrl: string | null;
+  /** Short, word-boundary-truncated bio for the row's middle column. Null if no bio on file. */
+  bioSnippet: string | null;
+  /** True once someone has claimed this profile (profiles.user_id set). Claimed people sort first
+   * and get a badge, as an incentive to claim (2026-08-28) — most of the directory is unclaimed
+   * profiles we built from event credits, so surfacing the ones a real person owns and maintains
+   * is worth more to a visitor than pure alphabetical order. */
+  isClaimed: boolean;
+};
+
+const LISTED_EVENT_STATUSES = ["published", "archived"];
+
+export async function getListedPeople(): Promise<ListedPerson[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = createStaticClient();
+
+  const [profileRes, teacherLinkRes, organizerLinkRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, slug, name, city, country, bio, discipline, is_nomadic, is_teacher, is_organizer, is_musician, image_url, image_status, website, instagram, facebook, user_id")
+      .eq("visibility", "public")
+      .limit(5000),
+    // published AND archived: an event is archived when it ends, not deleted (past events stay
+    // online as an evergreen record). Filtering to published alone dropped 178 people whose
+    // events have simply finished, which is exactly the audience a teacher directory is for.
+    // role is fetched (not just teacher_id) so deriveRoles can tell a teaching credit from a
+    // musician one, same distinction the detail page has made since I-115.
+    supabase.from("event_teachers").select("teacher_id, role, events!inner(status)").in("events.status", LISTED_EVENT_STATUSES).limit(20000),
+    supabase.from("event_organizers").select("organizer_id, events!inner(status)").in("events.status", LISTED_EVENT_STATUSES).limit(20000),
+  ]);
+
+  if (profileRes.error || !profileRes.data) return [];
+
+  const teacherCredit = new Map<string, { teacher: boolean; musician: boolean }>();
+  for (const row of (teacherLinkRes.data ?? []) as { teacher_id: string; role: string | null }[]) {
+    const entry = teacherCredit.get(row.teacher_id) ?? { teacher: false, musician: false };
+    if (row.role === "musician") entry.musician = true;
+    else entry.teacher = true;
+    teacherCredit.set(row.teacher_id, entry);
+  }
+  const organizerCredited = new Set<string>();
+  for (const row of (organizerLinkRes.data ?? []) as { organizer_id: string }[]) {
+    organizerCredited.add(row.organizer_id);
+  }
+
+  const credited = new Set<string>([...teacherCredit.keys(), ...organizerCredited]);
+
+  // Admission is credit-based for organizer/musician (those roles only mean something relative to
+  // a specific event), but NOT for teacher: "I teach CI" is a standing identity, not something that
+  // requires a submitted event to be true. Requiring a credit here excluded real teachers who only
+  // run local classes/jams that never became a listed event (Moti Zemelman, Tadeo San Martin) and
+  // undermined manually-added teachers meant to round out a country page (2026-08-26 decision) —
+  // is_teacher + a confirmed contact_improvisation discipline tag is itself a deliberate, researched
+  // fact, not something that happens by accident, so it's a sufficient bar on its own.
+  const isConfirmedTeacher = (p: { is_teacher: boolean; discipline: string[] | null }) =>
+    p.is_teacher && (p.discipline?.includes("contact_improvisation") ?? false);
+
+  return profileRes.data
+    .filter((p) => credited.has(p.id) || isConfirmedTeacher(p))
+    .flatMap((p) => {
+      const credit = teacherCredit.get(p.id) ?? { teacher: false, musician: false };
+      const { isTeacher, isOrganizer, isMusician } = deriveRoles(
+        { is_teacher: p.is_teacher, is_musician: p.is_musician, is_organizer: p.is_organizer, discipline: p.discipline },
+        {
+          hasTeacherCredit: credit.teacher,
+          hasMusicianCredit: credit.musician,
+          hasOrganizerCredit: organizerCredited.has(p.id),
+        },
+      );
+      const roles = [
+        isTeacher ? "teacher" : null,
+        isOrganizer ? "organizer" : null,
+        isMusician ? "musician" : null,
+      ].filter(Boolean) as string[];
+      // A credited-as-teacher-only profile whose practice isn't (yet) tagged as CI loses the
+      // teacher role entirely (see deriveRoles) and so has no role left to be listed under.
+      if (roles.length === 0) return [];
+      return [{
+        slug: p.slug,
+        name: p.name,
+        city: p.city,
+        country: p.country,
+        countryLabel: p.country ? getCountryLabel(p.country) : null,
+        isNomadic: Boolean(p.is_nomadic),
+        roles,
+        // Pending photos must not appear publicly — the privacy policy states this outright, so
+        // presence of image_url is not a sufficient check.
+        imageUrl: p.image_status === "approved" ? p.image_url : null,
+        linkUrl: p.website ?? p.instagram ?? p.facebook ?? null,
+        bioSnippet: bioSnippet(p.bio),
+        isClaimed: Boolean(p.user_id),
+      }];
+    })
+    .sort((a, b) => {
+      if (a.isClaimed !== b.isClaimed) return a.isClaimed ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+}
+
 export async function getAllPublicTeachersForIndex(): Promise<Pick<TeacherProfile, "slug" | "name" | "country">[]> {
   if (!hasSupabaseEnv()) return [];
   const supabase = createStaticClient();

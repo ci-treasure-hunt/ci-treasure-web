@@ -92,6 +92,19 @@ export function VenuesClient({
     });
   }, [initialVenues, searchQuery, selectedCountry]);
 
+  // Render-limiting "Load more" reveal, not real pagination (the full filtered set is already in
+  // memory) — same pattern as /communities and /teachers. Venue cards each carry a real photo, so
+  // rendering all of them (95+ and growing) meant loading every image up front for no reason
+  // (2026-08-28).
+  const VENUES_PAGE_SIZE = 24;
+  const [visibleVenueCount, setVisibleVenueCount] = useState(VENUES_PAGE_SIZE);
+  const [prevFilteredVenues, setPrevFilteredVenues] = useState(filteredVenues);
+  if (filteredVenues !== prevFilteredVenues) {
+    setPrevFilteredVenues(filteredVenues);
+    setVisibleVenueCount(VENUES_PAGE_SIZE);
+  }
+  const visibleVenues = filteredVenues.slice(0, visibleVenueCount);
+
   if (initialError) {
     return (
       <div className="mx-auto max-w-4xl text-center">
@@ -185,11 +198,23 @@ export function VenuesClient({
 
         {/* Card grid */}
         {filteredVenues.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredVenues.map((venue) => (
-              <VenueCard key={venue.id} venue={venue} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleVenues.map((venue) => (
+                <VenueCard key={venue.id} venue={venue} />
+              ))}
+            </div>
+            {visibleVenueCount < filteredVenues.length && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setVisibleVenueCount((c) => c + VENUES_PAGE_SIZE)}
+                  className="rounded-full border border-(--color-sand-strong) bg-white px-5 py-2 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+                >
+                  Load more ({filteredVenues.length - visibleVenueCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/75 px-6 py-16 text-center">
             <p className="font-serif text-xl font-medium text-slate-900">No venues found.</p>

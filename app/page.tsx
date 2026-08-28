@@ -79,12 +79,16 @@ export default async function Home() {
           <div className="border-l-4 border-(--color-pine) pl-5 py-1">
             <h1 className="font-serif text-4xl tracking-tight text-slate-950 sm:text-5xl">
               Contact Improvisation events,{" "}
-              <Link href="/venues" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
-                venues
-              </Link>{" "}
-              &amp;{" "}
               <Link href="/communities" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
                 communities
+              </Link>
+              ,{" "}
+              <Link href="/teachers" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
+                teachers
+              </Link>{" "}
+              &amp;{" "}
+              <Link href="/venues" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
+                venues
               </Link>
             </h1>
             <p className="mt-3 text-base text-slate-500 sm:text-lg">
@@ -148,12 +152,16 @@ export default async function Home() {
             <p>
               CI Treasure Hunt is a global directory of Contact Improvisation festivals, jams,
               workshops, intensives, and retreats, along with the{" "}
-              <Link href="/venues" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
-                venues
-              </Link>
-              , teachers, and{" "}
               <Link href="/communities" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
                 communities
+              </Link>
+              ,{" "}
+              <Link href="/teachers" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
+                teachers
+              </Link>
+              , and{" "}
+              <Link href="/venues" className="text-violet-600 underline underline-offset-4 hover:text-violet-800">
+                venues
               </Link>{" "}
               behind them. The directory currently lists {events.length} events,{" "}
               {venues.count} venues, and {communities.count} communities across{" "}
