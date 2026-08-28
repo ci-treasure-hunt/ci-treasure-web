@@ -88,9 +88,10 @@ export default function EventMap({ events, highlightedEventId, onMarkerClick, on
         minZoom: 2,
       }).setView([48, 12], isMobile ? 2 : 4);
 
-      // CartoDB Positron - Light Grayscale/Silver tiles
-      // Fits violet theme perfectly, works out-of-the-box in prod (no keys needed)
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      // CartoDB Voyager tiles. Fits violet theme perfectly.
+      // CARTO requires a free API key as of 2026-08 (carto.com/basemaps/apikey) —
+      // without it tiles still load but get an "API key required" watermark.
+      L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`, {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       }).addTo(map);
