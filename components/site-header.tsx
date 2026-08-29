@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 import { InstallToHomeScreen } from "@/components/install-to-home-screen";
+import { createClient } from "@/lib/supabase/client";
 
 
 const NAV_LINKS = [
@@ -25,8 +26,30 @@ function NewBadge() {
   );
 }
 
+// null = session check still in flight (renders a same-sized skeleton so the
+// button never visibly swaps labels after paint, matching the recommendation
+// discussed with Jan 2026-08-29 to avoid a "sign in" -> "dashboard" flash).
+function useIsSignedIn(): boolean | null {
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    // getSession() reads the locally persisted session (no network round trip) —
+    // getUser() would revalidate against Supabase and is worth the latency only
+    // for actual security checks, not for painting a label.
+    supabase.auth.getSession().then(({ data }) => setSignedIn(data.session != null));
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(session != null);
+    });
+    return () => subscription.subscription.unsubscribe();
+  }, []);
+
+  return signedIn;
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const signedIn = useIsSignedIn();
 
   return (
     <header className="border-b border-(--color-sand-strong) bg-(--color-mist)/90 backdrop-blur">
@@ -70,12 +93,19 @@ export function SiteHeader() {
               )
             )}
           </nav>
-          <Link
-            href="/auth?next=/dashboard"
-            className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
-          >
-            Sign in
-          </Link>
+          {signedIn === null ? (
+            <span
+              aria-hidden="true"
+              className="inline-block h-7.5 w-23 animate-pulse rounded-full bg-(--color-sand-strong)/40"
+            />
+          ) : (
+            <Link
+              href={signedIn ? "/dashboard" : "/auth?next=/dashboard"}
+              className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+            >
+              {signedIn ? "Dashboard" : "Sign in"}
+            </Link>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -116,13 +146,15 @@ export function SiteHeader() {
               </Link>
             )
           )}
-          <Link
-            href="/auth?next=/dashboard"
-            className="flex items-center gap-1.5 transition hover:text-(--color-pine)"
-            onClick={() => setOpen(false)}
-          >
-            Sign in
-          </Link>
+          {signedIn !== null && (
+            <Link
+              href={signedIn ? "/dashboard" : "/auth?next=/dashboard"}
+              className="flex items-center gap-1.5 transition hover:text-(--color-pine)"
+              onClick={() => setOpen(false)}
+            >
+              {signedIn ? "Dashboard" : "Sign in"}
+            </Link>
+          )}
         </nav>
       )}
     </header>
