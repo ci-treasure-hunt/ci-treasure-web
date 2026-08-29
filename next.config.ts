@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // sharp ships a native binary; Turbopack's server bundling was failing to load it at
+  // runtime (ERR_DLOPEN_FAILED on libvips) since 2026-08-25, breaking event-image upload,
+  // profile-photo upload, and pasted-URL image rehosting. Excluding it from bundling makes
+  // Next.js require() it straight from node_modules at runtime instead.
+  serverExternalPackages: ["sharp"],
   images: {
     remotePatterns: [
       {
