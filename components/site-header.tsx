@@ -16,6 +16,15 @@ const NAV_LINKS = [
   { label: "Newsletter", href: "/newsletter", external: false },
 ];
 
+// I-156, decided 2026-08-30: a grouped dropdown once there were three real destinations sharing
+// one job ("learn about the project / explore beyond events"), rather than more flat nav items.
+// Built to take a fourth entry (Guides, I-148) once that ships — just append here.
+const EXPLORE_LINKS = [
+  { label: "About", href: "/about" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Countries", href: "/countries" },
+];
+
 // Small "New" pill for recently-added nav items — remove the isNew flag above once it's
 // been live long enough that regulars have noticed (a few weeks is plenty).
 function NewBadge() {
@@ -92,6 +101,25 @@ export function SiteHeader() {
                 </Link>
               )
             )}
+            <details className="group relative">
+              <summary className="flex cursor-pointer list-none items-center gap-1 transition hover:text-(--color-pine) [&::-webkit-details-marker]:hidden">
+                Explore
+                <svg viewBox="0 0 10 6" className="size-2.5 fill-current transition group-open:rotate-180">
+                  <path d="M0 0l5 6 5-6z" />
+                </svg>
+              </summary>
+              <div className="absolute right-0 z-10 mt-2 flex min-w-32 flex-col gap-1 rounded-xl border border-(--color-sand-strong) bg-(--color-mist) p-2 shadow-lg">
+                {EXPLORE_LINKS.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="rounded-lg px-3 py-1.5 transition hover:bg-(--color-pine)/10 hover:text-(--color-pine)"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
           </nav>
           {signedIn === null ? (
             <span
@@ -146,6 +174,16 @@ export function SiteHeader() {
               </Link>
             )
           )}
+          {EXPLORE_LINKS.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="flex items-center gap-1.5 transition hover:text-(--color-pine)"
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
           {signedIn !== null && (
             <Link
               href={signedIn ? "/dashboard" : "/auth?next=/dashboard"}
