@@ -73,7 +73,12 @@ const TYPE_EMOJI: Record<string, string> = {
   lab: '🔬', underscore: '⭕', cdp: '🌀', performance: '🎭', lecture: '🎤', other: '📌',
 }
 
-const escapeMarkdown = (s: string) => s.replace(/\[/g, '(').replace(/\]/g, ')').replace(/([_*`])/g, '\\$1')
+// The backslash MUST be in the escaped set, and in the same single pass as the others (I-165,
+// flagged by CodeQL js/incomplete-sanitization). Without it the escaping is self-defeating: a
+// title of "Contact \_Jam\_ Berlin" escapes to "Contact \\_Jam\\_ Berlin", which Telegram reads
+// as a literal backslash followed by an *unescaped* underscore, so the organizer-controlled text
+// still opens italics. Kept identical to the copy in announce-event/index.ts.
+const escapeMarkdown = (s: string) => s.replace(/\[/g, '(').replace(/\]/g, ')').replace(/([\\_*`])/g, '\\$1')
 
 function toFlag(code: string): string {
   return [...code.toUpperCase()].map(c =>

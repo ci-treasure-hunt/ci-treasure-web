@@ -125,7 +125,14 @@ Deno.serve(async (req) => {
   // in organizer-controlled text (title, venue name) can break message parsing (send
   // fails) or bleed formatting into surrounding text. [ ] are replaced rather than
   // escaped since they sit inside the link label syntax itself.
-  const escapeMarkdown = (s: string) => s.replace(/\[/g, '(').replace(/\]/g, ')').replace(/([_*`])/g, '\\$1')
+  //
+  // The backslash MUST be in the escaped set, and in the same single pass as the others
+  // (I-165, flagged by CodeQL js/incomplete-sanitization). Without it the escaping is
+  // self-defeating: a title of "Contact \_Jam\_ Berlin" escapes to "Contact \\_Jam\\_ Berlin",
+  // which Telegram reads as a literal backslash followed by an *unescaped* underscore, so the
+  // organizer-controlled text still opens italics. Escaping \ first in a separate .replace()
+  // would be wrong too, since the later pass would then double-escape what it just added.
+  const escapeMarkdown = (s: string) => s.replace(/\[/g, '(').replace(/\]/g, ')').replace(/([\\_*`])/g, '\\$1')
 
   // Use "announce_name (if set) or venue name" for known venues; city otherwise. Revised
   // 2026-08-12: restored the ", City" suffix on venue-name locations — dropped 2026-08-10

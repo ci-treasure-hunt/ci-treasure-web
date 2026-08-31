@@ -4,6 +4,11 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+# I-165: least-privilege GITHUB_TOKEN (CodeQL actions/missing-workflow-permissions). Without an
+# explicit block the token inherits the repository default, which can be read/write on every
+# scope. This job only checks out code and runs tests.
+permissions:
+  contents: read
 jobs:
   test:
     timeout-minutes: 60
