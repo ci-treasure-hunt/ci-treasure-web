@@ -382,3 +382,17 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# I-165: pin verify_jwt for the announce functions. They are invoked by database triggers /
+# webhooks, not by a signed-in user, and all three currently run with verify_jwt = false in
+# production. `supabase functions deploy` defaults to TRUE, so without these entries the next
+# routine deploy would silently start rejecting the trigger's calls and announcements would stop
+# firing, with no error surfaced anywhere in the app.
+[functions.announce-event]
+verify_jwt = false
+
+[functions.announce-event-channel]
+verify_jwt = false
+
+[functions.announce-event-cancelled]
+verify_jwt = false
