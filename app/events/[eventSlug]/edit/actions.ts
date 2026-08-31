@@ -7,7 +7,7 @@ import { sendEmail } from "@/lib/email";
 import { buildEventSlug } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyAdminTeacherAdded } from "@/app/events/actions";
+import { notifyAdminTeacherAdded } from "@/lib/notify";
 
 type TeacherActionResult = { success: boolean; error?: string };
 

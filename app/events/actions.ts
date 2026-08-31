@@ -278,27 +278,7 @@ async function notifyAdminNewEvent(title: string) {
   });
 }
 
-export async function notifyAdminTeacherAdded(
-  organizerName: string,
-  teacherName: string,
-  role: string,
-  eventTitle: string,
-  shortId: string,
-) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
-  if (!token || !chatId) return;
-
-  const text = `👥 ${organizerName} added ${teacherName} as ${role} to ${eventTitle} — https://citreasurehunt.com/events/${shortId}`;
-
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      message_thread_id: EVENT_THREAD_ID,
-      text,
-      link_preview_options: { is_disabled: true },
-    }),
-  });
-}
+// I-166 F3: notifyAdminTeacherAdded moved to lib/notify.ts. It was exported from this module,
+// which carries "use server", and every export in such a module is a callable endpoint whose
+// caller's authorization does not protect it. It is server-only, so it now lives in a plain
+// module where it cannot become one by accident.

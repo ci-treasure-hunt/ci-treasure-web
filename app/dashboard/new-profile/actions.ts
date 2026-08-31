@@ -21,6 +21,13 @@ export async function checkSimilarProfiles(name: string): Promise<SimilarProfile
   if (name.trim().length < 3) return [];
 
   const supabase = await createClient();
+  // I-166 F2: this is a registered server action, so it is a public endpoint regardless of the
+  // page that renders it, and search_similar_profiles is SECURITY DEFINER and can see shadow
+  // profiles a normal session cannot. It only ever serves /dashboard/new-profile, which requires
+  // sign-in, so gate it here rather than leaving shadow rows readable to anyone.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data } = await supabase.rpc("search_similar_profiles", { p_name: name.trim() });
 
   return (data ?? []).map((p: { id: string; name: string; slug: string; bio_snippet: string | null; visibility: string }) => ({

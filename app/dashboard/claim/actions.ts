@@ -18,10 +18,25 @@ function escapeLike(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
+// I-166 F2: both exports below are registered server actions, i.e. public HTTP endpoints, and both
+// query with the service-role client which bypasses RLS entirely. That bypass is deliberate and
+// necessary (shadow profiles are invisible to a normal session but must be claimable), but the
+// unstated assumption was that only a signed-in user on /dashboard/claim would ever call them.
+// Anyone could, without logging in. These only ever serve a page that already requires auth, so
+// the check costs nothing. Measured exposure before fixing was small (5 shadow profiles; the other
+// 779 reachable rows are already public), but the shape is wrong regardless of today's row count.
+async function requireSignedIn(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return Boolean(user);
+}
+
 // Search runs on the service-role client: shadow/CIGC profiles are invisible to a
 // normal user session (profiles RLS = public OR own), but they must be claimable.
 // Only non-sensitive fields and only truly-claimable rows are returned.
 export async function searchProfiles(query: string): Promise<ClaimableProfile[]> {
+  if (!(await requireSignedIn())) return [];
+
   const q = query.trim();
   if (q.length < 2) return [];
 
@@ -54,6 +69,8 @@ export async function searchProfiles(query: string): Promise<ClaimableProfile[]>
 // profile" button) — same admin-client/unclaimed-only reasoning as searchProfiles, just
 // looked up by id instead of name so the confirm view can skip straight to one profile.
 export async function getClaimableProfileById(profileId: string): Promise<ClaimableProfile | null> {
+  if (!(await requireSignedIn())) return null;
+
   const admin = createAdminClient();
   const { data } = await admin
     .from("profiles")

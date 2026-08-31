@@ -1,0 +1,21 @@
+-- I-166 F2 / I-158: pin search_path on the one function that has the privilege-escalation shape.
+--
+-- `is_event_organizer` is the only function in this schema that is BOTH `SECURITY DEFINER` (runs
+-- with the owner's privileges, not the caller's) AND has an unpinned `search_path` (which the
+-- caller therefore controls). That combination is the classic escalation pattern: set search_path
+-- to a schema you own, create your own `profiles` there, call the function, and it reads your table
+-- while running as the owner.
+--
+-- Not exploitable today, which was checked rather than assumed: the function body fully qualifies
+-- every table it touches (`public.event_organizers`, `public.profiles`), so there is no unqualified
+-- name to hijack. This is insurance against a later edit introducing one, and it costs one line.
+--
+-- The advisor also flags 5 other functions for a mutable search_path — `track_profile_slug_history`,
+-- `track_slug_history`, `update_updated_at_column`, `generate_short_id`, `run_data_quality_checks`.
+-- Those are all SECURITY INVOKER, so they run as the caller and cannot escalate; they are ordinary
+-- lint and are deliberately left alone here to keep this migration to the one that matters.
+-- `has_role` and `trigger_revalidate` are definer-rights but already pin search_path.
+--
+-- Matches what has_role already does. Attributes other than search_path are untouched.
+
+ALTER FUNCTION public.is_event_organizer(p_event_id uuid) SET search_path TO 'public';
