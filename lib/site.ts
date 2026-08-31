@@ -6,6 +6,35 @@ export const SITE_URL = "https://citreasurehunt.com";
 // otherwise identical openGraph shape).
 export const SITE_OG_IMAGE = `${SITE_URL}/opengraph-image.jpg`;
 
+/**
+ * I-165 Finding 4. Only site-relative redirect targets survive; everything else falls back.
+ *
+ * Replaces two divergent copies of a /^\/(?!\/)/ test (app/auth/page.tsx and
+ * app/auth/confirm/route.ts) plus one call site that had no validation at all
+ * (app/admin/login/page.tsx, under a comment claiming it was kept in sync). That regex blocked
+ * "//evil.com" but not "/\evil.com": for special schemes the WHATWG URL parser normalises a
+ * backslash to a forward slash, so new URL("/\\evil.com", base) resolves to https://evil.com/ and
+ * the user was bounced off-site immediately after a genuine magic-link login — a convincing phish
+ * setup, since the login itself was real. Comparing origins is exhaustive where hand-written
+ * pattern matching is not.
+ *
+ * Returns a path, never an absolute URL, so callers can safely resolve it against their own
+ * request origin. Note SITE_URL is the hardcoded production origin: on localhost an *absolute*
+ * same-origin value (http://localhost:3000/x) therefore falls back rather than passing. That is
+ * deliberate — it fails closed, and `next` is always a relative path in practice.
+ */
+export function safeNext(value: string | null | undefined, fallback = "/dashboard"): string {
+  if (!value) return fallback;
+  try {
+    const base = new URL(SITE_URL);
+    const url = new URL(value, base);
+    if (url.origin !== base.origin) return fallback;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 // `ogImage()` (the `sharp`-based dimension probe) lives in `lib/og-image.ts`, not here — this
 // file is imported by client components too (e.g. `invite-buttons.tsx` for TELEGRAM_URL), and a
 // dynamic `import("sharp")` anywhere in a module client components pull in still gets analyzed

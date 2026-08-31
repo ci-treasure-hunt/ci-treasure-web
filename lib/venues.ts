@@ -3,6 +3,7 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, SupabaseEventRow, LinkItem, getLinkLabel, linkSortKey } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
+import { safeExternalUrl } from "./url-safety";
 
 // I-153: associated communities (community_venues) and people (venue_profiles, e.g. an owner or
 // resident teacher). Separate call, same reasoning as lib/teachers.ts's getProfileAssociations.
@@ -200,9 +201,9 @@ function venueCountryLabel(iso: string): string {
   }
 }
 
-function ensureHttps(url: string): string {
-  return url.startsWith("http") ? url : `https://${url}`;
-}
+// I-165: was a local `ensureHttps` that prefixed anything without a leading "http". That
+// neutralised dangerous schemes only as a side effect of formatting; safeExternalUrl checks them
+// deliberately, and returns null for anything it can't make safe.
 
 type VenueListRow = {
   id: string;
@@ -230,9 +231,10 @@ function toVenueListItem(row: VenueListRow): VenueListItem {
   const channelLinks = rawItems
     .map((item) => ({
       type: item.type,
-      url: ensureHttps(item.url),
+      url: safeExternalUrl(item.url),
       label: getLinkLabel(item.type, item.label),
     }))
+    .filter((item): item is { type: string; url: string; label: string } => item.url !== null)
     .sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));
 
   return {
@@ -243,7 +245,7 @@ function toVenueListItem(row: VenueListRow): VenueListItem {
     country: venueCountryLabel(row.country),
     countryIso: row.country,
     description: row.description,
-    website: row.website ? ensureHttps(row.website) : null,
+    website: safeExternalUrl(row.website),
     imageUrl: row.image_url,
     channelLinks,
   };

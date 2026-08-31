@@ -31,6 +31,7 @@ import { RevealEmail } from "@/components/reveal-email";
 import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
+import { safeExternalUrl } from "@/lib/url-safety";
 import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
 import { PracticeBadge, practicesToDisplay } from "@/components/shared/practice-badge";
 import { getCountryPageLink } from "@/lib/country-pages";
@@ -132,15 +133,22 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
     },
   );
 
-  const ensureHttps = (url: string) => url.startsWith("http") ? url : `https://${url}`;
+  // I-165: safeExternalUrl replaces a local ensureHttps that only neutralised dangerous schemes as
+  // a side effect of prefixing. It returns null for anything unsafe, so `push` is guarded. The
+  // handle-to-URL expansions for instagram/telegram still happen first — they turn "@name" into a
+  // real URL, which is a display concern, not a safety one.
   type LinkRow = { type: string; href: string; label: string; icon: React.ReactNode };
   const teacherLinks: LinkRow[] = [];
-  if (teacher.website) teacherLinks.push({ type: "website", href: ensureHttps(teacher.website), label: getLinkLabel("website"), icon: <Globe className="h-4 w-4" /> });
-  if (teacher.facebook) teacherLinks.push({ type: "facebook", href: ensureHttps(teacher.facebook), label: getLinkLabel("facebook"), icon: <Facebook className="h-4 w-4" /> });
-  if (teacher.instagram) teacherLinks.push({ type: "instagram", href: ensureHttps(teacher.instagram.replace(/^@/, "https://instagram.com/")), label: getLinkLabel("instagram"), icon: <Instagram className="h-4 w-4" /> });
-  if (teacher.youtube) teacherLinks.push({ type: "youtube", href: ensureHttps(teacher.youtube), label: getLinkLabel("youtube"), icon: <Youtube className="h-4 w-4" /> });
-  if (teacher.telegram) teacherLinks.push({ type: "telegram", href: teacher.telegram.startsWith("http") ? teacher.telegram : `https://t.me/${teacher.telegram.replace(/^@/, "")}`, label: getLinkLabel("telegram"), icon: <Send className="h-4 w-4" /> });
-  if (teacher.newsletter) teacherLinks.push({ type: "newsletter", href: ensureHttps(teacher.newsletter), label: getLinkLabel("newsletter"), icon: <MessageSquare className="h-4 w-4" /> });
+  const pushLink = (type: string, raw: string | null, label: string, icon: React.ReactNode) => {
+    const href = safeExternalUrl(raw);
+    if (href) teacherLinks.push({ type, href, label, icon });
+  };
+  pushLink("website", teacher.website, getLinkLabel("website"), <Globe className="h-4 w-4" />);
+  pushLink("facebook", teacher.facebook, getLinkLabel("facebook"), <Facebook className="h-4 w-4" />);
+  pushLink("instagram", teacher.instagram?.replace(/^@/, "https://instagram.com/") ?? null, getLinkLabel("instagram"), <Instagram className="h-4 w-4" />);
+  pushLink("youtube", teacher.youtube, getLinkLabel("youtube"), <Youtube className="h-4 w-4" />);
+  pushLink("telegram", teacher.telegram && !teacher.telegram.startsWith("http") ? `https://t.me/${teacher.telegram.replace(/^@/, "")}` : teacher.telegram, getLinkLabel("telegram"), <Send className="h-4 w-4" />);
+  pushLink("newsletter", teacher.newsletter, getLinkLabel("newsletter"), <MessageSquare className="h-4 w-4" />);
   teacherLinks.sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));
 
   const approvedImage = teacher.image_status === "approved" ? teacher.image_url : null;

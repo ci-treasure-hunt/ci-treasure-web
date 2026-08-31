@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getAdminUser } from "@/lib/admin-auth";
+import { safeNext } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 
 async function sendMagicLink(formData: FormData) {
@@ -12,9 +13,13 @@ async function sendMagicLink(formData: FormData) {
   // Default to /dashboard, not /admin/events — the middleware already injects an
   // explicit next=/admin/events when a logged-out admin is redirected here from an
   // admin subpage (proxy.ts). This bare default only fires when /admin/login is
-  // visited directly with no next param, which should be safe for non-admins too
-  // (see safeNext() in auth/confirm/route.ts — same reasoning, kept in sync).
-  const next = String(formData.get("next") ?? "/dashboard");
+  // visited directly with no next param, which should be safe for non-admins too.
+  //
+  // I-165: this comment used to claim it was "kept in sync" with safeNext() in
+  // auth/confirm/route.ts, but the call was never actually here — the value went straight into
+  // emailRedirectTo unvalidated, and the whole admin login path inherited whatever that helper
+  // did or didn't catch. Now it really does share the helper (lib/site.ts).
+  const next = safeNext(String(formData.get("next") ?? ""));
 
   if (!email) {
     redirect(`/admin/login?error=${encodeURIComponent("Enter an email address.")}&next=${encodeURIComponent(next)}`);

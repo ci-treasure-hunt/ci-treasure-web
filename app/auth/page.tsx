@@ -2,15 +2,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-
-const SAFE_NEXT = /^\/(?!\/)/; // must be a site-relative path, not a protocol-relative URL
-
-function safeNext(value: string | undefined, fallback = "/dashboard") {
-  if (value && SAFE_NEXT.test(value)) {
-    return value;
-  }
-  return fallback;
-}
+// I-165: was a local SAFE_NEXT regex that missed "/\host". Shared with app/auth/confirm/route.ts
+// and app/admin/login/page.tsx.
+import { safeNext } from "@/lib/site";
 
 async function sendMagicLink(formData: FormData) {
   "use server";

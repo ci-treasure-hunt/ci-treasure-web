@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { safeExternalUrl } from "@/lib/url-safety";
 import {
   type EventListItem,
   type SegmentItem,
@@ -204,9 +205,22 @@ function normalizeLinkItems(payload: unknown): LinkItem[] {
       }
       const typed = item as { type?: unknown; url?: unknown; label?: unknown };
       const type = typeof typed.type === "string" ? typed.type : "website";
-      const url = typeof typed.url === "string" ? typed.url : "";
+      const rawUrl = typeof typed.url === "string" ? typed.url : "";
       const label = typeof typed.label === "string" ? typed.label : undefined;
+      // I-165: never hand an unchecked scheme to an href. Enforced on read as well as on write
+      // (parseLinkItems), so rows already in the DB and any future write path that skips
+      // parseLinkItems are both covered.
+      const url = safeExternalUrl(rawUrl);
       if (!url) {
+        if (rawUrl) {
+          // Redact anything that looks like an address before logging: a bare email in `links` is
+          // one of the things that lands here (see BARE_EMAIL in lib/organizer-events.ts), and
+          // writing it to the runtime log would undercut the point of keeping emails gated.
+          console.warn(
+            `[links] dropped unsafe or unparseable URL (type=${type}): ` +
+              rawUrl.replace(/[^\s@]+@[^\s@]+/g, "<redacted-email>").slice(0, 120),
+          );
+        }
         return null;
       }
       return { type, url, ...(label ? { label } : {}) };

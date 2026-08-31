@@ -20,6 +20,7 @@ import { EntityImage } from "@/components/entity-image";
 import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
 import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
+import { safeExternalUrl } from "@/lib/url-safety";
 import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
 import { getAllVenueSlugs, getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect, getVenueRingNeighbors } from "@/lib/venues";
 import { getCountryPageLink } from "@/lib/country-pages";
@@ -101,16 +102,21 @@ export default async function VenuePage({ params }: VenuePageProps) {
     getContinent(venue.country),
   );
 
-  const ensureHttps = (url: string) => url.startsWith("http") ? url : `https://${url}`;
+  // I-165: safeExternalUrl replaces a local ensureHttps that only neutralised dangerous schemes as
+  // a side effect of prefixing. It returns null for anything unsafe, so `push` is guarded.
   type LinkRow = { type: string; href: string; label: string; icon: React.ReactNode };
   const venueLinks: LinkRow[] = [];
-  if (venue.website) venueLinks.push({ type: "website", href: ensureHttps(venue.website), label: getLinkLabel("website"), icon: <Globe className="h-4 w-4" /> });
-  if (venue.facebook) venueLinks.push({ type: "facebook", href: ensureHttps(venue.facebook), label: getLinkLabel("facebook"), icon: <Facebook className="h-4 w-4" /> });
-  if (venue.instagram) venueLinks.push({ type: "instagram", href: ensureHttps(venue.instagram), label: getLinkLabel("instagram"), icon: <Instagram className="h-4 w-4" /> });
-  if (venue.youtube) venueLinks.push({ type: "youtube", href: ensureHttps(venue.youtube), label: getLinkLabel("youtube"), icon: <Youtube className="h-4 w-4" /> });
-  if (venue.newsletter) venueLinks.push({ type: "newsletter", href: ensureHttps(venue.newsletter), label: getLinkLabel("newsletter"), icon: <MessageSquare className="h-4 w-4" /> });
+  const pushLink = (type: string, raw: string | null, label: string, icon: React.ReactNode) => {
+    const href = safeExternalUrl(raw);
+    if (href) venueLinks.push({ type, href, label, icon });
+  };
+  pushLink("website", venue.website, getLinkLabel("website"), <Globe className="h-4 w-4" />);
+  pushLink("facebook", venue.facebook, getLinkLabel("facebook"), <Facebook className="h-4 w-4" />);
+  pushLink("instagram", venue.instagram, getLinkLabel("instagram"), <Instagram className="h-4 w-4" />);
+  pushLink("youtube", venue.youtube, getLinkLabel("youtube"), <Youtube className="h-4 w-4" />);
+  pushLink("newsletter", venue.newsletter, getLinkLabel("newsletter"), <MessageSquare className="h-4 w-4" />);
   for (const link of venue.links?.items ?? []) {
-    venueLinks.push({ type: link.type, href: ensureHttps(link.url), label: getLinkLabel(link.type, link.label), icon: <ExternalLink className="h-4 w-4" /> });
+    pushLink(link.type, link.url, getLinkLabel(link.type, link.label), <ExternalLink className="h-4 w-4" />);
   }
   venueLinks.sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));
 

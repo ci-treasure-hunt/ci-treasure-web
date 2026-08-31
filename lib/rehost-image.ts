@@ -10,6 +10,7 @@ import { getMediumUrl, getSmallUrl } from "@/lib/image-url";
 // render WebP); `medium`/`small` are pure in-page uses, safe to convert to WebP.
 const MAX_FETCH_BYTES = 8 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 10_000;
+const MAX_REDIRECTS = 5;
 const LARGE_LONG_EDGE = 1600;
 const LARGE_QUALITY = 82;
 const MEDIUM_LONG_EDGE = 400;
@@ -87,6 +88,75 @@ async function assertPublicUrl(rawUrl: string): Promise<{ error: string } | null
   return null;
 }
 
+// I-165 Finding 5: assertPublicUrl above only ever saw the URL as pasted. fetch() then followed
+// redirects on its own, so a public host answering 302 -> http://169.254.169.254/... was fetched
+// anyway. Exfiltration was already blocked downstream (the content-type check, the magic-byte
+// check and the sharp re-encode all reject non-image responses), so what this closes is blind
+// internal probing, not a data leak. The DNS-rebinding caveat documented above still stands and is
+// still accepted.
+//
+// Returns a result object rather than throwing, so the specific reason ("URL not allowed") still
+// reaches the caller. Throwing would land in the caller's catch and be flattened into the generic
+// "Could not fetch image URL", losing the diagnostic that actually tells an admin what happened.
+async function fetchFollowingSafeRedirects(
+  startUrl: string,
+): Promise<{ response: Response } | { error: string }> {
+  // ONE deadline for the whole chain, created outside the loop. Creating the signal per hop would
+  // give a malicious chain MAX_REDIRECTS + 1 full timeouts (60s) and hold a serverless function
+  // open for the duration — worse than the single-fetch behaviour this replaces, since fetch's own
+  // redirect following was always bounded by one signal.
+  const deadline = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+  let current = startUrl;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+    const blocked = await assertPublicUrl(current);
+    if (blocked) {
+      return blocked;
+    }
+
+    let res: Response;
+    try {
+      // A bare Node fetch with no User-Agent/Accept reads as an obvious bot to most anti-scraping
+      // CDNs — found live 2026-07-22: Eventbrite's CDN returned a Content-Type: image/jpeg
+      // response with corrupted bytes (not a clean 4xx/HTML block page) specifically to a
+      // server-side fetch, while the identical URL fetched normally was fine. A real browser
+      // UA/Accept header is the standard, low-risk mitigation for this — it's a publicly
+      // embeddable image, not a real access-control bypass.
+      res = await fetch(current, {
+        redirect: "manual",
+        signal: deadline,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        },
+      });
+    } catch {
+      return { error: "Could not fetch image URL" };
+    }
+
+    if (res.status < 300 || res.status > 399) {
+      return { response: res };
+    }
+
+    const location = res.headers.get("location");
+    // Drain the redirect's body before moving on. With redirect: "manual" nothing consumes these,
+    // and an unread body keeps its connection checked out of undici's pool.
+    await res.body?.cancel().catch(() => {});
+
+    if (!location) {
+      return { error: "Image URL returned a redirect with no target" };
+    }
+    try {
+      current = new URL(location, current).toString();
+    } catch {
+      return { error: "Image URL redirected to an invalid target" };
+    }
+  }
+
+  return { error: "Too many redirects" };
+}
+
 /**
  * Fetches an external image URL, validates/normalizes it, and stores our own copy —
  * closes the "organizer-pasted external URL rots/expires" risk (I-126). Skips entirely if
@@ -104,30 +174,13 @@ export async function rehostExternalImage(
     return { url };
   }
 
-  const blocked = await assertPublicUrl(url);
-  if (blocked) {
-    return blocked;
+  // I-165: the standalone assertPublicUrl() call that used to sit here is now hop 0 of the loop
+  // inside fetchFollowingSafeRedirects, so every hop is validated rather than just the first.
+  const fetched = await fetchFollowingSafeRedirects(url);
+  if ("error" in fetched) {
+    return fetched;
   }
-
-  let response: Response;
-  try {
-    // A bare Node fetch with no User-Agent/Accept reads as an obvious bot to most
-    // anti-scraping CDNs — found live 2026-07-22: Eventbrite's CDN returned a
-    // Content-Type: image/jpeg response with corrupted bytes (not a clean 4xx/HTML block
-    // page) specifically to a server-side fetch, while the identical URL fetched normally
-    // was fine. A real browser UA/Accept header is the standard, low-risk mitigation for
-    // this — it's a publicly embeddable image, not a real access-control bypass.
-    response = await fetch(url, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-      },
-    });
-  } catch {
-    return { error: "Could not fetch image URL" };
-  }
+  const response = fetched.response;
   if (!response.ok || !response.body) {
     return { error: `Image URL returned ${response.status}` };
   }

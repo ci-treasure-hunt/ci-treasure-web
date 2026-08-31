@@ -7,6 +7,7 @@
 
 import type { AdminLinkItem, AdminPriceItem } from "./admin-events";
 import { COUNTRIES } from "./countries";
+import { safeExternalUrl } from "./url-safety";
 
 export { EVENT_TYPE_OPTIONS, LINK_TYPE_OPTIONS, TEACHER_ROLE_OPTIONS } from "./admin-events";
 export type { AdminLinkItem, AdminPriceItem };
@@ -203,7 +204,12 @@ export const BARE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function parseLinkItems(items: AdminLinkItem[]) {
   return items
     .map((item) => ({ type: item.type.trim() || "website", url: item.url.trim() }))
-    .filter((item) => item.url && !BARE_EMAIL.test(item.url));
+    .filter((item) => item.url && !BARE_EMAIL.test(item.url))
+    // I-165: scheme allowlist, http/https only. Runs after the BARE_EMAIL filter above so a bare
+    // address is still routed to contact_email by extractBareEmailFromLinks rather than being
+    // dropped here as an unparseable link.
+    .map((item) => ({ ...item, url: safeExternalUrl(item.url) }))
+    .filter((item): item is { type: string; url: string } => item.url !== null);
 }
 
 export function normalizeJsonItems<T>(items: T[]) {
