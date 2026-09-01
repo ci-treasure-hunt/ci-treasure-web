@@ -76,16 +76,28 @@ export function toFlag(code: string): string {
   ).join('')
 }
 
+// Shows the year only when it's not the current year — most events post within the year they
+// happen, where a bare "Oct 1-3" reads fine, but a Movement Artisans module announced in 2026 for
+// Oct 2027 without a year reads as next month, not next year (I-168).
 export function formatDates(start: string, end: string | null): string {
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const currentYear = new Date().getUTCFullYear()
   const s = new Date(start + 'T00:00:00Z')
-  const sm = MONTHS[s.getUTCMonth()], sd = s.getUTCDate()
-  if (!end || end === start) return `${sm} ${sd}`
+  const sy = s.getUTCFullYear(), sm = MONTHS[s.getUTCMonth()], sd = s.getUTCDate()
+  if (!end || end === start) {
+    return sy !== currentYear ? `${sm} ${sd}, ${sy}` : `${sm} ${sd}`
+  }
   const e  = new Date(end + 'T00:00:00Z')
-  const em = MONTHS[e.getUTCMonth()], ed = e.getUTCDate()
+  const ey = e.getUTCFullYear(), em = MONTHS[e.getUTCMonth()], ed = e.getUTCDate()
+  if (sy !== ey) {
+    // Crosses a year boundary — always show both years explicitly, since "Dec 29-Jan 10" alone
+    // hides that the span crosses into a different year.
+    return `${sm} ${sd}, ${sy}-${em} ${ed}, ${ey}`
+  }
+  const yearSuffix = sy !== currentYear ? `, ${sy}` : ''
   return s.getUTCMonth() === e.getUTCMonth()
-    ? `${sm} ${sd}-${ed}`
-    : `${sm} ${sd}-${em} ${ed}`
+    ? `${sm} ${sd}-${ed}${yearSuffix}`
+    : `${sm} ${sd}-${em} ${ed}${yearSuffix}`
 }
 
 type PriceItem = { amount?: number; currency?: string; description?: string }
