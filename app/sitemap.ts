@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { SITE_URL } from "@/lib/site";
 import { getAllCountrySummaries } from "@/lib/country-pages";
 import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
+import { getAllGuides } from "@/lib/guides";
 
 export const revalidate = 3600;
 
@@ -37,6 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${SITE_URL}/teachers`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/countries`, changeFrequency: "weekly", priority: 0.7 },
       ...EVENT_TYPE_PAGES.map((t) => ({ url: `${SITE_URL}${t.path}`, changeFrequency: "weekly" as const, priority: 0.7 })),
+      { url: `${SITE_URL}/guides`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
       { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
       { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.4 },
@@ -76,6 +78,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/teachers`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/countries`, changeFrequency: "weekly", priority: 0.7 },
     ...EVENT_TYPE_PAGES.map((t) => ({ url: `${SITE_URL}${t.path}`, changeFrequency: "weekly" as const, priority: 0.7 })),
+    { url: `${SITE_URL}/guides`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.4 },
@@ -119,6 +122,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
+  // I-148. Read off disk rather than from a query, so a guide is in the sitemap the moment its
+  // markdown file is deployed. lastModified comes from each file's own `updated` frontmatter,
+  // which is the only date that tracks the prose rather than the deploy.
+  const guides = await getAllGuides();
+  const guideUrls: MetadataRoute.Sitemap = guides.map((g) => ({
+    url: `${SITE_URL}/guides/${g.frontmatter.slug}`,
+    lastModified: g.frontmatter.updated ? new Date(`${g.frontmatter.updated}T00:00:00Z`) : undefined,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   const countryUrls: MetadataRoute.Sitemap = countrySummaries.map((c) => ({
     url: `${SITE_URL}/${c.slug}`,
     lastModified: new Date(c.updatedAt),
@@ -126,5 +140,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...eventUrls, ...venueUrls, ...teacherUrls, ...communityUrls, ...countryUrls];
+  return [...staticPages, ...eventUrls, ...venueUrls, ...teacherUrls, ...communityUrls, ...countryUrls, ...guideUrls];
 }

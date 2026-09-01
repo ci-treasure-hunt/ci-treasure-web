@@ -18,8 +18,10 @@ const NAV_LINKS = [
 
 // I-156, decided 2026-08-30: a grouped dropdown once there were three real destinations sharing
 // one job ("learn about the project / explore beyond events"), rather than more flat nav items.
-// Built to take a fourth entry (Guides, I-148) once that ships — just append here.
+// Guides (I-148) appended 2026-09-01, as the note here anticipated. It leads the list:
+// it is the only entry of the four a first-time visitor has a reason to open.
 const EXPLORE_LINKS = [
+  { label: "Guides", href: "/guides" },
   { label: "About", href: "/about" },
   { label: "FAQ", href: "/faq" },
   { label: "Countries", href: "/countries" },
