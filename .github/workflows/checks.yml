@@ -1,0 +1,54 @@
+name: Checks
+
+# Type check, lint and unit checks on every push and PR.
+#
+# Before this existed the only CI here was playwright.yml, so `tsc --noEmit`, `eslint` and
+# tests/unit/url-safety.check.ts ran only when someone remembered to run them locally. A type or
+# lint error could reach master and surface for the first time in the Vercel build, after merge.
+#
+# `next build` is deliberately not repeated here: Vercel already runs it on every push, and it is
+# the slow part (~2 minutes of static generation for ~1170 pages). The point of this workflow is
+# fast feedback on a PR, not to duplicate the deploy.
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# Least-privilege GITHUB_TOKEN, same reasoning as playwright.yml (I-165): without an explicit block
+# the token inherits the repository default, which can be read/write on every scope. This job only
+# checks out code and runs checks.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # I-165 Finding 2: safeExternalUrl in lib/url-safety.ts is the app's only URL scheme
+      # allowlist, and every path that renders a user-supplied URL into an href goes through it.
+      # These 30 assertions caught two real errors while it was being written (that
+      # `https://mailto:a@b.com` parses as a valid URL, and that a scheme regex misreads
+      # "ci-cph.dk:8080" because . and - are legal scheme characters), so they are worth enforcing
+      # rather than trusting to memory.
+      #
+      # npx --yes rather than a devDependency on tsx: keeps package-lock.json untouched.
+      - name: Unit checks
+        run: npx --yes tsx tests/unit/url-safety.check.ts

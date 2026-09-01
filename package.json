@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "import:manual-events": "node scripts/import_manual_event_intake.mjs"
   },
   "dependencies": {
