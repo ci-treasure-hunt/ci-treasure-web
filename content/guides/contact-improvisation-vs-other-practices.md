@@ -24,6 +24,34 @@ CI is a partner practice built on sharing real physical weight through a moving 
 with no choreography and no music required. Most of what it gets compared to is either a solo
 practice with no required touch, or a partner practice with a very different physical premise.
 
+## Contact Improvisation vs. contemporary dance
+
+This is the closest relation on the page, and the least like a choice between two options.
+
+CI came out of postmodern dance. Steve Paxton had danced with Merce Cunningham and belonged to the
+Judson Dance Theater circle, and CI grew up alongside release technique, which came out of the same
+rejection of ballet's held, effortful shapes. Release training is still common preparation for CI,
+and CI is taught inside contemporary dance training all over the world.
+
+Some practitioners therefore consider CI a form of contemporary dance. Others treat it as its own
+practice that happens to share contemporary dance's training lineage. Both views are common and
+this guide doesn't take a side.
+
+Where they clearly differ is in what a session is for. A contemporary dance class teaches a
+technique, and the work is usually shaped into choreography for an audience. A CI jam has nothing
+set, nothing taught while it runs, and no audience unless someone has invited one. CI has no
+required technique class the way ballet or contemporary training does.
+
+If you have a contemporary dance background you will find CI familiar in its use of weight and the
+floor, and unfamiliar in how little is decided in advance. If you have none, you have lost less
+than you would think: see [what is Contact
+Improvisation](/guides/what-is-contact-improvisation) on why dance experience is not the thing that
+matters most.
+
+**Dance improvisation** is the wider field both sit inside: movement made up in the moment rather
+than set in advance, with no requirement of contact or a partner. CI is one lineage within it. The
+[pillar guide](/guides/what-is-contact-improvisation) covers that distinction.
+
 ## Contact Improvisation vs. 5Rhythms
 
 **5Rhythms** is a solo movement meditation created by Gabrielle Roth, developed through the 1970s
@@ -124,16 +152,23 @@ branch is which, so it's worth asking instead of assuming. Either way it's commo
 and teachers, who move between Zouk and CI, and CI festivals occasionally host Zouk-adjacent
 workshops as a result.
 
-## What CI sits alongside, not against
+## Practices CI dancers also do
 
-Everything above is a practice you might choose *instead of* CI. There's a second group that CI
-dancers tend to do *as well as* CI, and they show up far more often on CI festival programs than
-most of the practices on this page. They're worth knowing by name for that reason.
+The practices above are alternatives: you would pick one or the other. This next group is
+different. CI dancers commonly train in these as well, and they appear on CI festival programs
+more often than most of what's on this page.
 
 **Somatic movement** is the broad label for practices working from internal sensation and attention
-instead of from a shape to achieve: Body-Mind Centering, Feldenkrais, Alexander Technique,
-Continuum and others. It's the description that appears most often next to CI in event listings,
-and a great many CI teachers hold a training in one somatic practice or another.
+instead of from a shape to achieve: Feldenkrais, Alexander Technique, Continuum and others. It's
+the description that appears most often next to CI in event listings, and a great many CI teachers
+hold a training in one somatic practice or another.
+
+**Body-Mind Centering** (BMC) is the somatic practice most closely entangled with CI. Bonnie
+Bainbridge Cohen founded her school in 1973, the year after CI's first performances, and wrote for
+*Contact Quarterly*, CI's own journal, from 1980 to 2009; the collected essays were published by
+the journal's own book imprint. BMC works from experiential anatomy, studying the body's systems,
+bones, organs, fluids and nerves from the inside rather than from a diagram. Many CI teachers hold
+a BMC training, and it's taught at CI festivals in its own right.
 
 **Axis Syllabus** is a reference system for human movement assembled by Frey Faust, built on
 anatomy, biomechanics and physics, not on any one dance style. Faust is a second-generation
@@ -144,6 +179,10 @@ bodies move, and it's commonly taught alongside CI, not as an alternative to it.
 **Authentic Movement**, built on a mover and a witness, shares vocabulary with CI (see *witnessing*
 in the [glossary](/guides/glossary)) and shares a lot of practitioners, without being a partner
 practice at all.
+
+**Butoh**, the postwar Japanese form, has no lineage connection to CI at all, but a noticeable
+number of CI teachers also work in it, and it turns up on European festival programs. The common
+ground is an interest in movement driven by internal image and sensation rather than by steps.
 
 None of these fit the comparison table below, because they aren't answering the same question. You
 don't pick between CI and somatics the way you might pick between CI and AcroYoga.
@@ -156,6 +195,7 @@ whether there's a set vocabulary to improvise from.
 | Practice | Partner required | Music required | Fixed roles | Set vocabulary |
 |---|---|---|---|---|
 | Contact Improvisation | Yes | No | No | No |
+| Contemporary dance | No | Usually | No | Yes (technique) |
 | 5Rhythms | No | Yes | No | No |
 | Ecstatic Dance | No | Yes | No | No |
 | AcroYoga | Yes | No | Yes (per pose) | Yes (poses) |
