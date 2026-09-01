@@ -23,9 +23,12 @@ listening to each other's balance. All of that is CI.
 ## The core idea: weight, not steps
 
 Most partner dances are built on a shared vocabulary of steps. You learn the tango, then you dance
-the tango. Contact Improvisation has no equivalent vocabulary. What it has instead is a physical
-principle: **when you give your weight to a partner, or take theirs, the two of you become a single
-physical system, and what happens next gets worked out through the place where you touch.**
+the tango. CI has shared material too, and classes teach it: rolling, falling, shoulder and hip
+lifts, ways of offering weight and taking it. What it doesn't have is a codified form those pieces
+get assembled into. There is no syllabus, no agreed sequence, and nobody counts you in. What holds
+a dance together is a physical principle: **when you give your weight to a partner, or take theirs,
+the two of you become a single physical system, and what happens next gets worked out through the
+place where you touch.**
 
 Ideas that come up constantly once you start:
 
@@ -52,20 +55,21 @@ The [CI glossary](/guides/glossary) defines these properly, along with the rest 
 CI started in 1972 in the United States, out of postmodern dance and improvisation experiments,
 most famously associated with the dancer Steve Paxton. Paxton had danced in Merce Cunningham's
 company and belonged to the Judson Dance Theater circle, but he drew as much on Aikido, gymnastics,
-and contact sports as on any of that. It wasn't invented as a performance style. It began as
-research into how bodies move together under real physical forces: momentum, gravity, friction,
-touch. Over the following decades it spread internationally and became both a performance form
-and, for a lot of practitioners, an ongoing weekly practice done for its own sake.
+and contact sports as on any of that. It was shown to audiences from the start: the first public
+presentation, in June 1972, was a series of performances in a New York gallery. What it wasn't was
+a technique with a syllabus. It began as research into how bodies move together under real physical
+forces: momentum, gravity, friction, touch. Groups toured it through the 1970s, and over the
+following decades it spread internationally and became, for a great many practitioners, an ongoing
+weekly practice done for its own sake.
 
 ## What it looks like in practice
 
 Most people meet CI in one of three settings:
 
 - **A jam.** The open, unstructured session most communities run weekly or monthly. Nobody teaches;
-  people dance with whoever they end up beside. This is where most people start, and it's usually
-  the cheapest way in.
-- **A class.** Taught and structured, and the place to pick up the things that are genuinely hard
-  to absorb by osmosis: falling, rolling, giving and catching weight.
+  people dance with whoever they end up beside.
+- **A class.** Taught and structured, and the place to pick up the things that are hard to learn
+  passively: falling, rolling, giving and catching weight.
 - **A festival or intensive.** Several days of classes and jams together, often residential. More
   CI in one week than a local scene gives you in months, which is why people travel for them.
 

@@ -18,15 +18,17 @@ const NAV_LINKS = [
 
 // I-156, decided 2026-08-30: a grouped dropdown once there were three real destinations sharing
 // one job ("learn about the project / explore beyond events"), rather than more flat nav items.
-// Guides (I-148) added 2026-09-01, as the note above anticipated. Ordered by kind, not
-// alphabetically: the first two are content a visitor came for, the last two are about the
-// project. Alphabetical was considered and rejected — at four items nobody scans by letter, and
-// it would lead with About, the entry least likely to be what anyone opened the menu for.
+// Guides (I-148) added 2026-09-01, as the note above anticipated. Alphabetical, decided with Jan:
+// this menu is opened by people already on the site, and for them About and FAQ are the higher
+// intent ("who runs this", "how do I get my event listed"). The guides earn their traffic from
+// search, where a reader lands on /guides/<slug> directly and never sees this menu, so ranking
+// them first here optimizes for an audience that is not using it. Alphabetical also settles the
+// order for good rather than reopening it every time an entry is added.
 const EXPLORE_LINKS = [
-  { label: "Guides", href: "/guides" },
-  { label: "Countries", href: "/countries" },
   { label: "About", href: "/about" },
+  { label: "Countries", href: "/countries" },
   { label: "FAQ", href: "/faq" },
+  { label: "Guides", href: "/guides" },
 ];
 
 // Small "New" pill for recently-added nav items — remove the isNew flag above once it's

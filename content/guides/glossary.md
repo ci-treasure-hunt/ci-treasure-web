@@ -33,10 +33,11 @@ It asks for more listening and less prediction.
 
 ### Center-to-center
 
-Contact between the dancers' physical centers, the lower belly, sometimes called the *hara*, where
-the body's weight effectively sits. Contact made center to center, not through limbs and surfaces,
-is what lets weight actually pass between two people instead of being pushed around at arm's
-length.
+Contact between the dancers' physical centers, the lower belly, sometimes called the *hara*,
+roughly where the body's center of mass sits. Bringing two centers close means one skeleton can
+carry the other, which is what makes weight transfer and lifting possible without muscling. Contact
+through limbs and surfaces alone leaves the weight out at arm's length, where it has to be pushed
+rather than carried.
 
 ### Counterbalance
 
@@ -246,6 +247,7 @@ Continuum and others among them. It's the label that turns up most often alongsi
 listings, and many CI teachers hold a training in one somatic practice or another. CI itself is
 usually described as somatically informed, not as a somatic practice in its own right,
 though where the line falls depends who you ask.
+
 ---
 
 *Part of [CI Treasure Hunt's guide series](/guides) on Contact Improvisation. Start here: [What Is
