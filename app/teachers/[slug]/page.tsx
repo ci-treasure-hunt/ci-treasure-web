@@ -331,7 +331,12 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
             </div>
 
             <aside className="space-y-6">
-              {teacherLinks.length > 0 && (
+              {/* Pre-existing bug found while verifying I-165 F3: this section was gated on
+                  teacherLinks.length alone, so a teacher with a contact address but no social
+                  links got no "Show email" button at all and no way to be contacted. The old
+                  public_email check sat inside the same wrapper, so this predates F3. The venues
+                  page already handles the equivalent case correctly. */}
+              {(teacherLinks.length > 0 || teacher.has_email) && (
                 <section className="rounded-[1.75rem] border border-(--color-sand-strong) bg-(--color-mist) p-6">
                   <h2 className="font-serif text-2xl text-slate-950">Links</h2>
                   <div className="mt-4 flex flex-col gap-3">
