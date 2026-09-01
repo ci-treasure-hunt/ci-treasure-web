@@ -5,6 +5,7 @@ import { geocodeAddress } from "@/lib/geocode";
 import { slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { setEntityEmail } from "@/lib/entity-email";
 async function createUniqueSlug(baseSlug: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase.from("venues").select("slug").ilike("slug", `${baseSlug}%`);
@@ -59,7 +60,6 @@ export async function POST(request: NextRequest) {
         lng: coords?.lng ?? null,
         description: String(payload.description ?? "").trim() || null,
         website: String(payload.website ?? "").trim() || null,
-        email: String(payload.email ?? "").trim() || null,
         newsletter: String(payload.newsletter ?? "").trim() || null,
         facebook: String(payload.facebook ?? "").trim() || null,
         instagram: String(payload.instagram ?? "").trim() || null,
@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
       .select("id, name, city, country, lat, lng")
       .single();
     if (error) throw error;
+
+    // I-165 F3: address goes to entity_emails, not venues.email.
+    await setEntityEmail("venue", data.id, String(payload.email ?? ""));
 
     return NextResponse.json({ venue: data });
   } catch (error) {

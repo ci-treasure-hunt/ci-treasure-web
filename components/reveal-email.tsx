@@ -5,7 +5,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Mail } from "lucide-react";
 import { getProtectedEmail } from "@/lib/protected-email-action";
 
-type EntityType = "venue" | "profile" | "event";
+type EntityType = "venue" | "profile" | "event" | "community";
 
 const ERROR_MESSAGES: Record<string, string> = {
   rate_limited: "Too many requests from this network — try again tomorrow.",

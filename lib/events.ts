@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { safeExternalUrl } from "@/lib/url-safety";
+import { getEntityEmail } from "@/lib/entity-email";
 import {
   type EventListItem,
   type SegmentItem,
@@ -35,7 +36,7 @@ export type SupabaseEventRow = {
   address: { venue_name?: string } | null;
   lat: number | null;
   lng: number | null;
-  contact_email?: string | null;
+  has_email?: boolean | null;
   series_id?: string | null;
   series_order?: number | null;
   event_series?: { title: string } | null;
@@ -97,6 +98,11 @@ export type EventDetail = EventListItem & {
   primaryRegistrationUrl: string | null;
   startDateIso: string;
   endDateIso: string;
+  // I-165 F3: whether an address exists, for the reveal button. The address itself lives in
+  // entity_emails and is never fetched into a public render.
+  hasEmail: boolean;
+  // Populated only on the admin preview path (getEventDetailForAdmin), which is allowed to
+  // show it as plain text. Always null in public renders.
   contactEmail: string | null;
   level: string | null;
   language: string[];
@@ -377,7 +383,7 @@ function getTimezoneOffset(timezone: string, date: Date) {
 }
 
 const EVENT_DETAIL_COLUMNS =
-  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, image_credit, links, price, segments, venue_id, address, contact_email, series_id, series_order, status, level, language, discipline, event_series(title)";
+  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, image_credit, links, price, segments, venue_id, address, has_email, series_id, series_order, status, level, language, discipline, event_series(title)";
 
 // Shared by the public event page (RLS-gated client, RPC-scoped credits) and the admin
 // pending-event preview (service-role client, direct table reads) — same output shape either
@@ -476,7 +482,8 @@ async function buildEventDetail(
     venueName: venueData?.name ?? row.address?.venue_name ?? null,
     venueAddress: venueData?.address ?? null,
     venueSlug: venueData?.visibility === "public" ? (venueData.slug ?? null) : null,
-    contactEmail: row.contact_email ?? null,
+    hasEmail: Boolean(row.has_email),
+    contactEmail: null,
     level: row.level ?? null,
     language: row.language ?? [],
     primaryRegistrationUrl:
@@ -557,7 +564,17 @@ export async function getEventDetailForAdmin(eventId: string): Promise<EventDeta
     ...((organizersRes.data ?? []) as unknown as CreditRow[]).map(mapCredit("organizer")),
   ];
 
-  return buildEventDetail(eventRow as unknown as Record<string, unknown>, admin, creditedPeople as never);
+  const detail = await buildEventDetail(
+    eventRow as unknown as Record<string, unknown>,
+    admin,
+    creditedPeople as never,
+  );
+
+  // I-165 F3: the I-147 admin preview is the one screen allowed to render the address as
+  // plain text, so it is the one caller that reads it back out of entity_emails.
+  // buildEventDetail hands every other path contactEmail: null, and those go through the
+  // Turnstile-gated reveal instead.
+  return { ...detail, contactEmail: await getEntityEmail("event", eventId) };
 }
 
 export function parseEventSlug(value: string) {

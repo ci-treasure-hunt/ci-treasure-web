@@ -58,7 +58,8 @@ export type TeacherProfile = {
   country: string | null;
   is_nomadic: boolean;
   website: string | null;
-  public_email: string | null;
+  // I-165 F3: existence flag only; the address lives in entity_emails.
+  has_email: boolean;
   instagram: string | null;
   facebook: string | null;
   youtube: string | null;

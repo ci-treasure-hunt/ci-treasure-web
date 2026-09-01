@@ -338,7 +338,7 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                     {teacherLinks.map((row, i) => (
                       <SocialLink key={i} href={row.href} icon={row.icon} label={row.label} />
                     ))}
-                    {teacher.public_email && (
+                    {teacher.has_email && (
                       <RevealEmail entityType="profile" entityId={teacher.id} />
                     )}
                   </div>

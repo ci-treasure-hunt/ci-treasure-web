@@ -7,6 +7,7 @@ import { getKnownDisciplines, parseEventSlug } from "@/lib/events";
 import { eventRowToFormData } from "@/lib/organizer-events";
 import { createClient } from "@/lib/supabase/server";
 
+import { getEntityEmail } from "@/lib/entity-email";
 type SegmentDisplay = { title?: string; teachers?: Array<string | { name?: string }> };
 
 export default async function EditEventPage({
@@ -31,7 +32,7 @@ export default async function EditEventPage({
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, short_id, title, type, start_date, end_date, timezone, city, country, address, contact_email, venue_id, venues(id, name, city, country), description, image_url, level, language, features, discipline, cancelled, cancelled_text, price, links, segments, status, user_id",
+      "id, short_id, title, type, start_date, end_date, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, level, language, features, discipline, cancelled, cancelled_text, price, links, segments, status, user_id",
     )
     .ilike("short_id", parsed.shortId)
     .maybeSingle();
@@ -62,8 +63,13 @@ export default async function EditEventPage({
     redirect("/dashboard");
   }
 
+  // I-165 F3: read the address only after the authorization block above has passed, and fold it
+  // back under its old key so eventRowToFormData keeps working unchanged.
+  const contactEmail = await getEntityEmail("event", event.id);
+
   const initial = eventRowToFormData({
     ...event,
+    contact_email: contactEmail,
     address: typeof event.address === "object" ? (event.address as { venue_name?: string } | null) : null,
     venues: Array.isArray(event.venues) ? event.venues[0] ?? null : event.venues,
   });

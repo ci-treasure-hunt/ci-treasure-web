@@ -81,7 +81,8 @@ export type Venue = {
   website: string | null;
   imageUrl: string | null;
   imageCredit: string | null;
-  email: string | null;
+  // I-165 F3: existence flag only; the address lives in entity_emails.
+  has_email: boolean;
   newsletter: string | null;
   instagram: string | null;
   facebook: string | null;
@@ -120,7 +121,7 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
     website: data.website,
     imageUrl: data.image_url,
     imageCredit: data.image_credit ?? null,
-    email: data.email,
+    has_email: Boolean(data.has_email),
     newsletter: data.newsletter,
     instagram: data.instagram,
     facebook: data.facebook,

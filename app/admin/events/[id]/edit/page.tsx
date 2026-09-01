@@ -6,6 +6,7 @@ import {
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { getEntityEmail } from "@/lib/entity-email";
 export default async function AdminEditEventPage({
   params,
 }: {
@@ -19,7 +20,7 @@ export default async function AdminEditEventPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, title, type, status, start_date, end_date, timezone, city, country, address, contact_email, venue_id, venues(id, name, city, country), description, image_url, cancelled, cancelled_text, hide, price, links")
+        .select("id, title, type, status, start_date, end_date, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, cancelled, cancelled_text, hide, price, links")
         .eq("id", id)
         .single(),
       supabase
@@ -84,7 +85,7 @@ export default async function AdminEditEventPage({
     venueId: event.venue_id ?? null,
     venueLabel: venue ? `${venue.name} — ${venue.city}, ${venue.country}` : "",
     venueName: address?.venue_name ?? "",
-    contactEmail: event.contact_email ?? "",
+    contactEmail: (await getEntityEmail("event", event.id)) ?? "",
     description: event.description ?? "",
     imageUrl: event.image_url ?? "",
     cancelled: event.cancelled,

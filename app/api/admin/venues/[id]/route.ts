@@ -5,6 +5,7 @@ import { requireAdminRequestUser } from "@/lib/admin-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { geocodeAddress } from "@/lib/geocode";
 
+import { setEntityEmail } from "@/lib/entity-email";
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -68,7 +69,6 @@ export async function PUT(
         lng,
         description: String(payload.description ?? "").trim() || null,
         website: String(payload.website ?? "").trim() || null,
-        email: String(payload.email ?? "").trim() || null,
         newsletter: String(payload.newsletter ?? "").trim() || null,
         facebook: String(payload.facebook ?? "").trim() || null,
         instagram: String(payload.instagram ?? "").trim() || null,
@@ -85,6 +85,9 @@ export async function PUT(
       .eq("id", id);
 
     if (error) throw error;
+
+    // I-165 F3: address goes to entity_emails, not venues.email.
+    await setEntityEmail("venue", id, String(payload.email ?? ""));
 
     // Cached ISR pages (the /venues directory, this venue's own detail page, and any event
     // page linking to it) won't otherwise pick up an admin edit for up to an hour.

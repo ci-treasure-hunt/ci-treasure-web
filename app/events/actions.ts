@@ -20,6 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import tzlookup from "tz-lookup";
 
+import { setEntityEmail } from "@/lib/entity-email";
 type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string };
 
 // Columns written from the organizer form. Status is handled separately so an
@@ -29,14 +30,21 @@ type ActionResult = { success: boolean; error?: string; slug?: string; warning?:
 // timezone is resolved by the caller (auto-derived from lat/lng via tz-lookup when the
 // organizer leaves the dropdown blank, see createEvent/updateEvent) rather than read off
 // data.timezone directly.
-function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, timezone: string) {
-  // A bare email typed into a Links URL field ("cicopenhagen@gmail.com" instead of a website)
-  // is routed to contact_email instead of stored as a link — found live 2026-08-18, 3 of 4
-  // submissions from one organizer did this. `links` renders as a plain, public <a> tag on the
-  // event page; contact_email is Turnstile-gated + rate-limited (lib/protected-email-action.ts,
-  // email_reveal_log). Storing the email as a link would silently defeat that protection, so it
-  // only ever fills contact_email when that field was left blank — never overwrites a real one.
+// A bare email typed into a Links URL field ("cicopenhagen@gmail.com" instead of a website)
+// is routed to the protected email store instead of stored as a link — found live 2026-08-18, 3 of 4
+// submissions from one organizer did this. `links` renders as a plain, public <a> tag on the
+// event page; the address is Turnstile-gated + rate-limited (lib/protected-email-action.ts,
+// email_reveal_log). Storing the email as a link would silently defeat that protection, so it
+// only ever fills the address when that field was left blank — never overwrites a real one.
+//
+// I-165 F3: resolved separately from eventColumns, because the address no longer lives on the
+// events row. It goes to entity_emails via setEntityEmail once the row id is known.
+function resolveContactEmail(data: OrganizerEventFormData): string | null {
   const bareEmailInLinks = (data.linkItems ?? []).find((i) => BARE_EMAIL.test(i.url.trim()))?.url.trim();
+  return data.contactEmail.trim() || bareEmailInLinks || null;
+}
+
+function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, timezone: string) {
   return {
     title: data.title.trim(),
     type: data.type,
@@ -57,7 +65,6 @@ function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, tim
     cancelled_text: data.cancelled ? data.cancelledText.trim() || "" : null,
     price: normalizeJsonItems(parsePriceItems(data.priceItems ?? [])),
     links: normalizeJsonItems(parseLinkItems(data.linkItems ?? [])),
-    contact_email: data.contactEmail.trim() || bareEmailInLinks || null,
     // venue_id/address/lat/lng are resolved by the caller (createEvent/updateEvent) — a
     // linked venue takes its coordinates from the venues table and skips both the free-text
     // address and a redundant geocode.
@@ -138,6 +145,10 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   if (insertError || !inserted) {
     return { success: false, error: insertError?.message ?? "Could not create event." };
   }
+
+  // I-165 F3. Ownership is already established: this row was just inserted under this user's
+  // session and RLS.
+  await setEntityEmail("event", inserted.id, resolveContactEmail(data));
 
   // Link the organizer's profile as lead (roles are always 'lead').
   const { error: linkError } = await supabase.from("event_organizers").insert({
@@ -240,6 +251,10 @@ export async function updateEvent(
   if (!updated) {
     return { success: false, error: "You don't have permission to edit this event." };
   }
+
+  // I-165 F3. Only reached when the RLS-guarded update above actually matched a row, so the
+  // caller's permission to edit this event is already proven.
+  await setEntityEmail("event", updated.id, resolveContactEmail(data));
 
   revalidatePath("/dashboard");
   // Cached ISR pages (homepage list, this event's own detail page) won't

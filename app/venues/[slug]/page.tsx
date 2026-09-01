@@ -287,9 +287,9 @@ export default async function VenuePage({ params }: VenuePageProps) {
                     ? venueLinks.map((row, i) => (
                         <SocialLink key={i} href={row.href} icon={row.icon} label={row.label} />
                       ))
-                    : !venue.email && <p className="text-sm text-slate-500 italic">No links available.</p>
+                    : !venue.has_email && <p className="text-sm text-slate-500 italic">No links available.</p>
                   }
-                  {venue.email && <RevealEmail entityType="venue" entityId={venue.id} />}
+                  {venue.has_email && <RevealEmail entityType="venue" entityId={venue.id} />}
                 </div>
               </section>
             </aside>

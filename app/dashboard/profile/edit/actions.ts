@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
 
+import { setEntityEmail } from "@/lib/entity-email";
 export type ProfileUpdateData = {
   bio: string;
   city: string;
@@ -96,7 +97,6 @@ export async function updateProfile(data: ProfileUpdateData) {
     youtube:      nullIfEmpty(data.youtube),
     telegram:     nullIfEmpty(normalizeTelegram(data.telegram)),
     newsletter:   nullIfEmpty(data.newsletter),
-    public_email: nullIfEmpty(data.public_email),
     is_organizer: data.is_organizer || lockedOrganizer,
     is_teacher:   data.is_teacher || lockedTeacher,
     is_musician:  data.is_musician || lockedMusician,
@@ -108,13 +108,17 @@ export async function updateProfile(data: ProfileUpdateData) {
     .from("profiles")
     .update(normalizedData)
     .eq("user_id", user.id)
-    .select("slug")
+    .select("id, slug")
     .single();
 
   if (error) {
     console.error("Error updating profile:", error);
     return { success: false, error: error.message };
   }
+
+  // I-165 F3: the address lives in entity_emails, not profiles.public_email. The update above
+  // is scoped by .eq("user_id", user.id), so this only ever touches the caller's own profile.
+  await setEntityEmail("profile", updated.id, data.public_email);
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile/edit");

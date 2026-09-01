@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { resolveVenueLocation } from "@/lib/geocode";
 
+import { setEntityEmail } from "@/lib/entity-email";
 function normalizeJsonItems<T>(items: T[]) {
   return items.length ? { items } : null;
 }
@@ -85,7 +86,6 @@ export async function PUT(
         hide: Boolean(payload.hide),
         venue_id,
         address,
-        contact_email: payload.contactEmail || null,
         ...(lat != null && lng != null ? { lat, lng } : {}),
         price: normalizeJsonItems(parsePriceItems(payload.priceItems ?? [])),
         links: normalizeJsonItems(parseLinkItems(payload.linkItems ?? [])),
@@ -96,6 +96,10 @@ export async function PUT(
     if (updateError) {
       throw updateError;
     }
+
+    // I-165 F3: see the POST route. Passing null/empty deletes the row, so clearing the
+    // field in the admin form clears the stored address.
+    await setEntityEmail("event", id, payload.contactEmail ?? null);
 
     const { error: deleteTeachersError } = await supabase.from("event_teachers").delete().eq("event_id", id);
     if (deleteTeachersError) {

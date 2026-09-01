@@ -357,7 +357,7 @@ export function EventDetailView({
                         : "No public links added yet."}
                     </p>
                   )}
-                  {event.contactEmail ? (
+                  {event.hasEmail ? (
                     preview ? (
                       <div className="inline-flex items-center justify-between rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900">
                         {event.contactEmail}

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { resolveVenueLocation } from "@/lib/geocode";
 
+import { setEntityEmail } from "@/lib/entity-email";
 function normalizeJsonItems<T>(items: T[]) {
   return items.length ? { items } : null;
 }
@@ -69,7 +70,6 @@ export async function POST(request: NextRequest) {
         hide: Boolean(payload.hide),
         venue_id,
         address,
-        contact_email: payload.contactEmail || null,
         ...(lat != null && lng != null ? { lat, lng } : {}),
         price: normalizeJsonItems(parsePriceItems(payload.priceItems ?? [])),
         links: normalizeJsonItems(parseLinkItems(payload.linkItems ?? [])),
@@ -83,6 +83,11 @@ export async function POST(request: NextRequest) {
     if (error) {
       throw error;
     }
+
+    // I-165 F3: the address lives in entity_emails, which denies anon/authenticated, not in
+    // a column on the public events table. Admin auth for this route is already established
+    // above; setEntityEmail does no authorization of its own.
+    await setEntityEmail("event", data.id, payload.contactEmail ?? null);
 
     // Found live 2026-07-22: the create form already shows a Teachers/Organizers picker and
     // keeps selections in local state, but this route never persisted them — an admin who

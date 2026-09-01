@@ -3,6 +3,7 @@ import { createEmptyVenueFormData, type AdminVenueFormData } from "@/lib/admin-v
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { getEntityEmail } from "@/lib/entity-email";
 export default async function AdminEditVenuePage({
   params,
 }: {
@@ -15,7 +16,7 @@ export default async function AdminEditVenuePage({
   const { data: venue, error } = await supabase
     .from("venues")
     .select(
-      "id, name, slug, city, country, region, address, lat, lng, description, website, email, newsletter, facebook, instagram, youtube, image_url, image_credit, visibility, show_in_list, show_in_announce, announce_name, admin_notes",
+      "id, name, slug, city, country, region, address, lat, lng, description, website, newsletter, facebook, instagram, youtube, image_url, image_credit, visibility, show_in_list, show_in_announce, announce_name, admin_notes",
     )
     .eq("id", id)
     .single();
@@ -37,7 +38,7 @@ export default async function AdminEditVenuePage({
     lng: venue.lng != null ? String(venue.lng) : "",
     description: venue.description ?? "",
     website: venue.website ?? "",
-    email: venue.email ?? "",
+    email: (await getEntityEmail("venue", venue.id)) ?? "",
     newsletter: venue.newsletter ?? "",
     facebook: venue.facebook ?? "",
     instagram: venue.instagram ?? "",
