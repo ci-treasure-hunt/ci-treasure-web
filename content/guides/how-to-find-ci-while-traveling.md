@@ -52,30 +52,32 @@ CI communities do not all use the same messaging app, and the split is strongly 
 the difference between finding a jam and not finding one: turn up with only Telegram installed and
 you are locked out of most of Spain.
 
-The pattern below comes from the invite links in CI Treasure Hunt's own community records, as of
-August 2026.
+The lists below come from the invite links in CI Treasure Hunt's own community records. They say
+which apps CI groups actually use in a country, not which app that country uses generally, and
+those two aren't always the same thing.
 
-- **WhatsApp** leads in Spain (by about four to one over Telegram), the UK, Ireland, the
-  Netherlands, Belgium, India, Thailand, Greece, and essentially all of Latin America: Brazil,
-  Mexico, Argentina, Colombia, Costa Rica.
-- **Telegram** leads in Germany, Switzerland, and Ukraine. Germany is the clearest case, with
-  Telegram groups outnumbering WhatsApp ones about seven to one.
-- **Signal** is worth having for Germany especially, where it's the second most common option after
-  Telegram and some communities run Signal only. It also turns up in Austria, Denmark, France, and
-  the Netherlands.
-- **LINE** is what you need in Japan and Taiwan, where it's the default messenger for everything.
-  Thailand is the useful exception: LINE dominates the country at large, but CI there is organized
-  on WhatsApp, so don't switch apps on the country's account.
-- **WeChat** is what you need in mainland China, where WhatsApp has been blocked since 2017 and
-  Telegram is unreliable. We list very little in the region so far, but the app question is
-  settled well before the CI question.
-- **Portugal and France** are split. Portugal runs about evenly between WhatsApp and Telegram,
-  France three ways across WhatsApp, Telegram, and Signal. Check all of them.
+- **WhatsApp** appears in more countries than anything else we hold: Spain, the UK, Ireland, the
+  Netherlands, Belgium, Portugal, France, Germany, Austria, Italy, Greece, Finland, Israel, India,
+  Nepal, Thailand, Vietnam, South Korea, Australia, the United States, and across Latin America in
+  Brazil, Mexico, Argentina, Colombia, Costa Rica and Guatemala.
+- **Telegram**: Germany, Switzerland, Spain, France, Portugal, Finland, Ukraine, Russia, Georgia,
+  Kazakhstan, Egypt, India, Indonesia, Singapore, South Korea, Thailand, Australia and Uruguay.
+- **Signal**: Germany, Austria, the Netherlands, France and Denmark. Some German communities run
+  Signal and nothing else, so it's worth having if you're spending time there.
+- **LINE**: Japan and Thailand.
+- **WeChat**: mainland China, where WhatsApp has been blocked since 2017 and Telegram is
+  unreliable. We hold no Chinese group chat on file, so this one is about the country rather than
+  about our records.
+
+Notice how many countries appear in more than one list. That's the useful part. Spain, Germany,
+France, Portugal, Thailand, India and others run on two or three apps at once, and two groups in
+the same city can be on different ones. Install more than one and search all of them before
+concluding a place has nothing.
 
 Two honest caveats, since this is our own data and not a survey. It reflects the invite links we
 happen to have collected, and our coverage is uneven: we hold a lot for Spain and Germany and
-almost none for the United States, so a country missing from this list says more about us than
-about it. Some of these also rest on very few groups, so treat the pattern as a hint about what to
+almost none for the United States, so a country missing from these lists says more about us than
+about it. Several entries rest on a single group, so treat all of this as a hint about what to
 install, not as a measurement.
 
 Install what the region uses before you arrive, not after. Some invite links are region-locked or
