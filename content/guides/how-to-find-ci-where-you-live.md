@@ -6,7 +6,7 @@ keywords: ["how to find contact improvisation", "contact improvisation near me",
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # How to Find Contact Improvisation Where You Live
@@ -26,9 +26,12 @@ nearest large city, then to the region. The [full community list](/communities) 
 directly if your country is small, since you can take in the whole picture at once instead of
 guessing at city names.
 
-We currently list 274 communities across 68 countries. Coverage is real but very uneven: dense in
-parts of Europe, thin or absent across large parts of the world. If your country isn't there at
-all, that's useful information, not a failed search.
+We currently list {communityCount} communities across {communityCountries} countries. Coverage is
+real but very uneven: dense in some regions, thin or absent across large parts of the world.
+
+If your country isn't there at all, you've learned something useful, and you can also help. If you
+know of a group we don't list, anywhere, [send it to us](mailto:hello@citreasurehunt.com) and we'll
+add it. Most of what's on this site got here exactly that way.
 
 ## Why a listing can look dead when the scene isn't
 
@@ -36,7 +39,9 @@ This is the part that trips people up, and it's worth knowing before you conclud
 near you.
 
 Most listed communities have no upcoming event showing at any given moment. In our own data it's
-about 88 percent. Some of that is our coverage gap. The rest is more interesting: a weekly jam that
+about 88 percent. Part of that is us: the calendar carries multi-day events, so a group's weekly
+jam and local classes aren't in it even when we know the group well. The rest is more interesting:
+a weekly jam that
 has run every Tuesday for eleven years often isn't published as an "event" anywhere, because
 everyone who goes already knows. A quarter of the communities we list have no website, no Facebook
 group and no Instagram between them.
@@ -53,26 +58,25 @@ This is where the problem stops being about search and becomes social.
 you almost nothing about them. CI communities, especially small ones, open up to people who keep
 coming back.
 
-**Expect the scene to be an odd shape.** It might be one weekly jam and nothing else. It might be a
-teacher running a class that feeds an informal jam afterwards. It might be a few overlapping groups
-that don't entirely talk to each other. Ask people how it's organized; there's usually no single
-obvious answer.
+**Expect every scene to be organized differently.** It might be one weekly jam and nothing else. It
+might be a teacher running a class that feeds an informal jam afterwards. It might be a few
+overlapping groups that don't entirely talk to each other. Ask people how it works; there's usually
+no single obvious answer.
 
 **Go to classes, not only jams.** A jam teaches you by exposure. A class teaches you the specific
 skills, safe falling, rolling, taking weight, that make jams less overwhelming and less risky. If
 your scene has both, use both.
 
 The [jam etiquette guide](/guides/contact-improvisation-jam-etiquette) covers what a single visit
-looks like, including how to tell whether a given jam expects prior experience. This guide is about
-what happens after the fifth visit.
+looks like, including how to tell whether a given jam expects prior experience.
 
 ## What if there's no CI near you?
 
 This is the more common situation, and it has three real answers. None of them is "keep searching."
 
 **Check the nearest city, not only your own.** CI density clusters around regional hubs instead of
-spreading evenly, and 24 of the 68 countries we list have exactly one community in them. Someone in
-a smaller city often has a real if inconvenient option an hour or two away.
+spreading evenly, and in many of the countries we list there's only one community at all. Someone
+in a smaller city often has a real if inconvenient option an hour or two away.
 
 **Watch for traveling teachers.** Established CI teachers run workshops outside their home base
 regularly, sometimes annually in the same city. A one-off weekend workshop is worth going to even
@@ -81,8 +85,8 @@ when it isn't weekly practice, and it's frequently how a local group starts.
 **Consider starting something.** Smaller step than it sounds. Plenty of long-running jams began
 with two or three people who did a workshop together and kept meeting in a rented room. What it
 takes is a floor, a fixed time, and persistence for longer than feels reasonable. If you get
-something going, [tell us](/feedback) and we'll list it. That's how most of the communities on this
-site got here.
+something going, [email us](mailto:hello@citreasurehunt.com) and we'll list it. That's how most of
+the communities on this site got here.
 
 ## Going deeper: festivals and intensives
 

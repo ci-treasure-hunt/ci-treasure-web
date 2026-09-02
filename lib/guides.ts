@@ -3,6 +3,7 @@ import path from "path";
 import matter from "gray-matter";
 import { marked } from "marked";
 
+import { getSiteStats } from "@/lib/site-stats";
 import { SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
 
 // I-148. Same files-in-git approach as lib/content-pages.ts (/about, /faq): Jan writes and edits
@@ -59,6 +60,24 @@ async function readGuideFile(slug: string): Promise<string> {
 // the belt to that braces: a note that slips through would otherwise sit in the public HTML
 // source, readable by anyone who hits View Source. Mirrors stripEditorialNotes() in
 // content-pages.ts, which exists for the same reason.
+// Same {token} substitution content-pages.ts does for /about, and for the same reason: a guide
+// that writes "we list 274 communities" is stale the week after it's written, and nobody
+// remembers to go back and edit prose. Tokens are the two totals from getSiteStats() that guide
+// text actually quotes. Kept as a plain replace rather than a template engine, matching the
+// existing precedent.
+//
+// Any number a guide states that ISN'T one of these has to be written so it can't contradict a
+// live figure, which is why guide #14 says "many of the countries we list" instead of restating
+// the country total in a second, hardcoded place.
+async function interpolateStats(markdown: string): Promise<string> {
+  if (!/\{[a-zA-Z]+\}/.test(markdown)) return markdown;
+  const stats = await getSiteStats();
+  return markdown.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const value = stats[key as keyof typeof stats];
+    return value !== undefined ? String(value) : match;
+  });
+}
+
 function stripEditorialComments(markdown: string): string {
   return markdown.replace(/<!--[\s\S]*?-->\n*/g, "");
 }
@@ -173,7 +192,7 @@ export async function getGuide(slug: string): Promise<Guide | null> {
   try {
     const raw = await readGuideFile(slug);
     const { data, content } = matter(raw);
-    const cleaned = stripEditorialComments(content);
+    const cleaned = await interpolateStats(stripEditorialComments(content));
     const rendered = addHeadingIds(await marked.parse(cleaned));
     const { heading, body } = splitLeadingH1(rendered);
     const words = cleaned.split(/\s+/).filter(Boolean).length;
