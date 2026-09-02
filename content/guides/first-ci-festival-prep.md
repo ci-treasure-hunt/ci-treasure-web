@@ -6,7 +6,7 @@ keywords: ["contact improvisation festival packing list", "first CI festival", "
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # Preparing for Your First Contact Improvisation Festival
@@ -46,19 +46,8 @@ Check what's included before you book. A camping ticket usually means you bring 
 and the bedding yourself. Dorms are commonly bunks for six to eight people. Private rooms are the
 expensive tier and the one that sells out first.
 
-**On sleeping halls and late-night jams.** Festivals resolve this one of two ways, and it's worth
-knowing which yours does. Either the sleeping space is separate from the dance space, in which case
-the jam can run as late as it likes, or people sleep in the hall itself, in which case the jam ends
-at a civilized hour so they can. What you won't get is an all-night jam in the room you're sleeping
-in.
-
 Pricing is frequently sliding scale, meaning you're asked to pay what you can within a stated range
 instead of a single fixed number.
-
-On our own European listings, the cheapest ticket for a week-long festival, usually camping and
-all-inclusive, most often falls between about 200 and 370 euros, with the middle around 280. A long
-weekend runs nearer 120 to 180. Indoor accommodation costs more than the cheapest tier, and
-anything outside Europe varies too much to generalize from.
 
 Sliding scale isn't a sign the event is struggling financially. It's a deliberate choice to keep
 the door open to people at different income levels, and the honest thing is to pay what you
@@ -91,14 +80,15 @@ what the climate is.
 ### The CI-specific things
 
 - **Far more dance clothes than feels reasonable.** You'll sweat through one or two sets a day and
-  laundry access varies. Four or five full changes is normal for a week. Long sleeves and long
-  trousers at minimum, plus lighter options for warm halls.
+  laundry access varies. More than you would pack for any other kind of week away, and in a hot
+  hall people change mid-jam, so a set per session is not excessive. Long sleeves and long trousers
+  at minimum, plus lighter options for warm halls.
 - **A bar of laundry soap.** Sink washing is how most people get through a week, and it's the item
   people most often forget.
 - **Kneepads**, if you use them. Commonly encouraged, rarely required, and some festivals have
   spares.
 - **Socks**, including grippy dance socks if you have them, for cold floors.
-- **A refillable water bottle.** The festival will tell you this too, and you'll still be glad.
+- **A refillable water bottle.**
 
 ### If you're camping
 
@@ -108,14 +98,15 @@ what the climate is.
 
 ### If you're in a dorm or sleeping hall
 
-- **Earplugs and an eye mask.** Dorms are commonly six to eight people on bunks, on completely
-  different schedules from yours.
+- **Earplugs and an eye mask.** In a large sleeping hall people come and go all night, heading off
+  to dance or coming back from it, going to the toilet, arriving at three because the jam finally
+  wore them out. Nobody is being inconsiderate; that's just what a shared hall is.
 - **A small torch**, so you can find your things at night without lighting the whole room.
 - **A bag you can live out of.** Floor space is shared and gets chaotic fast.
 
 ### If the venue is cold
 
-Nordic festivals, and European ones in spring or autumn. Halls get heated for moving bodies, not
+Anywhere outside high summer, and plenty of places in it. Halls get heated for moving bodies, not
 for sitting still.
 
 - Layers for the gaps between sessions, and something dry to change into after one.
@@ -127,12 +118,12 @@ Asia, Latin America, and the warmer end of the European summer.
 
 - Light long sleeves and long trousers anyway. Covered skin is about sliding contact, not warmth.
 - Insect repellent, a mosquito net if you're camping, and rehydration salts.
-- Even more clothes than the four or five above. You'll go through them faster.
+- Even more clothes than you packed for a temperate venue. You'll go through them faster.
 
 ### Also worth having
 
-- **Something to eat between meals**, if you tend to run low on energy. Festival kitchens don't
-  always run on a schedule that matches a full day of movement.
+- **Something to eat between meals**, if you tend to run low on energy. Kitchens usually cook
+  around the schedule, but a full day of dancing burns through more than three meals allow for.
 - **A journal**, if you're someone who processes that way. Multi-day intensives surface a lot,
   physically and emotionally.
 - **Read what the festival sends you.** Organizers usually email a packing list and practical
@@ -154,8 +145,9 @@ this full.
 
 ## The social side
 
-You'll be around the same forty to two hundred people for days, which is a different situation from
-a jam where you might not see anyone again for a week. Two things follow that people don't expect.
+You'll be around the same people for days, anywhere from a few dozen at a small gathering to
+several hundred at a large one, which is a different situation from a jam where you might not see
+anyone again for a week. Two things follow that people don't expect.
 
 Relationships compress. You'll have danced with someone for twenty minutes before you know their
 name or what country they live in, and that produces a closeness running well ahead of the ordinary
@@ -166,12 +158,33 @@ And there's nowhere to go. Constant contact with limited alone time is the stand
 fatigue, except that here the contact is physical as well as social.
 
 Finding your own rhythm inside the group schedule matters more than it sounds. Stepping away from a
-meal, sitting out an evening jam, leaving a conversation early: all normal, all done constantly by
-people on their tenth festival, and none of it reads as antisocial.
+meal, sitting out an evening jam, going for a walk on your own, leaving a conversation early: all
+normal, all done constantly by people on their tenth festival, and none of it reads as antisocial.
 
 **Consent and etiquette work the same as at any jam**, just for longer and with less time to reset
 between dances. The [jam etiquette guide](/guides/contact-improvisation-jam-etiquette) still
 applies in full; nothing about a festival setting suspends it.
+
+## Sharing circles, and the part nobody warns you about
+
+Several days of close physical contact, little sleep and no ordinary distractions will bring things
+up. People find old patterns showing up in how they dance, or in who they avoid. Grief arrives
+without an obvious cause. A dance goes somewhere unexpectedly tender and you don't know what to do
+with it afterwards. Being briefly overwhelmed at a festival is common, and it isn't a sign you've
+done anything wrong or picked the wrong event.
+
+This is what **sharing circles** are for, and many festivals run them: a facilitated round, often at
+the start and end and sometimes daily, where people say where they are and are listened to without
+anyone fixing it. Some events run smaller standing groups instead, the same handful of people
+meeting each day, so that by day four you're talking to faces you know. Names vary, opening and
+closing circles, sharing rounds, sharing groups, and they show up on festival programs across
+Europe and the Americas alike.
+
+Go to them, particularly at your first festival. They're the community's own answer to the fact
+that this practice asks a lot of people, and they're much easier to walk into on day one than on
+day four when you actually need one. If your festival doesn't run any, the people to find are the
+organizers or the Consent Team, and a conversation with one teacher is worth more than sitting with
+it alone.
 
 ## If it's genuinely your first one
 
