@@ -42,3 +42,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Written by `next dev` on every start (node_modules/next/dist/server/lib/
+# generate-agent-files.js): AGENTS.md holds Next's own agent rules and CLAUDE.md
+# is an 11-byte "@AGENTS.md" import. Next suggests committing them; we don't,
+# because this repo is public and they read as project documentation without
+# being any. Nothing needs them at build or run time.
+AGENTS.md
+CLAUDE.md
