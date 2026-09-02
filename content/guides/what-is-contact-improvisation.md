@@ -6,7 +6,7 @@ keywords: ["what is contact improvisation", "contact improvisation for beginners
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # What Is Contact Improvisation?
@@ -17,8 +17,8 @@ improvising as they go, with no choreography and nobody leading.
 
 There's no routine to learn. What dancers track instead is physical: where the weight is, where the
 point of contact has moved to, what the next moment of balance or falling makes possible. It can
-look like a slow-motion wrestling match, an acrobatic duet, or two people barely touching, just
-listening to each other's balance. All of that is CI.
+look like two people rolling over and around each other along the floor, an acrobatic duet in the
+air, or two people barely touching, just listening to each other's balance. All of that is CI.
 
 ## The core idea: weight, not steps
 
@@ -32,9 +32,10 @@ place where you touch.**
 
 Ideas that come up constantly once you start:
 
-- **The point of contact.** Wherever you happen to be touching. It moves, continuously, and it
-  moves faster than you can plan for. Learning to stay with it, instead of deciding where it ought
-  to go next, is much of what early practice consists of.
+- **The point of contact.** Wherever you happen to be touching. It moves continuously, sometimes
+  quickly and sometimes so slowly it's barely traveling, and neither of you decides in advance
+  where it goes. Beginners are usually taught slowly for exactly that reason. Learning to stay with
+  it, instead of deciding where it ought to go next, is much of what early practice consists of.
 - **Weight-sharing.** Not touching someone but handing them some of your mass, and taking some of
   theirs. This is the part that feels unlike anything else, and it's why good teaching stays slow
   for a long time before anything leaves the ground.
@@ -70,8 +71,10 @@ Most people meet CI in one of three settings:
   people dance with whoever they end up beside.
 - **A class.** Taught and structured, and the place to pick up the things that are hard to learn
   passively: falling, rolling, giving and catching weight.
-- **A festival or intensive.** Several days of classes and jams together, often residential. More
-  CI in one week than a local scene gives you in months, which is why people travel for them.
+- **A [festival](/festivals) or [intensive](/intensives).** Several days of classes and jams
+  together, often residential. More CI in one week than most local scenes give you in months, which
+  is why people travel for them. Shorter [workshops](/workshops) do the same thing over a weekend,
+  and [retreats](/retreats) and [long jams](/long-jams) trade teaching for time on the floor.
 
 ## Is Contact Improvisation the same as dance improvisation?
 
@@ -127,16 +130,17 @@ room you're walking into.
 
 ## Where to find it
 
-CI is danced worldwide, but very unevenly. Europe has the densest concentration of regular jams,
-and large parts of the world have none at all, so working out which situation you're in is its own
-small research problem. [CI Treasure Hunt](/) maps active communities, jams, festivals, and
-teachers.
+CI is danced worldwide, but very unevenly. Some cities have had a weekly jam running for decades,
+and large regions have none at all, so working out which of those you're in is its own small
+research problem. [CI Treasure Hunt](/) maps active communities, jams, festivals, and teachers.
 
 Two guides cover the search itself. [Finding CI where you live](/guides/how-to-find-ci-where-you-live)
 is for building an ongoing local practice, including what to do when there's nothing nearby.
 [Finding CI while traveling](/guides/how-to-find-ci-while-traveling) is for the narrower problem of
 getting to this week's jam in a city you're passing through. If what you've found is a multi-day
-event, [first festival prep](/guides/first-ci-festival-prep) covers what those weeks are like.
+event, [first festival prep](/guides/first-ci-festival-prep) covers what those weeks are like. You
+can also browse everything upcoming by type: [festivals](/festivals), [workshops](/workshops),
+[intensives](/intensives), [retreats](/retreats) and [long jams](/long-jams).
 
 ---
 
