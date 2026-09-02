@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { SITE_URL } from "@/lib/site";
 import { getAllCountrySummaries } from "@/lib/country-pages";
+import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
 
 export const revalidate = 3600;
 
@@ -35,6 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${SITE_URL}/venues`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/teachers`, changeFrequency: "weekly", priority: 0.7 },
       { url: `${SITE_URL}/countries`, changeFrequency: "weekly", priority: 0.7 },
+      ...EVENT_TYPE_PAGES.map((t) => ({ url: `${SITE_URL}${t.path}`, changeFrequency: "weekly" as const, priority: 0.7 })),
       { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
       { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
       { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.4 },
@@ -73,6 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/venues`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/teachers`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/countries`, changeFrequency: "weekly", priority: 0.7 },
+    ...EVENT_TYPE_PAGES.map((t) => ({ url: `${SITE_URL}${t.path}`, changeFrequency: "weekly" as const, priority: 0.7 })),
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.4 },

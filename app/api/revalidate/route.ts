@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 
 import { buildEventSlug, slugify } from "@/lib/events";
 import { getCountryLabel } from "@/lib/event-display";
+import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
 
 // Called by a Supabase Database Webhook (pg_net trigger, see
 // supabase/migrations/*_revalidate_on_write.sql) whenever a row changes in events, profiles, or
@@ -43,6 +44,13 @@ export async function POST(request: NextRequest) {
       if (record?.short_id && record?.title) {
         revalidatePath(`/events/${buildEventSlug(record.short_id as string, record.title as string)}`);
       }
+      // I-167: the type-listing pages (/festivals etc.) read from the same events table as the
+      // homepage but are separate static routes, so they need the same on-write revalidation the
+      // homepage already gets here — without this they'd only refresh on the passive 1h ISR
+      // cycle. Revalidating all five on every events write (not just the changed row's type) is
+      // deliberately simple: type changes are rare, the operation is cheap, and old_record isn't
+      // reliably available to target just one.
+      for (const typePage of EVENT_TYPE_PAGES) revalidatePath(typePage.path);
       break;
     }
     case "profiles": {

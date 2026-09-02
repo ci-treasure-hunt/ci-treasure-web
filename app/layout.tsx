@@ -12,6 +12,7 @@ import ServiceWorkerRegistration from "@/components/service-worker-registration"
 import { SiteHeader } from "@/components/site-header";
 import { getAllCountrySummaries } from "@/lib/country-pages";
 import { getCountryLabelWithArticle } from "@/lib/event-display";
+import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
 import {
   FACEBOOK_URL,
   INSTAGRAM_URL,
@@ -110,6 +111,22 @@ export default async function RootLayout({
         <div className="min-h-screen">
           <SiteHeader />
           {children}
+          {/* I-167: separate from the country strip below on purpose, same reasoning as that
+              strip's own separation from the footer — this exists purely for crawl-and-link-equity
+              distribution to the type pages, appearing on every page, not a navigation menu. */}
+          <nav aria-label="Contact Improvisation events by type" className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-center sm:px-8 lg:px-10">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-500">
+              <span className="mr-2 font-medium text-slate-600">Browse by type:</span>
+              {EVENT_TYPE_PAGES.map((t, i) => (
+                <span key={t.type}>
+                  {i > 0 && <span className="mr-2 text-slate-300">|</span>}
+                  <Link href={t.path} className="hover:text-slate-800 hover:underline">
+                    {t.label}
+                  </Link>
+                </span>
+              ))}
+            </div>
+          </nav>
           {countryLinks.length > 0 && (
             <nav aria-label="Contact Improvisation by country" className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-center sm:px-8 lg:px-10">
               <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-500">
