@@ -140,16 +140,25 @@ export function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function mapAccent(type: string) {
+// Revised 2026-09-02 (I-167): festival/retreat/workshop originally all pivoted through nearly the
+// same dark teal mid-stop and read as near-duplicates side by side. Reassigned each to a distinct
+// association instead — festival: fire/sunset, retreat: forest/dawn, workshop: studio/paper — and
+// added intensive (heat/immersion) and long_jam (night/lamplight) so every type page gets its own
+// hero identity, not just a fallback to GENERIC_ACCENT_GRADIENT.
+export function mapAccent(type: string) {
   const palette: Record<string, string> = {
     festival:
-      "bg-[radial-gradient(circle_at_15%_20%,rgba(241,123,52,0.9),transparent_20%),linear-gradient(135deg,#17313b_0%,#0b6b73_48%,#f7b267_100%)]",
+      "bg-[radial-gradient(circle_at_15%_20%,rgba(255,140,90,0.45),transparent_22%),linear-gradient(135deg,#17313b_0%,#e0563a_52%,#ffcf5c_100%)]",
     retreat:
-      "bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.45),transparent_26%),linear-gradient(135deg,#255757_0%,#4d8f75_48%,#f6d8a8_100%)]",
+      "bg-[radial-gradient(circle_at_80%_20%,rgba(250,222,150,0.4),transparent_26%),linear-gradient(135deg,#1f4a3d_0%,#7a9c52_50%,#f6e2b8_100%)]",
     training:
       "bg-[radial-gradient(circle_at_50%_10%,rgba(255,255,255,0.3),transparent_22%),linear-gradient(135deg,#2d2748_0%,#875c52_52%,#f0c38e_100%)]",
     workshop:
-      "bg-[radial-gradient(circle_at_22%_18%,rgba(255,255,255,0.28),transparent_18%),linear-gradient(135deg,#3a425d_0%,#0f7c82_55%,#edd6a1_100%)]",
+      "bg-[radial-gradient(circle_at_22%_18%,rgba(255,255,255,0.3),transparent_18%),linear-gradient(135deg,#2f3550_0%,#5b6fa8_55%,#ede3cf_100%)]",
+    intensive:
+      "bg-[radial-gradient(circle_at_25%_15%,rgba(242,90,90,0.35),transparent_22%),linear-gradient(135deg,#2b0f1f_0%,#8c2f3a_50%,#f4a259_100%)]",
+    long_jam:
+      "bg-[radial-gradient(circle_at_75%_15%,rgba(255,255,255,0.3),transparent_24%),linear-gradient(135deg,#141b2e_0%,#2f4d6b_50%,#e2b26b_100%)]",
   };
 
   return palette[type] ?? GENERIC_ACCENT_GRADIENT;
@@ -363,6 +372,77 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
         error instanceof Error
           ? `Could not load public events: ${error.message}`
           : "Could not load public events.",
+    };
+  }
+}
+
+export type TypeListItem = EventListItem & {
+  // Set when this row represents a deduped recurring series (I-167) — the count of additional
+  // upcoming occurrences folded into this one row, so callers can render a "+N more dates" hint
+  // instead of listing the same series title repeatedly.
+  seriesExtraDates?: number;
+};
+
+// I-167: one row per type-listing page (/festivals, /workshops, /retreats, /intensives,
+// /long-jams). Deliberately its own query rather than a client-side filter of
+// getUpcomingEvents()'s payload — that's exactly the pattern the homepage's `?type=` filter is
+// excluded from search indexing for (filters live in client state, not in what got fetched), and
+// these pages exist specifically to be crawlable.
+export async function getEventsByType(type: string, today: string): Promise<{ events: TypeListItem[]; error: string | null }> {
+  if (!hasSupabaseEnv()) {
+    return {
+      events: [],
+      error: "Supabase environment variables are missing, so this listing cannot load yet.",
+    };
+  }
+
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from("events")
+      .select("id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, discipline, cancelled, series_id")
+      .eq("status", "published")
+      .eq("type", type)
+      .contains("discipline", ["contact_improvisation"])
+      .gte("end_date", today)
+      .order("start_date", { ascending: true });
+
+    if (error) {
+      return { events: [], error: `Could not load ${type} events: ${error.message}` };
+    }
+
+    const rows = (data ?? []) as (SupabaseEventRow & { series_id?: string | null })[];
+
+    // Dedupe recurring series (e.g. a monthly retreat with 8 upcoming occurrences) down to their
+    // next occurrence, so one series doesn't dominate a listing meant to show variety. Rows are
+    // already sorted by start_date, so the first row seen per series_id is the earliest — count
+    // how many total rows share that series_id first, then keep only that first one.
+    const seriesTotals = new Map<string, number>();
+    for (const row of rows) {
+      if (row.series_id) seriesTotals.set(row.series_id, (seriesTotals.get(row.series_id) ?? 0) + 1);
+    }
+
+    const seenSeries = new Set<string>();
+    const events: TypeListItem[] = [];
+    for (const row of rows) {
+      if (row.series_id) {
+        if (seenSeries.has(row.series_id)) continue;
+        seenSeries.add(row.series_id);
+      }
+      const event: TypeListItem = mapEventRow(row);
+      const total = row.series_id ? seriesTotals.get(row.series_id) ?? 1 : 1;
+      if (total > 1) event.seriesExtraDates = total - 1;
+      events.push(event);
+    }
+
+    return { events, error: null };
+  } catch (error) {
+    return {
+      events: [],
+      error:
+        error instanceof Error
+          ? `Could not load ${type} events: ${error.message}`
+          : `Could not load ${type} events.`,
     };
   }
 }
