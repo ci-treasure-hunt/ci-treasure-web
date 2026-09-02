@@ -6,7 +6,7 @@ keywords: ["contact improvisation glossary", "contact improvisation terminology"
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # Contact Improvisation Glossary
@@ -18,7 +18,7 @@ term by term, not read start to finish.
 
 **Principles and movement concepts** [Backspace](#backspace) · [Center-to-center](#center-to-center) · [Counterbalance](#counterbalance) · [Falling](#falling) · [Listening](#listening) · [Momentum](#momentum) · [Negative space](#negative-space) · [Off-balance](#off-balance) · [Point of contact](#point-of-contact) · [Reaching](#reaching) · [Release](#release) · [Score](#score) · [Small dance](#small-dance) · [Spirals](#spirals) · [Weight-sharing](#weight-sharing) · [Witnessing](#witnessing) · [Yielding](#yielding)
 
-**Formats and gatherings** [Contemplative Dance Practice (CDP)](#contemplative-dance-practice-cdp) · [Festival](#festival) · [Intensive](#intensive) · [Jam](#jam) · [Lab](#lab) · [Silent jam](#silent-jam) · [Underscore](#underscore)
+**Formats and gatherings** [Contemplative Dance Practice (CDP)](#contemplative-dance-practice-cdp) · [Festival](#festival) · [Intensive](#intensive) · [Jam](#jam) · [Lab](#lab) · [Silent festival](#silent-festival) · [Silent jam](#silent-jam) · [Underscore](#underscore)
 
 **Terms from adjacent practices** [Authentic Movement](#authentic-movement) · [Axis Syllabus](#axis-syllabus) · [Body-Mind Centering (BMC)](#body-mind-centering-bmc) · [Conscious dance](#conscious-dance) · [Material for the Spine](#material-for-the-spine) · [Partnering](#partnering) · [Somatic movement](#somatic-movement)
 
@@ -34,10 +34,10 @@ It asks for more listening and less prediction.
 ### Center-to-center
 
 Contact between the dancers' physical centers, the lower belly, sometimes called the *hara*,
-roughly where the body's center of mass sits. Bringing two centers close means one skeleton can
-carry the other, which is what makes weight transfer and lifting possible without muscling. Contact
-through limbs and surfaces alone leaves the weight out at arm's length, where it has to be pushed
-rather than carried.
+roughly where the body's center of mass sits. When two centers come close and the supporting
+skeleton is stacked underneath, weight travels through bone instead of being held by muscle. That
+is what makes carrying a full-grown adult possible without strength. The same weight offered at
+arm's length sits on a much longer lever and costs far more effort for the same result.
 
 ### Counterbalance
 
@@ -165,6 +165,11 @@ dancers from well beyond the local community.
 A multi-day or multi-week period of concentrated CI training, usually with a smaller and more
 consistent group than a festival. Depth over breadth.
 
+Intensives also run inside festivals. A festival may offer two or three in parallel: you choose one
+at the start and stay with it, and with its teachers, for the whole event, in a group that doesn't
+change, while other classes run alongside for everyone else. Some festivals run a morning and an
+evening intensive with different teachers and the same group of dancers.
+
 ### Jam
 
 An open, informal gathering where anyone present can dance with anyone else, usually with a
@@ -173,8 +178,24 @@ guiding the session. The most common entry point into a CI community.
 
 ### Lab
 
-Also called a research session. A more exploratory, less performance-oriented gathering focused on one physical question or theme.
-Often used by experienced practitioners, or by teachers developing new material.
+Also called a research session. A more exploratory, less performance-oriented gathering focused on
+one physical question or theme. Often used by experienced practitioners, or by teachers developing
+new material.
+
+Labs usually make room for talking, which is the clearest practical difference from a jam. Stopping
+to describe what just happened, or to agree on what to try next, is part of the form. The same
+conversation on a jam floor would often be felt as an intrusion.
+
+### Silent festival
+
+A multi-day CI event held in silence, either with no talking at all for its whole length or with
+speech confined to set times. The aim is a more meditative, internally directed practice, with
+what passes between dancers staying physical instead of verbal. These run in several countries.
+Some are structured festivals with classes, intensives and focus jams; others are retreats with no
+teaching at all, where facilitators only hold the space. Each event sets its own terms, including
+whether phones are put away for the duration.
+
+Not the same as a *silent jam*, which refers to the absence of music.
 
 ### Silent jam
 
@@ -184,9 +205,21 @@ sensation and each other. CI doesn't follow music the way most social dances do.
 
 ### Underscore
 
-A long-form structured jam developed by Nancy Stark Smith, moving participants through a sequence
-of named phases over several hours: arriving, small dance, solo movement, entering duets, resting,
-group sections, and more. It makes the usually invisible phases of a jam explicit and shared.
+A long-form score for improvisation developed by Nancy Stark Smith from the early 1990s, usually
+danced over three to four hours. It gives names, and a graphic symbol each, to more than twenty
+states a dancer can be in: settling and sensing gravity alone, circulating among others, entering
+and leaving contact duets, opening out into whole-group improvisation, resting, reflecting.
+
+The naming is the substance of it. Most of what the Underscore names goes on at any jam anyway,
+unnoticed and unspoken, and giving the states names lets a whole room recognize together where it
+is. Stark Smith described the score as the key to a map instead of the map itself, "instructions
+just cryptic enough to get you oriented". There is a broad arc from solo through group and back to
+rest, but it isn't a queue: dancers enter and leave states in their own time, and a state can come
+round again.
+
+It's practiced worldwide, and once a year near the northern summer solstice as the Global
+Underscore, danced for four hours simultaneously at 90 or more sites at once. Newcomers are
+normally talked through the score before taking part.
 
 ## Terms from adjacent practices
 
