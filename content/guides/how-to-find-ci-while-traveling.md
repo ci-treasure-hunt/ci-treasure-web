@@ -6,7 +6,7 @@ keywords: ["contact improvisation while traveling"]
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # How to Find Contact Improvisation While Traveling
@@ -33,8 +33,8 @@ So the practical answer is: don't search for venues. Find the community.
 
 ## Before you land
 
-**Start with a directory.** [CI Treasure Hunt](/) maps 274 CI communities across 68
-countries, plus upcoming festivals, jams, and teachers. Search the city you're going to, and if
+**Start with a directory.** [CI Treasure Hunt](/) maps {communityCount} CI communities across
+{communityCountries} countries, plus upcoming festivals, jams, and teachers. Search the city you're going to, and if
 nothing comes up, search the country. The nearest active scene is often one city over, and in
 smaller countries it may be the only one.
 
@@ -56,21 +56,26 @@ The pattern below comes from the invite links in CI Treasure Hunt's own communit
 August 2026.
 
 - **WhatsApp** leads in Spain (by about four to one over Telegram), the UK, Ireland, the
-  Netherlands, Belgium, India, Thailand, Greece, and essentially all of Latin America: Brazil,
-  Mexico, Argentina, Colombia, Costa Rica.
+  Netherlands, Belgium, India, Greece, and essentially all of Latin America: Brazil, Mexico,
+  Argentina, Colombia, Costa Rica.
 - **Telegram** leads in Germany, Switzerland, and Ukraine. Germany is the clearest case, with
   Telegram groups outnumbering WhatsApp ones about seven to one.
 - **Signal** is worth having for Germany especially, where it's the second most common option after
   Telegram and some communities run Signal only. It also turns up in Austria, Denmark, France, and
   the Netherlands.
-- **LINE** is what you need in Japan.
+- **LINE** is the default in Japan, Taiwan, and Thailand, where it is far bigger than WhatsApp or
+  Telegram. Our own Thai listings happen to carry WhatsApp links, so check both there.
+- **WeChat** is what you need in mainland China, where WhatsApp has been blocked since 2017 and
+  Telegram is unreliable. We list very little in the region so far, but the app question is
+  settled well before the CI question.
 - **Portugal and France** are split. Portugal runs about evenly between WhatsApp and Telegram,
   France three ways across WhatsApp, Telegram, and Signal. Check all of them.
 
 Two honest caveats, since this is our own data and not a survey. It reflects the invite links we
 happen to have collected, and our coverage is uneven: we hold a lot for Spain and Germany and
 almost none for the United States, so a country missing from this list says more about us than
-about it. And some of these are small numbers. Germany rests on 25 groups, Denmark on one.
+about it. Some of these also rest on very few groups, so treat the pattern as a hint about what to
+install, not as a measurement.
 
 Install what the region uses before you arrive, not after. Some invite links are region-locked or
 expire, which is easier to sort out while you still have reliable wifi.
@@ -103,8 +108,7 @@ translated for visitors, and if they aren't, saying so usually fixes it.
 - No jewelry. Rings and earrings are the usual injury culprits.
 - Kneepads if you already use them, though many jams have spares.
 - Small cash, as above.
-- Socks, for colder halls. Otherwise CI is danced barefoot and indoor shoes are almost never
-  needed.
+- Socks, for colder floors. Otherwise CI is danced barefoot.
 
 ## Timing a trip around events
 
