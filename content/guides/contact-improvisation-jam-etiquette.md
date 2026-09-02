@@ -6,13 +6,15 @@ keywords: ["contact improvisation etiquette", "contact improvisation first jam",
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # Contact Improvisation Jam Etiquette
 
-A jam has very few rules and quite a lot of norms. Nobody hands you a list at the door, which is
-why walking into your first one can feel like everyone knows something you don't.
+A jam has very few rules and quite a lot of norms. Some jams do publish theirs, on their website or
+posted by the door, and where they exist they're worth reading before you dance. Many don't, and
+the norms are simply absorbed, which is why walking into your first one can feel like everyone
+knows something you don't.
 
 Most of what follows is common across communities worldwide. Some of it varies, and where it
 varies, asking is the right move. Saying "I'm new here, how do you do things?" is normal at any
@@ -32,7 +34,7 @@ not a sign something is missing. Others have live music or a playlist.
 
 ## Before you walk in: the self-check
 
-One practical version of this, [used by Leipzig's jam](https://contactimpro-leipzig.de/), comes as
+One practical version of this, [used by Leipzig's jam](https://contactimpro-leipzig.de/img/consent-jam-guidelines-en.pdf), comes as
 four questions to ask yourself:
 
 - Is my body hygiene okay for others? Are my feet washed?
@@ -51,8 +53,8 @@ rule everywhere.
 
 What is close to universal: avoid zips, buckles, belts, and hard buttons, and take off rings,
 earrings, and watches. Jewelry is a common cause of the small injuries that happen at jams. Most dancers are
-barefoot, though socks are common too, especially in unheated European halls in winter, and some
-people wear grippy dance socks so they can still turn.
+barefoot, though socks are common too, especially when the floor is cold, and some people wear
+grippy dance socks so they can still turn.
 
 Bring small cash. Jams are often donation-based or a sliding scale, and card payment is rare.
 
@@ -129,10 +131,9 @@ or a concern. If one exists, it will usually be introduced at the start.
 
 The CI community has written far more about this than fits here.
 [Contact Improv Consent Culture](https://contactimprovconsentculture.com/), founded by Kathleen
-Rea, is the substantial resource on consent in CI specifically. Separately, Benjamin Pierce
-maintains [a compendium of jam guidelines from around the
-world](https://www.cis.upenn.edu/~bcpierce/ci/), which is where to look if you want to see how
-different communities have actually written this down. Reading a jam's own guidelines before a
+Rea, is the substantial resource on consent in CI specifically. It also publishes [a compendium of
+jam guidelines from around the world](https://contactimprovconsentculture.com/2017/12/27/a-compendium-of-ci-jam-guidelines-from-around-the-world/), an open document started by Benjamin Pierce, which is
+where to look if you want to see how different communities have written this down. Reading a jam's own guidelines before a
 first visit is a good habit.
 
 ## Sharing the space
@@ -156,12 +157,13 @@ attention is its own way of being in the jam.
 ## Things that don't belong in the jam space
 
 - **Phones and cameras.** Keeping phones out of the dance space is one of the more consistent norms
-  in CI, though like everything else it varies. Some jams write it into their guidelines,
-  [Leipzig's](https://contactimpro-leipzig.de/) among them; others simply expect it. Filming is the
+  in CI, though like everything else it varies. Some jams write it into their guidelines; others
+  simply expect it. Filming is the
   stricter case, and here there's no ambiguity anywhere: never photograph or film without explicit
   permission from everyone visible.
 - **Unsolicited teaching.** Philadelphia names extended teaching as inappropriate at a jam
-  alongside rehearsals. Offering corrections mid-dance, however well meant, is unwelcome. A jam is
+  alongside rehearsals. Offering corrections mid-dance, however well meant, is usually unwelcome, though there are
+teachers and long-time partners who will say a word mid-dance and mean it kindly, and it lands. A jam is
   not a class, and the person didn't ask.
 - **Extended conversation on the floor.** Speak briefly and quietly. Take longer social
   conversations to the hallway.
@@ -191,8 +193,8 @@ answers before you go.
 
 One view, closer to how the form was taught early on, is that a jam is for people who already have
 the physical skills to keep themselves and each other safe, and that beginners belong in classes
-first. The other, more common now, is that a jam is open to anyone willing to move carefully and
-say so. Plenty of jams state a preference in their listing.
+first. The other, which has grown more common over the years, is that a jam is open to anyone
+willing to move carefully and say so. Plenty of jams state a preference in their listing.
 
 So check before you go. If the listing says prior experience is expected, take that at face value.
 If it says nothing, ask. And if there's a beginner class or a beginner-friendly segment, that's the
@@ -220,9 +222,11 @@ carefully:
 - [Contact Improv Consent Culture](https://contactimprovconsentculture.com/) (Kathleen Rea), on
   consent in CI specifically
 - [Philadelphia Contact Improvisation, *Safety & Boundaries*](https://www.cis.upenn.edu/~bcpierce/ci/SafetyAndBoundaries.pdf)
-  (Benjamin Pierce), and his [compendium of jam guidelines from around the
-  world](https://www.cis.upenn.edu/~bcpierce/ci/)
-- [Contact Improvisation Leipzig, Consent-Jam Guidelines](https://contactimpro-leipzig.de/)
+  (Benjamin Pierce)
+- [A Compendium of CI Jam Guidelines from around the world](https://contactimprovconsentculture.com/2017/12/27/a-compendium-of-ci-jam-guidelines-from-around-the-world/),
+  an open document started by Benjamin Pierce, published by Contact Improv Consent Culture
+- [Contact Improvisation Leipzig, Consent-Jam Guidelines
+  (English)](https://contactimpro-leipzig.de/img/consent-jam-guidelines-en.pdf)
 - [East Coast CI Jam, Boundaries and Consent Guidelines](https://www.eastcoastjam.com/welcome/boundaries-and-consent-guidelines)
 - [Contact Improv Boston, Suggested Guidelines for Safety and Awareness at the Jam](https://contactimprovboston.com/image/safety_lf.pdf)
 
