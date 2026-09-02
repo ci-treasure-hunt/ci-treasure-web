@@ -56,15 +56,16 @@ The pattern below comes from the invite links in CI Treasure Hunt's own communit
 August 2026.
 
 - **WhatsApp** leads in Spain (by about four to one over Telegram), the UK, Ireland, the
-  Netherlands, Belgium, India, Greece, and essentially all of Latin America: Brazil, Mexico,
-  Argentina, Colombia, Costa Rica.
+  Netherlands, Belgium, India, Thailand, Greece, and essentially all of Latin America: Brazil,
+  Mexico, Argentina, Colombia, Costa Rica.
 - **Telegram** leads in Germany, Switzerland, and Ukraine. Germany is the clearest case, with
   Telegram groups outnumbering WhatsApp ones about seven to one.
 - **Signal** is worth having for Germany especially, where it's the second most common option after
   Telegram and some communities run Signal only. It also turns up in Austria, Denmark, France, and
   the Netherlands.
-- **LINE** is the default in Japan, Taiwan, and Thailand, where it is far bigger than WhatsApp or
-  Telegram. Our own Thai listings happen to carry WhatsApp links, so check both there.
+- **LINE** is what you need in Japan and Taiwan, where it's the default messenger for everything.
+  Thailand is the useful exception: LINE dominates the country at large, but CI there is organized
+  on WhatsApp, so don't switch apps on the country's account.
 - **WeChat** is what you need in mainland China, where WhatsApp has been blocked since 2017 and
   Telegram is unreliable. We list very little in the region so far, but the app question is
   settled well before the CI question.
