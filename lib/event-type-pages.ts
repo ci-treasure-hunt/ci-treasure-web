@@ -33,7 +33,7 @@ export const EVENT_TYPE_PAGES: EventTypePageConfig[] = [
     path: "/festivals",
     label: "Contact Improvisation Festivals",
     description:
-      "Discover Contact Improvisation festivals around the world: multi-day gatherings with many teachers, workshops, jams, and performances, kept up to date.",
+      "Contact Improvisation festivals worldwide: multi-day gatherings with many teachers, workshops, jams and often performances. Hand-researched, updated daily.",
     intro:
       "A festival brings together many teachers, workshops, jams, and often performances in one place, usually over several days. It's the widest way to experience Contact Improvisation with a large community, rather than a single class or teacher.",
     guide: {
@@ -46,7 +46,7 @@ export const EVENT_TYPE_PAGES: EventTypePageConfig[] = [
     path: "/workshops",
     label: "Contact Improvisation Workshops",
     description:
-      "Discover Contact Improvisation workshops around the world: focused, teacher-led classes from a single day to a weekend, hand-researched and kept up to date.",
+      "Find a Contact Improvisation workshop: focused, teacher-led classes running from a single day to a weekend, listed worldwide and researched by hand.",
     intro:
       "A workshop is a focused block of classes with one teacher or teaching team, typically a single day up to a weekend. It's the most common way to study a specific theme or technique without committing to a longer gathering.",
     guide: {
@@ -59,9 +59,9 @@ export const EVENT_TYPE_PAGES: EventTypePageConfig[] = [
     path: "/retreats",
     label: "Contact Improvisation Retreats",
     description:
-      "Discover Contact Improvisation retreats around the world: multi-day gatherings that pair practice with rest and nature, hand-researched and kept up to date.",
+      "Contact Improvisation retreats worldwide: residential gatherings that pair dancing with rest and reflection, at a slower pace than a festival. Updated daily.",
     intro:
-      "A retreat is a multi-day gathering, often at a residential venue away from daily life, that pairs Contact Improvisation practice with rest, nature, and reflection. Expect a slower, less densely scheduled pace than a festival or intensive.",
+      "A retreat is a multi-day gathering at a residential venue away from daily life, pairing Contact Improvisation with rest and reflection, and often set somewhere quiet. Expect a slower, less densely scheduled pace than a festival or intensive.",
     guide: {
       href: "/guides/first-ci-festival-prep",
       label: "First multi-day event? What to pack, and how to pace yourself",
@@ -72,9 +72,9 @@ export const EVENT_TYPE_PAGES: EventTypePageConfig[] = [
     path: "/intensives",
     label: "Contact Improvisation Intensives",
     description:
-      "Discover Contact Improvisation intensives around the world: multi-day deep-dives into a single theme with one teacher or team, kept up to date.",
+      "Contact Improvisation intensives worldwide: multi-day study with one teacher or team, working a single theme in depth. Hand-researched and updated daily.",
     intro:
-      "An intensive is a multi-day deep-dive into Contact Improvisation, usually led by one teacher or a small teaching team around a single theme, with a denser, more concentrated curriculum than a festival's mixed program.",
+      "An intensive is a multi-day deep-dive into Contact Improvisation, usually led by one teacher or a small teaching team around a single theme, going further into one thing than a festival's mixed program has room for.",
     guide: {
       href: "/guides/first-ci-festival-prep",
       label: "First multi-day event? What to pack, and how to pace yourself",
@@ -85,9 +85,9 @@ export const EVENT_TYPE_PAGES: EventTypePageConfig[] = [
     path: "/long-jams",
     label: "Contact Improvisation Long Jams",
     description:
-      "Discover Contact Improvisation long jams around the world: extended, teacher-free open dancing beyond a typical evening jam, kept up to date.",
+      "Contact Improvisation long jams worldwide: extended open dancing that runs well past an evening jam, sometimes for days. Hand-researched and updated daily.",
     intro:
-      "A long jam is an extended, teacher-free open dance that runs longer than a typical evening or weekly jam, often a full day or across several days. It's about practicing together, not being taught.",
+      "A long jam is an extended open dance that runs longer than a typical evening or weekly jam, often a full day or across several days. Some have a facilitator or an opening warm-up, but the point is practicing together rather than being taught.",
     guide: {
       href: "/guides/contact-improvisation-jam-etiquette",
       label: "What happens at a jam, and the etiquette that holds it together",
