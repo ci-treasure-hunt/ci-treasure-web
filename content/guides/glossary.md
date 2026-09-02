@@ -20,7 +20,7 @@ term by term, not read start to finish.
 
 **Formats and gatherings** [Contemplative Dance Practice (CDP)](#contemplative-dance-practice-cdp) · [Festival](#festival) · [Intensive](#intensive) · [Jam](#jam) · [Lab](#lab) · [Silent festival](#silent-festival) · [Silent jam](#silent-jam) · [Underscore](#underscore)
 
-**Terms from adjacent practices** [Authentic Movement](#authentic-movement) · [Axis Syllabus](#axis-syllabus) · [Body-Mind Centering (BMC)](#body-mind-centering-bmc) · [Conscious dance](#conscious-dance) · [Material for the Spine](#material-for-the-spine) · [Open Floor](#open-floor) · [Partnering](#partnering) · [Somatic movement](#somatic-movement)
+**Terms from adjacent practices** [Authentic Movement](#authentic-movement) · [Axis Syllabus](#axis-syllabus) · [Body-Mind Centering (BMC)](#body-mind-centering-bmc) · [Conscious dance](#conscious-dance) · [Material for the Spine](#material-for-the-spine) · [Partnering](#partnering) · [Somatic movement](#somatic-movement)
 
 ## Principles and movement concepts
 
@@ -265,13 +265,6 @@ community and isn't settled; this glossary doesn't take a position on it.
 Steve Paxton's own long-running movement research, developed after CI and studied by many CI
 teachers. It's solo work, not partner work, focused on the spine and pelvis and on fine internal
 sensation. Usually described as a companion practice to CI, not a part of it.
-
-### Open Floor
-
-A [conscious dance](#conscious-dance) practice founded in 2014 by four teachers who had worked
-with Gabrielle Roth for decades, after her death. Like 5Rhythms and Ecstatic Dance it's solo, led
-by music and a facilitator, and requires no contact with anyone else, which is what separates all
-three from CI. Named here because it turns up in the same listings and the same conversations.
 
 ### Partnering
 
