@@ -158,7 +158,7 @@ when you write, you are not writing to a support queue.
 - Facebook group, Europe / Middle East / Africa (weekend workshops and up): [facebook.com/groups/citreasurehuntemea](https://www.facebook.com/groups/citreasurehuntemea)
 - Instagram: [@citreasurehunt](https://www.instagram.com/citreasurehunt/)
 - Newsletter, monthly: [citreasurehunt.com/newsletter](/newsletter)
-- Something wrong on a page: [the feedback form](/feedback)
+- Something wrong on a page, or a listing to add: [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com)
 
 Corrections, missing events, and people telling me I have their festival's dates wrong are all
 welcome. The data is only as good as the people who bother to point at the broken parts.

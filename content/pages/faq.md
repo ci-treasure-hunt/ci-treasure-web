@@ -75,7 +75,7 @@ are not in it, deliberately: a recurring local jam changes venue, skips holidays
 summer schedule, and a directory kept from the outside is always weeks behind the truth on it.
 Local groups do that job better. What we list instead is the group itself, in
 [Communities](/communities), so you can find your jam by finding the people who run it. If your
-community is missing there, [send it in](/feedback).
+community is missing there, send it to [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com) and we will add it.
 
 **Can I buy tickets here?**
 No. We do not sell tickets, take payments, or handle registration. Every event page links to the
@@ -227,8 +227,7 @@ public post. Each listing is a summary that links back to the source. The rest i
 directly by organizers.
 
 **Something is wrong on a page.**
-[The feedback form](/feedback) or [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com).
-Corrections are welcome and they get made.
+Email [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com). Corrections are welcome and they get made.
 
 **Why do some community links ask me to prove I am human?**
 Some communities are reachable only through a private Telegram or WhatsApp invite link. Those are
