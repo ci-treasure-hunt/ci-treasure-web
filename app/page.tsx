@@ -145,6 +145,35 @@ export default async function Home() {
               studios, festivals, and open-air jams, as both a dance form and a somatic or
               movement research practice.
             </p>
+            {/* I-148: this section asks the pillar guide's exact question and answered it in one
+                paragraph with nothing to click. It is also the page most likely to outrank that
+                guide for "what is contact improvisation", so linking consolidates the two instead
+                of leaving them to compete. Highest-value inbound link the guide cluster has. */}
+            <p>
+              For the longer answer, see{" "}
+              <Link
+                href="/guides/what-is-contact-improvisation"
+                className="text-violet-600 underline underline-offset-4 hover:text-violet-800"
+              >
+                what Contact Improvisation is
+              </Link>
+              , what a first jam is actually like, and whether you need any dance experience. The{" "}
+              <Link
+                href="/guides/glossary"
+                className="text-violet-600 underline underline-offset-4 hover:text-violet-800"
+              >
+                glossary
+              </Link>{" "}
+              explains the vocabulary, and the rest of the{" "}
+              <Link
+                href="/guides"
+                className="text-violet-600 underline underline-offset-4 hover:text-violet-800"
+              >
+                guides
+              </Link>{" "}
+              cover finding a jam, festivals, and how CI differs from practices it gets confused
+              with.
+            </p>
           </div>
 
           <h2 className="mt-8 mb-4 font-serif text-2xl text-slate-950">About CI Treasure Hunt</h2>

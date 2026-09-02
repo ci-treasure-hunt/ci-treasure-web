@@ -38,16 +38,32 @@ export async function EventTypeListing({ config }: { config: EventTypePageConfig
               <p className="max-w-2xl text-white/90">{config.intro}</p>
             </div>
           </div>
-          {events.length > 0 && (
-            <div className="flex justify-start gap-8 bg-white px-6 py-4 text-sm font-medium text-slate-700 sm:px-8">
-              <span className="flex items-center gap-2">
-                <CalendarDays className="size-4 text-(--color-pine)" />
-                {events.length} upcoming {events.length === 1 ? "event" : "events"}
-              </span>
-              {countryCount > 0 && (
-                <span className="text-slate-500">
-                  in {countryCount} {countryCount === 1 ? "country" : "countries"}
-                </span>
+          {/* I-148: the guide link sits in this white bar rather than in the gradient hero, so the
+              hero stays one clean statement of what the type is, and so a link never has to be
+              styled against a colored background. The bar renders for the guide alone when there
+              are no events, which is exactly when a reader has least else to do here. */}
+          {(events.length > 0 || config.guide) && (
+            <div className="flex flex-col gap-2 bg-white px-6 py-4 text-sm font-medium text-slate-700 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+              {events.length > 0 && (
+                <div className="flex gap-8">
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="size-4 text-(--color-pine)" />
+                    {events.length} upcoming {events.length === 1 ? "event" : "events"}
+                  </span>
+                  {countryCount > 0 && (
+                    <span className="text-slate-500">
+                      in {countryCount} {countryCount === 1 ? "country" : "countries"}
+                    </span>
+                  )}
+                </div>
+              )}
+              {config.guide && (
+                <Link
+                  href={config.guide.href}
+                  className="font-normal text-(--color-pine) hover:underline"
+                >
+                  {config.guide.label} →
+                </Link>
               )}
             </div>
           )}
