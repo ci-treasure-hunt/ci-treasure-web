@@ -116,7 +116,7 @@ translated for visitors, and if they aren't, saying so usually fixes it.
 ## Timing a trip around events
 
 Multi-day events cluster seasonally, and they are worth planning around instead of stumbling into.
-The European festival season runs roughly April to October. July and August are the peak, and
+The European [festival](/festivals) season runs roughly April to October. July and August are the peak, and
 October is busier than people expect, close to level with high summer. The larger festivals sell
 out months ahead. Southeast Asia runs on
 the opposite cycle: the Thailand and wider Asia season falls in the northern winter, roughly

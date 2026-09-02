@@ -78,8 +78,8 @@ This is the more common situation, and it has three real answers. None of them i
 spreading evenly, and in many of the countries we list there's only one community at all. Someone
 in a smaller city often has a real if inconvenient option an hour or two away.
 
-**Watch for traveling teachers.** Established CI teachers run workshops outside their home base
-regularly, sometimes annually in the same city. A one-off weekend workshop is worth going to even
+**Watch for traveling teachers.** Established CI teachers run [workshops](/workshops) outside
+their home base regularly, sometimes annually in the same city. A one-off weekend workshop is worth going to even
 when it isn't weekly practice, and it's frequently how a local group starts.
 
 **Consider starting something.** Smaller step than it sounds. Plenty of long-running jams began
@@ -90,7 +90,9 @@ the communities on this site got here.
 
 ## Going deeper: festivals and intensives
 
-Once you have a regular local practice, the usual next step is a multi-day festival or intensive.
+Once you have a regular local practice, the usual next step is a multi-day
+[festival](/festivals) or [intensive](/intensives), or a [retreat](/retreats) if you want less
+teaching and more floor time.
 It's a different experience from a weekly jam: sustained practice over several days, usually with
 visiting teachers, usually with people from well beyond your own city.
 

@@ -20,6 +20,9 @@ Most of what follows is common across communities worldwide. Some of it varies, 
 varies, asking is the right move. Saying "I'm new here, how do you do things?" is normal at any
 jam in the world.
 
+If you're still looking for one, [browse the communities we list](/communities) to find the group
+that runs jams where you are. Multi-day jams are listed separately as [long jams](/long-jams).
+
 ## What happens at a jam
 
 A typical jam runs two to three hours and has a loose shape. People arrive, change, and warm up,

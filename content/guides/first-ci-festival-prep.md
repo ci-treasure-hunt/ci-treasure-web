@@ -16,7 +16,10 @@ usually with visiting teachers and mostly with people you've never met, and it t
 physically and socially demanding than anything a local scene prepares you for. None of that is a
 reason to skip it. It just helps to know what you're walking into.
 
-If you haven't found a festival yet, the [travel guide](/guides/how-to-find-ci-while-traveling)
+Every upcoming one we know of is listed under [festivals](/festivals), with
+[intensives](/intensives), [retreats](/retreats), [workshops](/workshops) and
+[long jams](/long-jams) alongside. If you haven't found one yet, the [travel
+guide](/guides/how-to-find-ci-while-traveling)
 covers that. This one assumes you've already registered for something.
 
 ## What does a day at a CI festival look like?
