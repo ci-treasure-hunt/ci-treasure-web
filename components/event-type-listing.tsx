@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
 import { EventCard } from "@/components/event-card";
@@ -57,9 +58,9 @@ export async function EventTypeListing({ config }: { config: EventTypePageConfig
         {!error && events.length === 0 && (
           <p className="text-slate-600">
             No upcoming {config.label.toLowerCase()} listed right now. Check back soon, or{" "}
-            <a href="/newsletter" className="underline hover:text-slate-800">
+            <Link href="/newsletter" className="underline hover:text-slate-800">
               subscribe to the newsletter
-            </a>{" "}
+            </Link>{" "}
             to hear about new ones.
           </p>
         )}
