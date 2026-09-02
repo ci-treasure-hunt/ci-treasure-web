@@ -20,7 +20,7 @@ term by term, not read start to finish.
 
 **Formats and gatherings** [Contemplative Dance Practice (CDP)](#contemplative-dance-practice-cdp) · [Festival](#festival) · [Intensive](#intensive) · [Jam](#jam) · [Lab](#lab) · [Silent festival](#silent-festival) · [Silent jam](#silent-jam) · [Underscore](#underscore)
 
-**Terms from adjacent practices** [Authentic Movement](#authentic-movement) · [Axis Syllabus](#axis-syllabus) · [Body-Mind Centering (BMC)](#body-mind-centering-bmc) · [Conscious dance](#conscious-dance) · [Material for the Spine](#material-for-the-spine) · [Partnering](#partnering) · [Somatic movement](#somatic-movement)
+**Terms from adjacent practices** [Authentic Movement](#authentic-movement) · [Axis Syllabus](#axis-syllabus) · [Body-Mind Centering (BMC)](#body-mind-centering-bmc) · [Conscious dance](#conscious-dance) · [Material for the Spine](#material-for-the-spine) · [Open Floor](#open-floor) · [Partnering](#partnering) · [Somatic movement](#somatic-movement)
 
 ## Principles and movement concepts
 
@@ -158,7 +158,7 @@ overlap in many communities and often share practitioners and venues.
 ### Festival
 
 A larger multi-day gathering combining classes, jams, and often performances, usually drawing
-dancers from well beyond the local community.
+dancers from well beyond the local community. See [upcoming festivals](/festivals).
 
 ### Intensive
 
@@ -168,13 +168,15 @@ consistent group than a festival. Depth over breadth.
 Intensives also run inside festivals. A festival may offer two or three in parallel: you choose one
 at the start and stay with it, and with its teachers, for the whole event, in a group that doesn't
 change, while other classes run alongside for everyone else. Some festivals run a morning and an
-evening intensive with different teachers and the same group of dancers.
+evening intensive with different teachers and the same group of dancers. See [upcoming
+intensives](/intensives).
 
 ### Jam
 
 An open, informal gathering where anyone present can dance with anyone else, usually with a
 warm-up period before open dancing begins. Typically leaderless, with no central instructor
-guiding the session. The most common entry point into a CI community.
+guiding the session. The most common entry point into a CI community. Multi-day jams are listed
+as [long jams](/long-jams).
 
 ### Lab
 
@@ -263,6 +265,13 @@ community and isn't settled; this glossary doesn't take a position on it.
 Steve Paxton's own long-running movement research, developed after CI and studied by many CI
 teachers. It's solo work, not partner work, focused on the spine and pelvis and on fine internal
 sensation. Usually described as a companion practice to CI, not a part of it.
+
+### Open Floor
+
+A [conscious dance](#conscious-dance) practice founded in 2014 by four teachers who had worked
+with Gabrielle Roth for decades, after her death. Like 5Rhythms and Ecstatic Dance it's solo, led
+by music and a facilitator, and requires no contact with anyone else, which is what separates all
+three from CI. Named here because it turns up in the same listings and the same conversations.
 
 ### Partnering
 

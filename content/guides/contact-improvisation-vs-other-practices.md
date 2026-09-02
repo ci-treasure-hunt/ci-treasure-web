@@ -6,7 +6,7 @@ keywords: ["contact improvisation vs 5rhythms", "contact improvisation vs ecstat
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-08-07
+updated: 2026-09-02
 ---
 
 # Contact Improvisation vs. Other Movement Practices
@@ -38,9 +38,11 @@ practice that happens to share contemporary dance's training lineage. Both views
 this guide doesn't take a side.
 
 Where they clearly differ is in what a session is for. A contemporary dance class teaches a
-technique, and the work is usually shaped into choreography for an audience. A CI jam has nothing
-set, nothing taught while it runs, and no audience unless someone has invited one. CI has no
-required technique class the way ballet or contemporary training does.
+technique, and the work is usually shaped into choreography, made to be shown. A jam is not made to
+be shown. People do sit at the side and watch, and watching is a real part of the practice rather
+than a break from it (see *witnessing* in the [glossary](/guides/glossary)), but they're watching
+dancers who aren't dancing for them. CI also has no required technique class the way ballet or
+contemporary training does.
 
 If you have a contemporary dance background you will find CI familiar in its use of weight and the
 floor, and unfamiliar in how little is decided in advance. If you have none, you have lost less
@@ -49,8 +51,8 @@ Improvisation](/guides/what-is-contact-improvisation) on why dance experience is
 matters most.
 
 **Dance improvisation** is the wider field both sit inside: movement made up in the moment rather
-than set in advance, with no requirement of contact or a partner. CI is one lineage within it. The
-[pillar guide](/guides/what-is-contact-improvisation) covers that distinction.
+than set in advance, with no requirement of contact or a partner. CI is one lineage within it. [What Is
+Contact Improvisation?](/guides/what-is-contact-improvisation) covers that distinction.
 
 ## Contact Improvisation vs. 5Rhythms
 
@@ -83,9 +85,9 @@ their own.
 CI has nothing equivalent as a movement-wide standard. Plenty of individual jams publish guidelines
 landing in similar territory, including on talking and phones (see the [jam etiquette
 guide](/guides/contact-improvisation-jam-etiquette)), but there's no central document, because
-there's no center. That difference is worth more than it looks: it's the same structural fact that
-makes CI hard to find in a new city, and it comes from the same decision not to institutionalize
-the form.
+there's no center. That absence has consequences well beyond etiquette: it's the same structural
+fact that makes CI hard to find in a new city, and it comes from the same decision not to
+institutionalize the form.
 
 The structural contrast is almost the same as with 5Rhythms: Ecstatic Dance is solo and
 music-driven, CI is partnered and doesn't need music at all (see *silent jam* in the
@@ -124,16 +126,20 @@ tango is as unplanned as a good CI duet.
 
 The difference is what they improvise *with*. Tango improvises by selecting and combining from a
 large shared vocabulary of steps, within a fixed embrace and a fixed lead and follow structure. CI
-has no vocabulary to select from, no fixed embrace, and no roles. Take the steps away from tango
-and there is nothing left to dance; take them away from CI and nothing changes, because they were
-never there.
+has no vocabulary to select from, no fixed embrace, and no roles. A tango dancer improvises by
+choosing among things they know; a CI dancer improvises with weight and momentum as they arrive.
 
-There is a real, if small, fusion practice worth knowing about: usually called **Contact Tango** or
-**Contango**, it explores what happens when tango's embrace meets CI's improvisational, rolling
-point of contact. Teachers in Germany have been developing it since the early 2000s, and it has its
-own workshops and at least one dedicated festival. It stays much smaller than an established
-practice with its own worldwide community, the way CI, 5Rhythms, or AcroYoga each have. Worth seeking out if the combination interests you,
-but not something you'll find in most cities.
+There is a fusion practice worth knowing about, which goes by several names: **Contango**,
+**Contact Tango** and **Contactango** are all in use, along with spellings like ConTango and
+ContacTango. It explores what happens when tango's embrace meets CI's improvisational, rolling
+point of contact, and it typically drops tango's fixed lead and follow so that both dancers do
+both.
+
+Teachers have been developing it since the mid-2000s, with regular workshops, practicas and at
+least one dedicated multi-day festival. German-speaking Europe is where it's easiest to find, and
+there are teachers and researchers working on it elsewhere too, including in Argentina and Italy.
+It's a smaller scene than either of the practices it draws on, so it's worth looking for
+deliberately instead of expecting to come across it.
 
 ## Contact Improvisation vs. Zouk
 
@@ -144,19 +150,16 @@ follow structure, is always danced to music, and works from a learned vocabulary
 movement, and body waves within a close embrace.
 
 The core difference is the same shape as with tango: Zouk has fixed roles and a vocabulary you
-learn and repeat, structure CI simply doesn't work with. But the two communities overlap more than
-most of the practices on this page. Zouk has several newer branches, and the ones usually grouped
-as **Modern Zouk** draw openly on contact improvisation, contemporary dance and somatic practice
-for a more expansive, less pattern-bound movement quality. Zouk dancers are precise about which
-branch is which, so it's worth asking instead of assuming. Either way it's common to find dancers,
-and teachers, who move between Zouk and CI, and CI festivals occasionally host Zouk-adjacent
-workshops as a result.
+learn and repeat, structure CI simply doesn't work with. Zouk has several newer branches, though,
+and the ones usually grouped as **Modern Zouk** draw openly on contact improvisation, contemporary
+dance and somatic practice for a more expansive, less pattern-bound movement quality. Zouk dancers
+are precise about which branch is which, so it's worth asking instead of assuming.
 
 ## Practices CI dancers also do
 
-The practices above are alternatives: you would pick one or the other. This next group is
-different. CI dancers commonly train in these as well, and they appear on CI festival programs
-more often than most of what's on this page.
+The practices above are the ones people usually weigh against CI when deciding what to try. This
+next group sits differently. CI dancers commonly train in these as well, and they appear on CI
+festival programs more often than most of what's on this page.
 
 **Somatic movement** is the broad label for practices working from internal sensation and attention
 instead of from a shape to achieve: Feldenkrais, Alexander Technique, Continuum and others. It's
@@ -176,21 +179,33 @@ contact improviser from the 1980s New York scene, which goes a long way toward e
 overlap. It isn't a dance form and isn't a style of CI; it's a framework for understanding how
 bodies move, and it's commonly taught alongside CI, not as an alternative to it.
 
-**Authentic Movement**, built on a mover and a witness, shares vocabulary with CI (see *witnessing*
-in the [glossary](/guides/glossary)) and shares a lot of practitioners, without being a partner
-practice at all.
+**Authentic Movement** pairs a mover, who dances with the eyes closed and follows whatever impulse
+arrives, with a witness, who watches without directing and afterwards speaks about what they saw in
+themselves while watching. It grew out of Mary Starks Whitehouse's work in the 1950s and was
+developed further by Janet Adler. It isn't a partner practice and involves no contact, but the
+witnessing half of it has fed CI directly: the word *witnessing* means much the same thing at a
+jam, where sitting out and watching is understood as participation (see the
+[glossary](/guides/glossary)). Many teachers work in both.
 
-**Butoh**, the postwar Japanese form, has no lineage connection to CI at all, but a noticeable
-number of CI teachers also work in it, and it turns up on European festival programs. The common
-ground is an interest in movement driven by internal image and sensation rather than by steps.
+**Butoh** emerged in Japan in the late 1950s, with Tatsumi Hijikata and Kazuo Ohno, and developed
+entirely separately from CI. What it shares is a way of working: movement driven by internal image
+and sensation instead of by steps, often very slow, and unconcerned with looking like dancing. A
+number of CI teachers also work in butoh, and it appears on European CI festival programs, usually
+as a morning practice or a single workshop rather than a strand of its own.
 
-None of these fit the comparison table below, because they aren't answering the same question. You
-don't pick between CI and somatics the way you might pick between CI and AcroYoga.
+One practical difference between this group and the practices above: several of them are
+trademarked, with training that leads to a certificate. 5Rhythms and Body-Mind Centering are both
+registered marks with their own teacher certification, and AcroYoga teachers are certified by the
+organizations that teach it. CI has none of that. Anyone can call themselves a CI teacher, which
+is a direct result of the 1970s decision not to trademark the form. It means a certified 5Rhythms
+teacher has met a defined standard, and that judging a CI teacher is on you.
 
 ## Quick comparison
 
-All six are improvised in the sense that nothing is choreographed in advance. What differs is
-whether there's a set vocabulary to improvise from.
+Every practice here except contemporary dance is improvised in the sense that nothing is set in
+advance. What differs between them is whether there's a vocabulary to improvise from, and whether
+anyone is required to touch. Contemporary dance is in the table because people ask, but it's the
+one that's usually choreographed.
 
 | Practice | Partner required | Music required | Fixed roles | Set vocabulary |
 |---|---|---|---|---|
@@ -206,17 +221,17 @@ whether there's a set vocabulary to improvise from.
 
 - Physical contact and real weight: CI or AcroYoga.
 - Free movement without touch: 5Rhythms or Ecstatic Dance.
-- A vocabulary to learn and then improvise with: tango or Zouk.
-- Improvisation with no vocabulary at all: CI, which is unusual among widely practiced partner
-  forms.
+- A vocabulary to learn and then improvise with: Tango or Zouk.
+- A partner dance with nothing to learn first: CI, which is close to alone in that.
 
 They're not competitors for the same time slot in most people's lives. It's common to find dancers
 who do two or three of these regularly, and communities in the same city often share venues,
 teachers, and dancers across all of them.
 
 You'll also see several of these grouped under the umbrella term *conscious dance*, which the
-[glossary](/guides/glossary) covers. It's a useful label for 5Rhythms, Ecstatic Dance, and Open
-Floor. Whether CI belongs under it is a question CI communities answer differently, and this guide
+[glossary](/guides/glossary) covers. It's a useful label for 5Rhythms, Ecstatic Dance, and **Open
+Floor**, the last of these founded in 2014 by four long-time 5Rhythms teachers and structurally
+much like the other two: solo, music-led, no contact required. Whether CI belongs under it is a question CI communities answer differently, and this guide
 doesn't settle it either.
 
 ---
