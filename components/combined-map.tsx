@@ -7,6 +7,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import type { CountryMapMarker } from "@/lib/country-pages";
+import { escapeHtml } from "@/lib/utils";
 
 const TYPE_COLOR: Record<CountryMapMarker["type"], string> = {
   event: "#6834b2", // matches the existing event-map marker color
@@ -102,13 +103,15 @@ export default function CombinedMap({ markers }: CombinedMapProps) {
           }
         });
 
+        // bindPopup renders its argument as raw HTML — marker.title is organizer-submitted
+        // free text, so it MUST go through escapeHtml (same rationale as map.tsx).
         const popupContent = `
           <div class="p-2 space-y-1.5 font-sans text-slate-900 max-w-64 min-w-56">
             <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase" style="background:${color}22;color:${color}">
               ${TYPE_LABEL[marker.type]}
             </span>
-            <h4 class="font-serif text-base font-bold leading-tight text-slate-950">${marker.title}</h4>
-            <a href="${marker.href}" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition inline-block pt-1">
+            <h4 class="font-serif text-base font-bold leading-tight text-slate-950">${escapeHtml(marker.title)}</h4>
+            <a href="${escapeHtml(marker.href)}" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition inline-block pt-1">
               Details page &rarr;
             </a>
           </div>

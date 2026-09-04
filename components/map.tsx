@@ -10,6 +10,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import { formatEventDateRange, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
+import { escapeHtml } from "@/lib/utils";
 
 // Standard fix for Leaflet default icon markers in Next.js/Webpack environment
 const fixLeafletIcons = () => {
@@ -196,22 +197,26 @@ export default function EventMap({ events, highlightedEventId, onMarkerClick, on
           ? "bg-pink-500 text-white"
           : "bg-violet-100 text-violet-700";
 
+      // bindPopup renders its argument as raw HTML — every user-controlled value below
+      // (title, city, type via getTypeLabel's unknown-value fallback) MUST go through
+      // escapeHtml, or a submitted event can execute script in this origin for every
+      // visitor who opens the popup.
       const popupContent = `
         <div class="p-2 space-y-2 font-sans text-slate-900 max-w-64 min-w-56">
           <div class="flex items-center gap-1.5">
             <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase ${badgeColor}">
-              ${badgeText}
+              ${escapeHtml(badgeText)}
             </span>
           </div>
-          <h4 class="font-serif text-base font-bold leading-tight text-slate-950">${event.title}</h4>
+          <h4 class="font-serif text-base font-bold leading-tight text-slate-950">${escapeHtml(event.title)}</h4>
           <p class="text-xs text-slate-500 flex items-center gap-1">
-            <span>📍</span> ${event.city}, ${getCountryLabel(event.country)}
+            <span>📍</span> ${escapeHtml(event.city)}, ${escapeHtml(getCountryLabel(event.country))}
           </p>
           <p class="text-xs text-slate-600 flex items-center gap-1">
-            <span>📅</span> ${formatEventDateRange(event)}
+            <span>📅</span> ${escapeHtml(formatEventDateRange(event))}
           </p>
           <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between">
-            <a href="${eventHref}" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition flex items-center gap-1">
+            <a href="${escapeHtml(eventHref)}" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition flex items-center gap-1">
               Details page &rarr;
             </a>
           </div>

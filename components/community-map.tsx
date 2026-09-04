@@ -10,6 +10,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import { type Community } from "@/lib/communities";
+import { escapeHtml } from "@/lib/utils";
 
 // Standard fix for Leaflet default icon markers in Next.js/Webpack environment
 const fixLeafletIcons = () => {
@@ -160,19 +161,21 @@ export default function CommunityMap({ communities, highlightedCommunityId, onMa
       const badgeText = community.type || "Community";
       const badgeColor = "bg-violet-100 text-violet-700";
 
+      // bindPopup renders its argument as raw HTML — every user-controlled value below
+      // MUST go through escapeHtml (same rationale as map.tsx).
       const popupContent = `
         <div class="p-2 space-y-2 font-sans text-slate-900 max-w-64 min-w-56">
           <div class="flex items-center gap-1.5">
             <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase ${badgeColor}">
-              ${badgeText}
+              ${escapeHtml(badgeText)}
             </span>
           </div>
-          <h4 class="font-serif text-base font-bold leading-tight text-slate-950">${community.name}</h4>
+          <h4 class="font-serif text-base font-bold leading-tight text-slate-950">${escapeHtml(community.name)}</h4>
           <p class="text-xs text-slate-500 flex items-center gap-1">
-            <span>📍</span> ${community.city}${community.city && community.country ? ", " : ""}${community.country}
+            <span>📍</span> ${escapeHtml(community.city)}${community.city && community.country ? ", " : ""}${escapeHtml(community.country)}
           </p>
           <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between">
-            <a href="/communities/${community.slug}" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition flex items-center gap-1">
+            <a href="/communities/${encodeURIComponent(community.slug)}" class="text-xs font-semibold text-violet-600 hover:text-violet-800 transition flex items-center gap-1">
               View details &rarr;
             </a>
           </div>
