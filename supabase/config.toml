@@ -388,6 +388,12 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # production. `supabase functions deploy` defaults to TRUE, so without these entries the next
 # routine deploy would silently start rejecting the trigger's calls and announcements would stop
 # firing, with no error surfaced anywhere in the app.
+#
+# Security review 2026-09-05: verify_jwt = false made them callable by anyone on the internet,
+# so all three now check Authorization: Bearer <service-role key> in code (like
+# cleanup-tg-messages), and their triggers send that header via pg_net + the Vault-reserved
+# service_role_key secret (migration 20260905100000) — supabase_functions.http_request cannot
+# attach an Authorization header. Keep verify_jwt = false; the bearer check is the gate.
 [functions.announce-event]
 verify_jwt = false
 

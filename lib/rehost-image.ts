@@ -37,33 +37,98 @@ function isOwnBucketUrl(url: string): boolean {
 // form, server-side, with no allowlist — before this, an attacker-controlled URL like
 // http://169.254.169.254/latest/meta-data/ or http://localhost:<internal-port>/... would be
 // fetched by our server exactly like any other image link. Blocks loopback/private/
-// link-local ranges by IP, checked both on a literal IP in the URL and on the hostname's
-// resolved DNS result (a plain hostname can point at an internal address just as easily).
+// link-local ranges by IP, checked both on a literal IP in the URL (brackets stripped, so
+// http://[::1]/ can't slip past isIP) and on every address the hostname's DNS lookup returns
+// (a hostname can have mixed public/private A/AAAA records). IPv4-mapped IPv6
+// (::ffff:169.254.169.254, incl. hex and expanded forms) and NAT64 (64:ff9b::/96) are
+// unwrapped and checked as IPv4 — the first version of this guard treated them as public IPv6.
 // Not a complete fix for DNS-rebinding (the IP is re-resolved by fetch() itself, not pinned
 // to the address checked here) — acceptable for this app's threat model, but worth knowing
 // if this ever needs to be airtight.
-function isPrivateIp(ip: string): boolean {
-  const version = isIP(ip);
+export function isPrivateIp(ip: string): boolean {
+  const cleanIp = ip.replace(/^\[|\]$/g, "").trim().toLowerCase();
+  const version = isIP(cleanIp);
   if (version === 4) {
-    const [a, b] = ip.split(".").map(Number);
-    if (a === 127) return true; // loopback
-    if (a === 10) return true; // private
-    if (a === 172 && b >= 16 && b <= 31) return true; // private
-    if (a === 192 && b === 168) return true; // private
-    if (a === 169 && b === 254) return true; // link-local, incl. cloud metadata (169.254.169.254)
-    if (a === 0) return true;
+    const parts = cleanIp.split(".").map(Number);
+    if (parts.length !== 4 || parts.some((n) => isNaN(n) || n < 0 || n > 255)) return true;
+    const [a, b, c] = parts;
+    if (a === 0) return true; // 0.0.0.0/8
+    if (a === 10) return true; // 10.0.0.0/8 private
+    if (a === 127) return true; // 127.0.0.0/8 loopback
+    if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local / cloud metadata (169.254.169.254)
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12 private
+    if (a === 192 && b === 168) return true; // 192.168.0.0/16 private
+    if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT / cloud internal
+    if (a === 192 && b === 0 && c === 0) return true; // 192.0.0.0/24 IETF Protocol Assignments
+    if (a === 192 && b === 0 && c === 2) return true; // 192.0.2.0/24 TEST-NET-1
+    if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15 benchmarking
+    if (a === 198 && b === 51 && c === 100) return true; // 198.51.100.0/24 TEST-NET-2
+    if (a === 203 && b === 0 && c === 113) return true; // 203.0.113.0/24 TEST-NET-3
+    if (a >= 224) return true; // 224.0.0.0/4 multicast & reserved
     return false;
   }
   if (version === 6) {
-    const lower = ip.toLowerCase();
-    if (lower === "::1") return true; // loopback
-    if (lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) return true; // link-local / unique-local
+    if (cleanIp === "::" || cleanIp === "::1" || cleanIp === "0:0:0:0:0:0:0:0" || cleanIp === "0:0:0:0:0:0:0:1") return true; // unspecified and loopback
+
+    // Unwrap an embedded IPv4 tail — dotted ("169.254.169.254") or hex ("a9fe:a9fe") — and
+    // check it as IPv4. Used by both the v4-mapped and the NAT64 branches below.
+    const embeddedV4 = (rawTail: string): boolean => {
+      // A compressed "::" boundary leaves a stray leading colon on the tail ("64:ff9b::1.2.3.4").
+      const tail = rawTail.replace(/^:+/, "");
+      if (isIP(tail) === 4) {
+        return isPrivateIp(tail);
+      }
+      const hexParts = tail.split(":");
+      if (hexParts.length === 2) {
+        const p1 = parseInt(hexParts[0], 16);
+        const p2 = parseInt(hexParts[1], 16);
+        if (!isNaN(p1) && !isNaN(p2) && p1 <= 0xffff && p2 <= 0xffff) {
+          const a = (p1 >> 8) & 0xff;
+          const b = p1 & 0xff;
+          const c = (p2 >> 8) & 0xff;
+          const d = p2 & 0xff;
+          return isPrivateIp(`${a}.${b}.${c}.${d}`);
+        }
+      }
+      return true; // unrecognized tail — fail closed
+    };
+
+    // IPv4-mapped IPv6 (::ffff:x.x.x.x or 0:0:0:0:0:ffff:x.x.x.x or hex form)
+    if (cleanIp.startsWith("::ffff:") || cleanIp.startsWith("0:0:0:0:0:ffff:")) {
+      return embeddedV4(cleanIp.replace(/^(::ffff:|0:0:0:0:0:ffff:)/i, ""));
+    }
+
+    // IPv4-compatible IPv6 (::x.x.x.x)
+    if (cleanIp.startsWith("::") && cleanIp.includes(".")) {
+      const v4Part = cleanIp.slice(2);
+      if (isIP(v4Part) === 4) {
+        return isPrivateIp(v4Part);
+      }
+    }
+
+    // fe80::/10 link-local (fe8, fe9, fea, feb)
+    if (/^fe[89ab]/i.test(cleanIp)) return true;
+    // fc00::/7 unique local (fc, fd)
+    if (cleanIp.startsWith("fc") || cleanIp.startsWith("fd")) return true;
+    // 64:ff9b::/96 (IPv4/IPv6 translation, incl. the hex form a DNS64 resolver returns)
+    if (cleanIp.startsWith("64:ff9b:")) {
+      return embeddedV4(cleanIp.slice("64:ff9b:".length));
+    }
+    // 2001:db8::/32 documentation
+    if (cleanIp.startsWith("2001:db8:") || cleanIp === "2001:db8") return true;
+    // 2001:10::/28 & 2001:20::/28 (ORCHID)
+    if (cleanIp.startsWith("2001:1") || cleanIp.startsWith("2001:2")) return true;
+    // 100::/64 discard prefix
+    if (cleanIp.startsWith("100:")) return true;
+    // ff00::/8 multicast
+    if (cleanIp.startsWith("ff")) return true;
+
     return false;
   }
   return false;
 }
 
-async function assertPublicUrl(rawUrl: string): Promise<{ error: string } | null> {
+export async function assertPublicUrl(rawUrl: string): Promise<{ error: string } | null> {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);
@@ -73,13 +138,15 @@ async function assertPublicUrl(rawUrl: string): Promise<{ error: string } | null
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     return { error: "Only http/https URLs are allowed" };
   }
-  const hostname = parsed.hostname;
+  const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
   if (hostname === "localhost" || isPrivateIp(hostname)) {
     return { error: "URL not allowed" };
   }
   try {
-    const { address } = await dns.lookup(hostname);
-    if (isPrivateIp(address)) {
+    // Check EVERY resolved address, not just the first: a hostname with mixed public/private
+    // A/AAAA records must not slip a private address past the guard.
+    const results = await dns.lookup(hostname, { all: true });
+    if (results.some((result) => isPrivateIp(result.address))) {
       return { error: "URL not allowed" };
     }
   } catch {

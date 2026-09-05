@@ -45,7 +45,7 @@ export async function getVenueAssociations(venueId: string): Promise<{
       city: profile.city,
       bio: profile.bio,
       imageUrl: profile.image_url,
-      linkUrl: profile.website ?? profile.instagram ?? profile.facebook ?? null,
+      linkUrl: safeExternalUrl(profile.website ?? profile.instagram ?? profile.facebook),
     }));
 
   return { communities, people };
@@ -98,9 +98,13 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
   if (!hasSupabaseEnv()) return null;
 
   const supabase = await createClient();
+  // Explicit column list, not "*": venues.admin_notes is internal-only and no longer granted to
+  // anon/authenticated (migration 20260905120000), so a wildcard would rely on PostgREST's
+  // privilege-aware expansion. Naming the columns keeps this query valid under any PostgREST
+  // behaviour.
   const { data, error } = await supabase
     .from("venues")
-    .select("*")
+    .select("id, name, slug, city, country, region, address, lat, lng, description, website, image_url, image_credit, has_email, newsletter, instagram, facebook, youtube, links")
     .eq("slug", slug)
     .eq("visibility", "public")
     .single();

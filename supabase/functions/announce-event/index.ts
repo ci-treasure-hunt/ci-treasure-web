@@ -3,6 +3,7 @@ import { buildRichCaption, TEACHER_ROLES, slugify } from '../_shared/announce-fo
 
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
 const CHAT_ID   = Deno.env.get('TELEGRAM_PUBLIC_CHAT_ID')!
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const FESTIVAL_THREAD_ID  = Number(Deno.env.get('TELEGRAM_PUBLIC_THREAD_ID')!)
 const WORKSHOP_THREAD_IDS: Record<string, number> = {
   americas: Number(Deno.env.get('TELEGRAM_WORKSHOP_AMERICAS_THREAD_ID')!),
@@ -57,6 +58,17 @@ function daySpan(start: string, end: string | null): number {
 }
 
 Deno.serve(async (req) => {
+
+  // Security review 2026-09-05: these functions run with verify_jwt = false (see
+  // supabase/config.toml — the database-webhook caller sends no user JWT), which previously
+  // left them callable by anyone on the internet with a fabricated {record: ...} body — i.e.
+  // arbitrary content published to the official Telegram group/channel as this project's bot.
+  // Require the service-role bearer token, exactly like cleanup-tg-messages; the pg_net
+  // trigger function that replaced supabase_functions.http_request sends it from the
+  // Vault-reserved service_role_key secret (see migration 20260905100000).
+  if (req.headers.get('Authorization') !== `Bearer ${SERVICE_KEY}`) {
+    return new Response('unauthorized', { status: 401 })
+  }
 
   const { record: event, old_record } = await req.json()
 

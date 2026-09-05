@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
+import { safeExternalUrl } from "@/lib/url-safety";
 
 import { setEntityEmail } from "@/lib/entity-email";
 export type ProfileUpdateData = {
@@ -91,12 +92,12 @@ export async function updateProfile(data: ProfileUpdateData) {
     city:         data.is_nomadic ? null : nullIfEmpty(data.city),
     country:      data.is_nomadic ? null : nullIfEmpty(data.country),
     is_nomadic:   data.is_nomadic,
-    website:      nullIfEmpty(data.website),
-    facebook:     nullIfEmpty(data.facebook),
-    instagram:    nullIfEmpty(normalizeInstagram(data.instagram)),
-    youtube:      nullIfEmpty(data.youtube),
-    telegram:     nullIfEmpty(normalizeTelegram(data.telegram)),
-    newsletter:   nullIfEmpty(data.newsletter),
+    website:      safeExternalUrl(data.website) ?? null,
+    facebook:     safeExternalUrl(data.facebook) ?? null,
+    instagram:    safeExternalUrl(normalizeInstagram(data.instagram)) ?? null,
+    youtube:      safeExternalUrl(data.youtube) ?? null,
+    telegram:     safeExternalUrl(normalizeTelegram(data.telegram)) ?? null,
+    newsletter:   safeExternalUrl(data.newsletter) ?? null,
     is_organizer: data.is_organizer || lockedOrganizer,
     is_teacher:   data.is_teacher || lockedTeacher,
     is_musician:  data.is_musician || lockedMusician,
@@ -158,9 +159,39 @@ export async function setProfileDeactivated(deactivated: boolean) {
     return { success: false, error: "Not authenticated" };
   }
 
+  // Security review 2026-09-05: only the reversible public <-> deactivated pair may be toggled
+  // by the owner. Every Server Action is a public HTTP endpoint regardless of the page that
+  // renders it (same reasoning as I-166 F2), so without this check a hand-crafted call with
+  // deactivated=false would self-publish a profile still awaiting admin review (visibility
+  // 'shadow' since the I-150 review gate / I-165 INSERT guard) or flip an admin-imposed
+  // 'suspended' back to live. The DB trigger (protect_profile_privileged_columns, migration
+  // 20260905110000) enforces the same rule; this keeps the client's feedback truthful.
+  const SELF_TOGGLEABLE = new Set(["public", "deactivated"]);
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, visibility")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    return { success: false, error: "Profile not found" };
+  }
+
+  const nextVisibility: string = deactivated ? "deactivated" : "public";
+  if (!SELF_TOGGLEABLE.has(profile.visibility)) {
+    return {
+      success: false,
+      error: "Your profile isn't live yet — an admin has to review it before it can be published.",
+    };
+  }
+  if (profile.visibility === nextVisibility) {
+    return { success: true };
+  }
+
   const { data: updated, error } = await supabase
     .from("profiles")
-    .update({ visibility: deactivated ? "deactivated" : "public", updated_at: new Date().toISOString() })
+    .update({ visibility: nextVisibility, updated_at: new Date().toISOString() })
     .eq("user_id", user.id)
     .select("slug")
     .single();
