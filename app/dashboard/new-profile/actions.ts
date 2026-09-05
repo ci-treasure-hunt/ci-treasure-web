@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
+import { safeExternalUrl } from "@/lib/url-safety";
 
 export type SimilarProfile = {
   id: string;
@@ -94,7 +95,7 @@ export async function createProfile(input: {
   const { error } = await admin.from("profiles").insert({
     name,
     slug,
-    website: input.website.trim() || null,
+    website: safeExternalUrl(input.website.trim()) || null,
     user_id: user.id,
     // Shadow, not public: self-submitted profiles need admin review before going live (I-150).
     // Previously these auto-published immediately with no review at all — a stray "test" profile

@@ -5,6 +5,7 @@ import { type EventListItem } from "./event-display";
 import { getContinent, getContinentCountries } from "./entity-continents";
 import { getCountryLabel } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
+import { safeExternalUrl } from "./url-safety";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -249,7 +250,7 @@ export async function getListedPeople(): Promise<ListedPerson[]> {
         // Pending photos must not appear publicly — the privacy policy states this outright, so
         // presence of image_url is not a sufficient check.
         imageUrl: p.image_status === "approved" ? p.image_url : null,
-        linkUrl: p.website ?? p.instagram ?? p.facebook ?? null,
+        linkUrl: safeExternalUrl(p.website ?? p.instagram ?? p.facebook),
         bioSnippet: bioSnippet(p.bio),
         isClaimed: Boolean(p.user_id),
       }];

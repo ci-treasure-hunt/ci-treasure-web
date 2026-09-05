@@ -4,6 +4,7 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, type SupabaseEventRow } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
+import { safeExternalUrl } from "./url-safety";
 
 export type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
 
@@ -162,18 +163,6 @@ function countryLabel(row: CommunityRow): string {
   return tail ?? "Worldwide / International";
 }
 
-function normalizeUrl(value: string | null): string | null {
-  if (!value) return null;
-  const str = value.trim();
-  if (!str) return null;
-  if (/^https?:\/\//i.test(str)) return str;
-  if (/^mailto:/i.test(str)) return str;
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) return `mailto:${str}`;
-  // Free text (e.g. Calendar notes) — not renderable as a link
-  if (/\s/.test(str) || !str.includes(".")) return null;
-  return `https://${str}`;
-}
-
 function toCommunity(row: CommunityRow): Community {
   return {
     id: row.id,
@@ -184,17 +173,17 @@ function toCommunity(row: CommunityRow): Community {
     country: countryLabel(row),
     countryIso: row.country,
     description: row.description,
-    websiteUrl: normalizeUrl(row.website),
-    facebookGroupUrl: normalizeUrl(row.facebook_group),
-    facebookPageUrl: normalizeUrl(row.facebook_page),
-    instagramUrl: normalizeUrl(row.instagram),
-    telegramGroupUrl: normalizeUrl(row.telegram_group),
-    telegramChannelUrl: normalizeUrl(row.telegram_channel),
-    whatsappChannelUrl: normalizeUrl(row.whatsapp_channel),
-    youtubeUrl: normalizeUrl(row.youtube),
-    calendarUrl: normalizeUrl(row.calendar),
-    newsletterUrl: normalizeUrl(row.newsletter),
-    otherResourceUrl: normalizeUrl(row.other_resource),
+    websiteUrl: safeExternalUrl(row.website),
+    facebookGroupUrl: safeExternalUrl(row.facebook_group),
+    facebookPageUrl: safeExternalUrl(row.facebook_page),
+    instagramUrl: safeExternalUrl(row.instagram),
+    telegramGroupUrl: safeExternalUrl(row.telegram_group),
+    telegramChannelUrl: safeExternalUrl(row.telegram_channel),
+    whatsappChannelUrl: safeExternalUrl(row.whatsapp_channel),
+    youtubeUrl: safeExternalUrl(row.youtube),
+    calendarUrl: safeExternalUrl(row.calendar),
+    newsletterUrl: safeExternalUrl(row.newsletter),
+    otherResourceUrl: safeExternalUrl(row.other_resource),
     latitude: row.lat,
     longitude: row.lng,
     hasInvites: row.has_invites,
@@ -383,17 +372,17 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
 
   return {
     ...rest,
-    website: normalizeUrl(rest.website),
-    instagram: normalizeUrl(rest.instagram),
-    facebook_group: normalizeUrl(rest.facebook_group),
-    facebook_page: normalizeUrl(rest.facebook_page),
-    telegram_group: normalizeUrl(rest.telegram_group),
-    telegram_channel: normalizeUrl(rest.telegram_channel),
-    whatsapp_channel: normalizeUrl(rest.whatsapp_channel),
-    youtube: normalizeUrl(rest.youtube),
-    calendar: normalizeUrl(rest.calendar),
-    newsletter: normalizeUrl(rest.newsletter),
-    other_resource: normalizeUrl(rest.other_resource),
+    website: safeExternalUrl(rest.website),
+    instagram: safeExternalUrl(rest.instagram),
+    facebook_group: safeExternalUrl(rest.facebook_group),
+    facebook_page: safeExternalUrl(rest.facebook_page),
+    telegram_group: safeExternalUrl(rest.telegram_group),
+    telegram_channel: safeExternalUrl(rest.telegram_channel),
+    whatsapp_channel: safeExternalUrl(rest.whatsapp_channel),
+    youtube: safeExternalUrl(rest.youtube),
+    calendar: safeExternalUrl(rest.calendar),
+    newsletter: safeExternalUrl(rest.newsletter),
+    other_resource: safeExternalUrl(rest.other_resource),
     associatedVenues: (community_venues ?? [])
       .map((row) => (Array.isArray(row.venue) ? row.venue[0] : row.venue))
       .filter((v): v is AssociatedVenueRow => Boolean(v))
@@ -410,7 +399,7 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
         imageUrl: p.image_url,
         // Same fallback order as I-132's country pages (lib/country-pages.ts) — website first,
         // then Instagram, then Facebook.
-        linkUrl: p.website ?? p.instagram ?? p.facebook ?? null,
+        linkUrl: safeExternalUrl(p.website ?? p.instagram ?? p.facebook),
       })),
   } as unknown as CommunityDetail;
 }
