@@ -156,6 +156,7 @@ when you write, you are not writing to a support queue.
 - Facebook page: [facebook.com/citreasurehunt](https://www.facebook.com/citreasurehunt/)
 - Facebook group, international festivals (four days and up): [facebook.com/groups/citreasurehunt](https://www.facebook.com/groups/citreasurehunt)
 - Facebook group, Europe / Middle East / Africa (weekend workshops and up): [facebook.com/groups/citreasurehuntemea](https://www.facebook.com/groups/citreasurehuntemea)
+- Facebook group, Water Dance & Aquatic Movement worldwide (2+ days, not limited to CI): [facebook.com/groups/citreasurehuntaqua](https://www.facebook.com/groups/citreasurehuntaqua)
 - Instagram: [@citreasurehunt](https://www.instagram.com/citreasurehunt/)
 - Newsletter, monthly: [citreasurehunt.com/newsletter](/newsletter)
 - Something wrong on a page, or a listing to add: [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com)

@@ -41,6 +41,7 @@ you already use your phone.
 | [Telegram group](https://t.me/citreasurehunt) | The community. New events are posted into topics, and people actually talk. |
 | [Facebook group](https://www.facebook.com/groups/citreasurehunt) | Organizers post their own events, four days and up. |
 | [Facebook group, Europe / Middle East / Africa](https://www.facebook.com/groups/citreasurehuntemea) | Same, for shorter formats from two days up, including weekend workshops. |
+| [Facebook group, Water Dance & Aquatic Movement](https://www.facebook.com/groups/citreasurehuntaqua) | A separate group for water-based movement events worldwide (2+ days) — Watsu, WaterDance, Aguahara, aquatic CI and related work, not limited to Contact Improvisation. |
 | [Instagram](https://www.instagram.com/citreasurehunt/) | Visual highlights, festival posts, collaborations with organizers. |
 | [Newsletter](/newsletter) | A monthly digest. Handpicked events across several continents. |
 

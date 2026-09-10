@@ -274,11 +274,21 @@ export async function getAllPublicTeachersForIndex(): Promise<Pick<TeacherProfil
   return data;
 }
 
+// I-172: the public detail-page fetchers below use createStaticClient() (cookie-free), not
+// createClient(). This is load-bearing for caching, not a style choice: createClient() calls
+// cookies(), a Next.js Dynamic API that excludes a route from the ISR cache and adds per-request
+// overhead these public pages never need. NOTE: removing it is necessary but NOT sufficient —
+// these routes still render dynamically because supabase-js's internal fetch is uncached; see
+// I-172 'Caching, unresolved'. Safe because each of
+// these either filters visibility/status explicitly in the query or reads a table whose RLS grants
+// anon the same rows an authenticated session gets (verified 2026-09-10 against pg_policies).
+// Functions serving the dashboard/admin, or anything that must see the caller's own private rows,
+// must keep createClient().
 export async function getTeacherBySlug(slug: string): Promise<TeacherProfile | null> {
   if (!hasSupabaseEnv()) {
     return null;
   }
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -302,7 +312,7 @@ export async function getProfileAssociations(profileId: string): Promise<{
 }> {
   if (!hasSupabaseEnv()) return { communities: [], venues: [] };
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const [{ data: communityRows }, { data: venueRows }] = await Promise.all([
     supabase
       .from("community_profiles")
@@ -339,7 +349,7 @@ export async function resolveTeacherSlugRedirect(slug: string): Promise<string |
   if (!hasSupabaseEnv()) {
     return null;
   }
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase
     .from("profiles")
     .select("slug")
@@ -359,7 +369,7 @@ export async function getTeacherEvents(profileId: string): Promise<{
   if (!hasSupabaseEnv()) {
     return { upcoming: [], past: [] };
   }
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const fields = `role, teacher_id, events (id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, status, hide)`;
   const orgFields = `organizer_id, events (id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, status, hide)`;
 
@@ -426,7 +436,7 @@ export type TeacherRingItem = RingEntity & { city: string | null; imageUrl: stri
 // image when approved (image_status), same gate as the teacher's own detail page.
 async function fetchTeacherRingPool(countryIsos: string[] | null): Promise<TeacherRingItem[]> {
   if (!hasSupabaseEnv()) return [];
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   let query = supabase
     .from("profiles")
     .select("slug, name, city, image_url, image_status")

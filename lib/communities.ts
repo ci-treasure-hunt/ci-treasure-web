@@ -340,10 +340,20 @@ function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+// I-172: the public detail-page fetchers below use createStaticClient() (cookie-free), not
+// createClient(). This is load-bearing for caching, not a style choice: createClient() calls
+// cookies(), a Next.js Dynamic API that excludes a route from the ISR cache and adds per-request
+// overhead these public pages never need. NOTE: removing it is necessary but NOT sufficient —
+// these routes still render dynamically because supabase-js's internal fetch is uncached; see
+// I-172 'Caching, unresolved'. Safe because each of
+// these either filters visibility/status explicitly in the query or reads a table whose RLS grants
+// anon the same rows an authenticated session gets (verified 2026-09-10 against pg_policies).
+// Functions serving the dashboard/admin, or anything that must see the caller's own private rows,
+// must keep createClient().
 export async function getCommunityBySlug(slug: string): Promise<CommunityDetail | null> {
   if (!hasSupabaseEnv()) return null;
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("communities")
     .select(`
@@ -424,7 +434,7 @@ export type CommunityRingItem = RingEntity & { city: string | null };
 // codes. Reused across the country/continent/global tiers.
 async function fetchCommunityRingPool(countryIsos: string[] | null): Promise<CommunityRingItem[]> {
   if (!hasSupabaseEnv()) return [];
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   let query = supabase.from("communities").select("slug, name, city").is("deleted_at", null);
   if (countryIsos) query = query.in("country", countryIsos);
 
@@ -482,7 +492,7 @@ export async function getAllCommunitySlugs(): Promise<string[]> {
 export async function resolveCommunitySlugRedirect(slug: string): Promise<string | null> {
   if (!hasSupabaseEnv()) return null;
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase
     .from("communities")
     .select("slug")
@@ -500,7 +510,7 @@ export const COMMUNITY_RELATED_EVENTS_LIMIT = 5;
 export async function getCommunityOwnEvents(communityId: string) {
   if (!hasSupabaseEnv()) return [];
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
   const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, status";
@@ -527,7 +537,7 @@ export async function getCommunityOwnEvents(communityId: string) {
 export async function getCommunityEventsByCountry(countryIso: string | null) {
   if (!hasSupabaseEnv() || !countryIso) return [];
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
   const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng";

@@ -36,7 +36,6 @@ import {
 } from "@/lib/event-display";
 import {
   COMMUNITY_RELATED_EVENTS_LIMIT,
-  getAllCommunitySlugs,
   getCommunityBySlug,
   getCommunityOwnEvents,
   getCommunityEventsByCountry,
@@ -58,7 +57,11 @@ import { RingSection } from "@/components/also-browse";
 import { getContinent } from "@/lib/entity-continents";
 import { ringSectionHeading } from "@/lib/entity-ring";
 
-export const revalidate = 3600;
+// I-172: 24h, not the 1h the rest of the site uses. Data changes reach this page via the
+// Supabase revalidate webhook, so the TTL is only a backstop for content that goes stale
+// with no write behind it — mainly the upcoming/past split, which is computed from the
+// clock at render time. 24h bounds that; Jan's call 2026-09-10 over a shorter window.
+export const revalidate = 86400;
 
 type CommunityPageProps = {
   params: Promise<{
@@ -66,10 +69,9 @@ type CommunityPageProps = {
   }>;
 };
 
-export async function generateStaticParams() {
-  const slugs = await getAllCommunitySlugs();
-  return slugs.map((slug) => ({ slug }));
-}
+// I-172: deliberately no generateStaticParams — see the note in app/teachers/[slug]/page.tsx.
+// Same reasoning, 290 community pages rebuilt on every deploy. Next's default dynamicParams: true
+// renders on first request instead; missing slugs still 404 via notFound() below.
 
 export async function generateMetadata({ params }: CommunityPageProps): Promise<Metadata> {
   const { slug } = await params;

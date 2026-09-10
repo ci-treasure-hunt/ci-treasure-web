@@ -13,7 +13,7 @@ export async function getVenueAssociations(venueId: string): Promise<{
 }> {
   if (!hasSupabaseEnv()) return { communities: [], people: [] };
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const [{ data: communityRows }, { data: peopleRows }] = await Promise.all([
     supabase
       .from("community_venues")
@@ -94,10 +94,20 @@ function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+// I-172: the public detail-page fetchers below use createStaticClient() (cookie-free), not
+// createClient(). This is load-bearing for caching, not a style choice: createClient() calls
+// cookies(), a Next.js Dynamic API that excludes a route from the ISR cache and adds per-request
+// overhead these public pages never need. NOTE: removing it is necessary but NOT sufficient —
+// these routes still render dynamically because supabase-js's internal fetch is uncached; see
+// I-172 'Caching, unresolved'. Safe because each of
+// these either filters visibility/status explicitly in the query or reads a table whose RLS grants
+// anon the same rows an authenticated session gets (verified 2026-09-10 against pg_policies).
+// Functions serving the dashboard/admin, or anything that must see the caller's own private rows,
+// must keep createClient().
 export async function getVenueBySlug(slug: string): Promise<Venue | null> {
   if (!hasSupabaseEnv()) return null;
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("venues")
     .select("*")
@@ -133,7 +143,7 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
 export async function getVenueEvents(venueId: string) {
   if (!hasSupabaseEnv()) return { upcoming: [], past: [] };
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
   const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng";
@@ -385,7 +395,7 @@ export async function getAllVenueSlugs(): Promise<string[]> {
 export async function resolveVenueSlugRedirect(slug: string): Promise<string | null> {
   if (!hasSupabaseEnv()) return null;
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase
     .from("venues")
     .select("slug")

@@ -14,7 +14,6 @@ import Link from "next/link";
 import {
   getTeacherBySlug,
   getTeacherEvents,
-  getAllPublicTeacherSlugs,
   resolveTeacherSlugRedirect,
   getProfileAssociations,
   getTeacherRingNeighbors,
@@ -41,14 +40,19 @@ import { ogImage } from "@/lib/og-image";
 import { getContinent } from "@/lib/entity-continents";
 import { ringSectionHeading } from "@/lib/entity-ring";
 
-export const revalidate = 3600;
+// I-172: 24h, not the 1h the rest of the site uses. Data changes reach this page via the
+// Supabase revalidate webhook, so the TTL is only a backstop for content that goes stale
+// with no write behind it — mainly the upcoming/past split, which is computed from the
+// clock at render time. 24h bounds that; Jan's call 2026-09-10 over a shorter window.
+export const revalidate = 86400;
 
-export async function generateStaticParams() {
-  const slugs = await getAllPublicTeacherSlugs();
-  return slugs.map((slug) => ({
-    slug,
-  }));
-}
+// I-172: deliberately no generateStaticParams. Pre-rendering all ~515 teacher slugs meant every
+// deploy rebuilt all of them — 20 deploys in the five days to 2026-09-02, against 410 pageviews
+// across the whole route in 30 days, so the overwhelming majority were rebuilt repeatedly and
+// never read. Vercel's free-tier ISR Write quota hit 75% as a result. Without this function,
+// Next's default dynamicParams: true renders each page on first request and caches it for the
+// revalidate window instead, which is what /events/[eventSlug] (the site's busiest route) has
+// always done. Missing slugs still 404 via notFound() below — that never depended on this list.
 
 type TeacherPageProps = {
   params: Promise<{
