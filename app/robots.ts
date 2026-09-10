@@ -36,6 +36,11 @@ const BLOCKED_AI_AND_SEO_BOTS = [
   "ImagesiftBot",
   "Omgilibot",
   "Timpibot",
+  // Added 2026-09-10 from the firewall's Top User Agents (24h): real volume, near-zero referral
+  // value for a Contact Improvisation directory specifically.
+  "PetalBot", // Huawei/Petal Search, 288 hits/24h — a real search engine, but not one this
+  // audience uses; unlike Googlebot/Bingbot this is a judgment call, not a given.
+  "LumiaBot", // 230 hits/24h, unidentified purpose, no known referral value
   // Commercial SEO / backlink crawlers we get no value from
   "SemrushBot",
   "DataForSeoBot",
