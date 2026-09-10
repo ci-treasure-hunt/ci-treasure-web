@@ -34,7 +34,11 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
+// I-172: 24h, raised from 1h. Safe only because the webhook now derives and invalidates this
+// path on events/profiles/venues/communities writes (see revalidateCountryFor there) — before
+// that, this timer was the only way a country page learned about a new event, so it had to stay
+// short and paid for it on every crawl.
+export const revalidate = 86400;
 
 // First sentence of the summary as a card teaser — cheap (no extra query, summaryText is already
 // fetched by getAllCountrySummaries) and avoids truncating mid-word the way a bare character

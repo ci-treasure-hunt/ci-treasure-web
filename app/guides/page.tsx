@@ -30,7 +30,10 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
+// I-172: no timed revalidation. This page's content is markdown in content/, so it can only
+// change with a deploy, and a deploy rebuilds it anyway. A timer here bought nothing and cost a
+// regeneration per crawl.
+export const revalidate = false;
 
 export default async function GuidesPage() {
   const guides = await getAllGuides();

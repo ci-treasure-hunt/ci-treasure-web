@@ -5,7 +5,9 @@ import { getAllCountrySummaries } from "@/lib/country-pages";
 import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
 import { getAllGuides } from "@/lib/guides";
 
-export const revalidate = 3600;
+// I-172: 24h. This enumerates every event, teacher, venue, community and country URL, so it is
+// one of the most expensive things on the site to regenerate, and crawlers refetch it often.
+export const revalidate = 86400;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

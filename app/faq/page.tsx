@@ -7,7 +7,10 @@ import { SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
 // I-156: content lives in content/pages/faq.md. See that file's own build notes for why only
 // the "Frequently asked questions" Q&A blocks (not the "How It Works" intro above them) go into
 // the FAQPage schema below.
-export const revalidate = 3600;
+// I-172: no timed revalidation. This page's content is markdown in content/, so it can only
+// change with a deploy, and a deploy rebuilds it anyway. A timer here bought nothing and cost a
+// regeneration per crawl.
+export const revalidate = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = await getContentPage("faq");

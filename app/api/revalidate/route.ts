@@ -21,6 +21,26 @@ type WebhookPayload = {
   old_record: Record<string, unknown> | null;
 };
 
+// I-172: a write to any of these tables changes what a country page lists, but nothing here used
+// to invalidate /[country] on those writes — the page depended entirely on its own timer. That is
+// why the timer had to stay at an hour, and why every crawler sweep of the country pages
+// regenerated them. With this, the timer becomes a backstop and can go to 24h like the rest.
+// Slug derivation matches the country_summaries case below and getAllCountrySummaries().
+function revalidateCountryFor(...records: (Record<string, unknown> | null)[]) {
+  const seen = new Set<string>();
+  for (const rec of records) {
+    const iso = rec?.country;
+    if (typeof iso !== "string" || !iso) continue;
+    const slug = slugify(getCountryLabel(iso));
+    if (slug && !seen.has(slug)) {
+      seen.add(slug);
+      revalidatePath(`/${slug}`);
+    }
+  }
+  // The index counts events per country, so it moves with the same writes.
+  if (seen.size > 0) revalidatePath("/countries");
+}
+
 export async function POST(request: NextRequest) {
   if (!REVALIDATE_SECRET) {
     console.error("REVALIDATE_SECRET not configured");
@@ -51,21 +71,25 @@ export async function POST(request: NextRequest) {
       // deliberately simple: type changes are rare, the operation is cheap, and old_record isn't
       // reliably available to target just one.
       for (const typePage of EVENT_TYPE_PAGES) revalidatePath(typePage.path);
+      revalidateCountryFor(payload.record, payload.old_record);
       break;
     }
     case "profiles": {
       revalidatePath("/teachers");
       if (record?.slug) revalidatePath(`/teachers/${record.slug as string}`);
+      revalidateCountryFor(payload.record, payload.old_record);
       break;
     }
     case "venues": {
       revalidatePath("/venues");
       if (record?.slug) revalidatePath(`/venues/${record.slug as string}`);
+      revalidateCountryFor(payload.record, payload.old_record);
       break;
     }
     case "communities": {
       revalidatePath("/communities");
       if (record?.slug) revalidatePath(`/communities/${record.slug as string}`);
+      revalidateCountryFor(payload.record, payload.old_record);
       break;
     }
     case "country_summaries": {

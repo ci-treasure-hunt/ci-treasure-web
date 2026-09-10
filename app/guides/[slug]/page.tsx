@@ -5,7 +5,10 @@ import { notFound } from "next/navigation";
 import { formatGuideDate, getGuide, getGuideSlugs, guideOgImage } from "@/lib/guides";
 import { SITE_URL } from "@/lib/site";
 
-export const revalidate = 3600;
+// I-172: no timed revalidation. This page's content is markdown in content/, so it can only
+// change with a deploy, and a deploy rebuilds it anyway. A timer here bought nothing and cost a
+// regeneration per crawl.
+export const revalidate = false;
 
 // Files on disk, so the whole set can be rendered at build time. dynamicParams stays on its
 // default (true) so a guide added between deploys still resolves rather than 404ing.

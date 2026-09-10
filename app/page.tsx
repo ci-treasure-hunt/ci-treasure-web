@@ -11,7 +11,11 @@ import { getAllCountrySummaries } from "@/lib/country-pages";
 import { SITE_URL } from "@/lib/site";
 import { EntityIndex } from "@/components/entity-index";
 
-export const revalidate = 3600;
+// I-172: 24h, not 1h. This route is invalidated on write by the Supabase revalidate webhook
+// (app/api/revalidate/route.ts), so the timer is only a backstop, not the freshness mechanism.
+// At 1h every crawler sweep regenerated it; crawlers outnumber human pageviews here by roughly
+// an order of magnitude, and that regeneration is what consumed the ISR Write quota.
+export const revalidate = 86400;
 
 const TITLE = "CI Treasure Hunt — Contact Improvisation Events Worldwide";
 const DESCRIPTION =

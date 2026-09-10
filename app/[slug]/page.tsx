@@ -15,7 +15,11 @@ import { getCountryLabelWithArticle } from "@/lib/event-display";
 import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL } from "@/lib/site";
 
-export const revalidate = 3600;
+// I-172: 24h, raised from 1h. Safe only because the webhook now derives and invalidates this
+// path on events/profiles/venues/communities writes (see revalidateCountryFor there) — before
+// that, this timer was the only way a country page learned about a new event, so it had to stay
+// short and paid for it on every crawl.
+export const revalidate = 86400;
 
 type CountryPageProps = {
   params: Promise<{ slug: string }>;

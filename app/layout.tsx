@@ -27,8 +27,14 @@ import {
 // with the in-page "Explore other countries" chip section on app/[slug]/page.tsx, which is a
 // deliberate keep-both call (2026-08-13) rather than an oversight — the two differ in styling and
 // job, and suppressing one per-route would cost more than the duplication does.
-// revalidate is required here because the layout itself now fetches; 1h matches every other page.
-export const revalidate = 3600;
+// revalidate is required here because the layout itself now fetches.
+// I-172: raised 1h -> 24h, and this is the load-bearing one. Next takes the *lowest* revalidate
+// across a route's segment tree, so this layout was silently capping every page in the app at 1h
+// no matter what the page itself declared — including the 24h the detail pages already set. It
+// also runs getAllCountrySummaries() on every render, which is why country_summaries was the most
+// queried table on the site (~1.2k reads/day for a band that changes when a country page goes
+// live, i.e. rarely and manually).
+export const revalidate = 86400;
 
 const sans = Manrope({
   variable: "--font-sans",
