@@ -53,6 +53,18 @@ export async function getInviteLinks(
     return { error: "rate_limited" };
   }
 
+  // Parent community must exist and be active (not soft-deleted) before revealing its invites.
+  const { data: community } = await supabase
+    .from("communities")
+    .select("id")
+    .eq("id", communityId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!community) {
+    return { error: "not_found" };
+  }
+
   const { data, error } = await supabase
     .from("community_invites")
     .select("platform, url")

@@ -1,4 +1,5 @@
 import { SITE_OG_IMAGE } from "@/lib/site";
+import { assertPublicUrl } from "@/lib/rehost-image";
 
 // Facebook's crawler (unlike Telegram's, which just probes the image directly) wants explicit
 // og:image:width/height/type to reliably render a preview — the homepage gets these for free from
@@ -24,8 +25,13 @@ export async function ogImage(entityImageUrl?: string | null) {
     return { url: SITE_OG_IMAGE, width: 1280, height: 1024, type: "image/jpeg" };
   }
   try {
+    const blocked = await assertPublicUrl(entityImageUrl);
+    if (blocked) return { url: entityImageUrl };
+
     const sharp = (await import("sharp")).default;
-    const res = await fetch(entityImageUrl);
+    const res = await fetch(entityImageUrl, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (!res.ok) return { url: entityImageUrl };
     const buffer = Buffer.from(await res.arrayBuffer());
     const { width, height, format } = await sharp(buffer).metadata();

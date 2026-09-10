@@ -2,6 +2,7 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { getCountryLabel, type EventListItem } from "@/lib/event-display";
 import { mapEventRow, slugify, type SupabaseEventRow } from "@/lib/events";
 import { getCommunities, type Community } from "@/lib/communities";
+import { safeExternalUrl } from "@/lib/url-safety";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -196,7 +197,7 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
     // Table row's "links" column — website preferred, social as fallback. Sparse today (only a
     // few of Sweden's 13 teachers have one on file) but graceful when absent, same as
     // getPrimaryJoinUrl() for communities.
-    linkUrl: t.website ?? t.instagram ?? t.facebook ?? null,
+    linkUrl: safeExternalUrl(t.website ?? t.instagram ?? t.facebook),
   }));
 
   const events = ((eventRows ?? []) as SupabaseEventRow[]).map(mapEventRow);

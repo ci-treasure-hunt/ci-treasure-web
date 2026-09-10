@@ -1,4 +1,5 @@
 import { requireAdminUser } from "@/lib/admin-auth";
+import { safeExternalUrl } from "@/lib/url-safety";
 
 import { getPendingProfiles } from "./actions";
 import { ProfileReviewActions } from "./review-actions";
@@ -34,7 +35,11 @@ export default async function AdminPendingProfilesPage() {
         <p className="mt-6 text-base text-slate-600">No pending profiles.</p>
       ) : (
         <ul className="mt-6 divide-y divide-(--color-sand-strong)">
-          {profiles.map((profile) => (
+          {profiles.map((profile) => {
+            const website = safeExternalUrl(profile.website);
+            const facebook = safeExternalUrl(profile.facebook);
+            const instagram = safeExternalUrl(profile.instagram);
+            return (
             <li key={profile.id} className="flex flex-col gap-3 py-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="lg:pr-6">
                 <p className="font-semibold text-slate-950">{profile.name}</p>
@@ -49,18 +54,18 @@ export default async function AdminPendingProfilesPage() {
                   <p className="mt-2 text-sm italic text-slate-400">No bio submitted.</p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-3 text-sm">
-                  {profile.website ? (
-                    <a href={profile.website} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
+                  {website ? (
+                    <a href={website} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
                       Website
                     </a>
                   ) : null}
-                  {profile.facebook ? (
-                    <a href={profile.facebook} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
+                  {facebook ? (
+                    <a href={facebook} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
                       Facebook
                     </a>
                   ) : null}
-                  {profile.instagram ? (
-                    <a href={profile.instagram} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
+                  {instagram ? (
+                    <a href={instagram} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
                       Instagram
                     </a>
                   ) : null}
@@ -71,7 +76,8 @@ export default async function AdminPendingProfilesPage() {
               </div>
               <ProfileReviewActions profileId={profile.id} />
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </section>
