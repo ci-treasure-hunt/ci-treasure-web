@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map } from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { escapeHtml } from "@/lib/utils";
 
 type VenueMapProps = {
   lat: number;
@@ -46,7 +47,7 @@ export default function VenueMap({ lat, lng, name }: VenueMapProps) {
         iconAnchor: [8, 8],
       });
 
-      const marker = L.marker([lat, lng], { icon, alt: name }).addTo(map).bindPopup(name);
+      const marker = L.marker([lat, lng], { icon, alt: name }).addTo(map).bindPopup(escapeHtml(name));
       // Leaflet's `alt` option only reaches an <img>-based icon; this is a
       // divIcon, so set the accessible name directly on its DOM element.
       const el = marker.getElement();

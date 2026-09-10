@@ -28,8 +28,9 @@
  *   "mailto:a@b.com"        -> null
  *   "data:text/html,<x>"    -> null
  *   "file:///etc/passwd"    -> null
+ *   "anna@example.com"      -> null
  *
- * Two earlier drafts got this wrong in opposite directions, so both traps are worth naming:
+ * Three earlier drafts got this wrong, so all three traps are worth naming:
  *
  * 1. Treating any leading /^[a-z][a-z0-9+.-]*:/ as "a scheme" also matches the HOST in
  *    "ci-cph.dk:8080", because "." and "-" are legal scheme characters. That rejected a valid
@@ -40,13 +41,25 @@
  *    userinfo and "b.com" as the host. It was accepted, address and all. Likewise
  *    "file:///etc/passwd" became "https://file///etc/passwd". Caught by the test cases below the
  *    fold rather than by review, which is the argument for keeping them.
+ * 3. A bare email with no scheme at all ("anna@example.com") has the same problem one layer up:
+ *    prefixing gives "https://anna@example.com/", a perfectly valid URL whose userinfo is "anna"
+ *    and whose host is "example.com" — it silently produces a working, wrong link to the entity's
+ *    own site instead of rejecting the input. Found live 2026-09-10 (marion-kortenkamp had typed
+ *    an address into a website field). Rejected explicitly, before the scheme check, since it has
+ *    no colon to trip the scheme-like branch below.
  *
- * So: an explicit scheme check, with an explicit carve-out for host:port.
+ * So: an explicit scheme check, with an explicit carve-out for host:port, and an explicit
+ * bare-email reject.
  */
 export function safeExternalUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const trimmed = raw.trim();
   if (!trimmed) return null;
+
+  // A bare email address has no scheme, so it would otherwise fall through to the
+  // prefix-with-https path below and become a misleading `https://user@host/` URL. Address
+  // fields belong in entity_emails (I-165 F3), not here.
+  if (/^[^\s@:/]+@[^\s@:/]+\.[^\s@:/]+$/.test(trimmed)) return null;
 
   // Anything with a scheme that isn't http/https is rejected outright. The `isHostPort` carve-out
   // is what keeps "ci-cph.dk:8080/x" working: there, the text before the colon is a host, not a
