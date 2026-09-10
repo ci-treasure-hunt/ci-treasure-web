@@ -41,6 +41,7 @@ export const LANGUAGE_OPTIONS = [
   { code: "da", label: "Danish" },
   { code: "hu", label: "Hungarian" },
   { code: "sv", label: "Swedish" },
+  { code: "tr", label: "Turkish" },
 ] as const;
 
 const KNOWN_LANGUAGE_CODES: Set<string> = new Set(LANGUAGE_OPTIONS.map((l) => l.code));
