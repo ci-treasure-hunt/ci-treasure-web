@@ -3,6 +3,7 @@ import { slugify } from '../_shared/announce-format.ts'
 
 const BOT_TOKEN    = Deno.env.get('TELEGRAM_BOT_TOKEN')!
 const CHAT_ID       = Deno.env.get('TELEGRAM_PUBLIC_CHAT_ID')!
+const WEBHOOK_SECRET = Deno.env.get('ANNOUNCE_WEBHOOK_SECRET')!
 const FESTIVAL_THREAD_ID = Number(Deno.env.get('TELEGRAM_PUBLIC_THREAD_ID')!)
 const WORKSHOP_THREAD_IDS: Record<string, number> = {
   americas: Number(Deno.env.get('TELEGRAM_WORKSHOP_AMERICAS_THREAD_ID')!),
@@ -111,6 +112,15 @@ function formatDates(start: string, end: string | null): string {
 }
 
 Deno.serve(async (req) => {
+  // Security review 2026-09-05, fixed 2026-09-10: bearer check matching cleanup-tg-messages and
+  // its two sibling announce functions — with verify_jwt = false and no in-code check, anyone on
+  // the internet could post fake "CANCELLED" announcements and rewrite the caption of real
+  // channel posts by guessing/reading an event id off the public API. See announce-event/index.ts
+  // for the full rationale.
+  if (req.headers.get('Authorization') !== `Bearer ${WEBHOOK_SECRET}`) {
+    return new Response('unauthorized', { status: 401 })
+  }
+
   const { record: event, old_record } = await req.json()
 
   // Only fire on first transition to cancelled = true.

@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { buildRichCaption, TEACHER_ROLES } from '../_shared/announce-format.ts'
 
 const BOT_TOKEN    = Deno.env.get('TELEGRAM_BOT_TOKEN')!
+const WEBHOOK_SECRET = Deno.env.get('ANNOUNCE_WEBHOOK_SECRET')!
 const CHANNEL_CHAT = '@citreasurelist'
 
 // Public channel — richer than the group message (I-018a's announce-event): a photo card with
@@ -10,6 +11,14 @@ const CHANNEL_CHAT = '@citreasurelist'
 // Caption format shared with announce-event's workshop path — see _shared/announce-format.ts.
 
 Deno.serve(async (req) => {
+  // Security review 2026-09-05, fixed 2026-09-10: bearer check matching cleanup-tg-messages and
+  // its two sibling announce functions — with verify_jwt = false and no in-code check, anyone on
+  // the internet could publish arbitrary content to @citreasurelist as this project's bot. See
+  // announce-event/index.ts for the full rationale.
+  if (req.headers.get('Authorization') !== `Bearer ${WEBHOOK_SECRET}`) {
+    return new Response('unauthorized', { status: 401 })
+  }
+
   const { record: event, old_record } = await req.json()
 
   // Only fire on first transition to 'published' — same guard as announce-event (I-018a).
