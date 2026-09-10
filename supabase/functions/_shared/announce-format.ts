@@ -30,7 +30,7 @@ export const DISCIPLINE_HASHTAG: Record<string, string> = {
   dance_improvisation: 'DanceImprovisation', dance_theatre: 'DanceTheatre',
   authentic_movement: 'AuthenticMovement', bmc: 'BMC', butoh: 'Butoh',
   conscious_dance: 'ConsciousDance', contemporary_dance: 'ContemporaryDance',
-  acroyoga: 'AcroYoga', axis_syllabus: 'AxisSyllabus',
+  acroyoga: 'AcroYoga', axis_syllabus: 'AxisSyllabus', water_dance: 'WaterDance',
 }
 
 // Country names for hashtags — covers every country currently in the DB (checked 2026-07-20) plus

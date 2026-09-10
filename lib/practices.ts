@@ -38,6 +38,7 @@ export const SELF_SELECTABLE_PRACTICES = [
   "axis_syllabus",
   "butoh",
   "conscious_dance",
+  "water_dance",
 ] as const;
 
 export type SelfSelectablePractice = (typeof SELF_SELECTABLE_PRACTICES)[number];
