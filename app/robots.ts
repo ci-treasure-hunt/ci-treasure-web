@@ -20,20 +20,18 @@ import { SITE_URL } from "@/lib/site";
 // particular has a poor reputation for compliance. If the load does not drop, the remedy is
 // firewall-level blocking, not a longer list here.
 const BLOCKED_AI_AND_SEO_BOTS = [
-  // AI training / answer-engine crawlers
-  "GPTBot",
-  "ChatGPT-User",
-  "OAI-SearchBot",
-  "ClaudeBot",
-  "Claude-Web",
-  "anthropic-ai",
-  "PerplexityBot",
-  "Google-Extended",
-  "Applebot-Extended",
-  "Meta-ExternalAgent",
+  // Model-training crawlers. Blocking these costs nothing: none of them send a visitor or a
+  // citation back, they only ingest.
+  "GPTBot", // OpenAI, training
+  "ClaudeBot", // Anthropic, training
+  "anthropic-ai", // Anthropic, legacy training agent
+  "Google-Extended", // Gemini training only; no effect on Google Search
+  "Applebot-Extended", // Apple AI training only; plain Applebot (Siri/Spotlight) stays allowed
+  "Meta-ExternalAgent", // Meta AI training; facebookexternalhit (link previews) is separate
   "Amazonbot",
-  "Bytespider",
-  "CCBot",
+  "Bytespider", // ByteDance/TikTok; heavy, and a poor robots-compliance record
+  "CCBot", // Common Crawl, the dataset most training corpora are built from
+  // Scrapers and dataset resellers
   "Diffbot",
   "ImagesiftBot",
   "Omgilibot",
@@ -46,6 +44,25 @@ const BLOCKED_AI_AND_SEO_BOTS = [
   "MJ12bot",
   "DotBot",
 ];
+
+// Deliberately ALLOWED, and the distinction matters more than it looks. Each vendor runs separate
+// crawlers for separate jobs, under separate user agents:
+//   1. training      - ingests pages to train a model. Blocked above.
+//   2. user-triggered - fetches a page live because a person asked the assistant about it.
+//   3. search index   - builds the index an assistant cites and links from.
+// Only (1) is a pure taking. (2) and (3) are how this site becomes the answer when someone asks
+// an assistant "where are the CI festivals in Portugal", which is the same job Google Search does
+// for us and is squarely in the project's interest. So these stay allowed:
+//   ChatGPT-User, OAI-SearchBot          (OpenAI: live fetch, and the ChatGPT search index)
+//   Claude-User, Claude-SearchBot        (Anthropic: same split)
+//   PerplexityBot, Perplexity-User       (Perplexity: index, and live fetch)
+// They cost crawl volume, which is the thing we are trying to reduce, and that is a real
+// trade accepted knowingly: user-triggered fetches scale with actual interest rather than
+// sweeping the site, and the index crawlers behave more like Googlebot than like a scraper.
+// Caveat: Perplexity has been publicly documented fetching pages that robots.txt disallowed, so
+// treat a rule against it as unreliable either way.
+// DeepSeek has no crawler user agent I could verify, so nothing here covers it.
+
 
 export default function robots(): MetadataRoute.Robots {
   return {
