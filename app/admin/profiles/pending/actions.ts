@@ -151,3 +151,53 @@ export async function rejectProfile(
   revalidatePath("/admin/profiles/pending");
   return { success: true };
 }
+
+// Leaves the profile exactly as-is (still shadow, still in this queue) — just emails the
+// submitter asking for more before it can be approved. Unlike rejectProfile, nothing is deleted:
+// this is for a profile that's genuinely on track (a real person, right shape) but too thin to
+// publish yet, where deleting it would just make them start over from a blank form.
+export async function requestMoreInfo(
+  profileId: string,
+  message: string,
+): Promise<{ success: boolean; error?: string }> {
+  await requireAdminUser();
+  const admin = createAdminClient();
+
+  const trimmedMessage = message.trim();
+  if (!trimmedMessage) {
+    return { success: false, error: "Message is required." };
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("name, slug, user_id")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (!profile) {
+    return { success: false, error: "Profile not found." };
+  }
+
+  const email = await submitterEmail(admin, profile.user_id);
+  if (!email) {
+    return { success: false, error: "No submitter email on file." };
+  }
+
+  const result = await sendEmail({
+    to: email,
+    subject: `A bit more info needed for your CI Treasure Hunt profile`,
+    text: [
+      `Thanks for submitting "${profile.name}" to CI Treasure Hunt!`,
+      "",
+      trimmedMessage,
+      "",
+      `Add it from your dashboard whenever you're ready, and it'll be reviewed again: https://citreasurehunt.com/dashboard/profile/edit`,
+      "",
+      "CI Treasure Hunt",
+    ].join("\n"),
+  });
+  if (!result.ok) {
+    return { success: false, error: result.error ?? "Failed to send email." };
+  }
+
+  return { success: true };
+}
