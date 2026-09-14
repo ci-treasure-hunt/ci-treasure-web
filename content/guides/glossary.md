@@ -6,7 +6,7 @@ keywords: ["contact improvisation glossary", "contact improvisation terminology"
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-09-02
+updated: 2026-09-14
 ---
 
 # Contact Improvisation Glossary
@@ -78,10 +78,12 @@ from here. CI treats off-balance as material to work with, not something to avoi
 
 ### Point of contact
 
-The place where two dancers' bodies are touching. It rarely stays fixed. It travels across the
-dancers' bodies by **rolling** (the contact area itself turning over), **sliding** (two surfaces
-moving against each other without losing touch), or **pivoting** (rotating around a fixed point).
-Following that travel instead of planning it is close to the physical core of what CI is.
+The place where two dancers' bodies are touching, sometimes called the **surface of contact**
+since it's rarely one point, more a patch of skin than a spot. It rarely stays fixed either way:
+it travels across the dancers' bodies by **rolling** (the contact area itself turning over),
+**sliding** (two surfaces moving against each other without losing touch), or **pivoting**
+(rotating around a fixed point). Following that travel instead of planning it is close to the
+physical core of what CI is.
 
 ### Reaching
 
@@ -221,7 +223,8 @@ round again.
 
 It's practiced worldwide, and once a year near the northern summer solstice as the Global
 Underscore, danced for four hours simultaneously at 90 or more sites at once. Newcomers are
-normally talked through the score before taking part.
+normally talked through the score before taking part. Nancy Stark Smith's own site has [more on
+the score's history and structure](https://nancystarksmith.com/underscore/).
 
 ## Terms from adjacent practices
 
