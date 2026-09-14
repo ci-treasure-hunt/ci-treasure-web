@@ -84,6 +84,14 @@ Deno.serve(async (req) => {
     return new Response('skip: past event', { status: 200 })
   }
 
+  // 1-day events don't reach the group — its two topics (festival index, regional workshop
+  // list) are for things people travel for. A 1-day event still gets the public channel post
+  // and the website listing, just not a group thread entry. Decided 2026-09-14.
+  const days = daySpan(event.start_date, event.end_date)
+  if (days === 1) {
+    return new Response('skip: 1-day event (group excluded)', { status: 200 })
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -165,62 +173,41 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 4+ days -> festival topic, short one-liner. Fewer -> regional workshop topic by
-  // event.country; falls back to the festival topic if the country isn't in any region
-  // bucket (unmapped code) so an event never silently fails to announce.
-  const days = daySpan(event.start_date, event.end_date)
+  // 4+ days -> festival topic. Fewer -> regional workshop topic by event.country; falls back
+  // to the festival topic if the country isn't in any region bucket (unmapped code) so an
+  // event never silently fails to announce.
   const isFestival = days >= 4
   const threadId = isFestival
     ? FESTIVAL_THREAD_ID
     : WORKSHOP_THREAD_IDS[regionFor(event.country) ?? ''] ?? FESTIVAL_THREAD_ID
 
-  let tgRes: Response
+  // Same rich photo-card format as the public channel — price/level/teachers, not just a
+  // title. Originally only the 1-3 day workshop path got this (2026-07-22: those days have no
+  // equivalent "list" to fall back on), while festivals got just the terse index line below.
+  // Festivals now get both: the line still serves as this topic's running index, but the card
+  // gives the event the same visibility everyone else gets. Decided 2026-09-14.
+  const { data: teacherRows } = await supabase
+    .from('event_teachers')
+    .select('role, profiles(name)')
+    .eq('event_id', event.id)
+  // profiles(name) is a to-one join, but the untyped Supabase client infers it as an array —
+  // runtime shape is a single object (per the ?.name access), so cast rather than fight it.
+  type TeacherRow = { role: string; profiles: { name: string } | null }
+  const teacherNames = [...new Set(
+    ((teacherRows ?? []) as unknown as TeacherRow[])
+      .filter(row => TEACHER_ROLES.has(row.role))
+      .map(row => row.profiles?.name)
+      .filter(Boolean),
+  )]
+  const caption = buildRichCaption(event, teacherNames, location)
 
-  if (isFestival) {
-    // Unchanged short one-liner — festivals already have a de facto "list" (this topic
-    // itself reads as a running index), so a terse pointer is enough.
-    const title = escapeMarkdown(event.title)
-    const url   = `https://citreasurehunt.com/events/${event.short_id}-${slugify(event.title)}`
-    const disciplines: string[] = event.discipline ?? []
-    const isCi = disciplines.includes('contact_improvisation')
-    const disciplineTag = !isCi && disciplines.length ? `[${disciplines.join(', ')}] ` : ''
-    const text = `New: ${disciplineTag}${toFlag(event.country)} ${formatDates(event.start_date, event.end_date)} — [${title}](${url}), ${escapeMarkdown(location)}`
-
-    tgRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        message_thread_id: threadId,
-        text,
-        parse_mode: 'Markdown',
-        link_preview_options: { is_disabled: true },
-      }),
-    })
-  } else {
-    // 2026-07-22: 2-3 day workshops have no equivalent "list" anywhere else to fall back
-    // on, so they get the same rich photo-card format as the public channel instead of a
-    // terse line — see docs/issues/i-085-organizer-outreach.md discussion. Falls back to a
-    // text-only sendMessage with the same caption when there's no image, rather than
-    // skipping outright (unlike the channel's photo-first design) — a workshop with no
-    // photo still deserves a real announcement, since this topic is its only visibility.
-    const { data: teacherRows } = await supabase
-      .from('event_teachers')
-      .select('role, profiles(name)')
-      .eq('event_id', event.id)
-    // profiles(name) is a to-one join, but the untyped Supabase client infers it as an array —
-    // runtime shape is a single object (per the ?.name access), so cast rather than fight it.
-    type TeacherRow = { role: string; profiles: { name: string } | null }
-    const teacherNames = [...new Set(
-      ((teacherRows ?? []) as unknown as TeacherRow[])
-        .filter(row => TEACHER_ROLES.has(row.role))
-        .map(row => row.profiles?.name)
-        .filter(Boolean),
-    )]
-    const caption = buildRichCaption(event, teacherNames, location)
-
-    tgRes = event.image_url
-      ? await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+  // Falls back to a text-only sendMessage with the same caption when there's no image, rather
+  // than skipping outright (unlike the channel's photo-first design) — an event with no photo
+  // still deserves a real announcement here, since for 1-3 day events this topic is its only
+  // group visibility.
+  async function sendRichCard(): Promise<Response> {
+    return event.image_url
+      ? fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -231,7 +218,7 @@ Deno.serve(async (req) => {
             parse_mode: 'HTML',
           }),
         })
-      : await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      : fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -244,20 +231,53 @@ Deno.serve(async (req) => {
         })
   }
 
-  const tgData = await tgRes.json()
-
-  if (!tgData.ok) {
-    console.error('Telegram error:', JSON.stringify(tgData))
-    return new Response('telegram error', { status: 500 })
+  async function recordAnnouncement(tgRes: Response): Promise<boolean> {
+    const tgData = await tgRes.json()
+    if (!tgData.ok) {
+      console.error('Telegram error:', JSON.stringify(tgData))
+      return false
+    }
+    await supabase.from('tg_announcements').insert({
+      entity_type: 'event',
+      entity_id:   event.id,
+      chat_id:     Number(CHAT_ID),
+      thread_id:   threadId,
+      message_id:  tgData.result.message_id,
+    })
+    return true
   }
 
-  await supabase.from('tg_announcements').insert({
-    entity_type: 'event',
-    entity_id:   event.id,
-    chat_id:     Number(CHAT_ID),
-    thread_id:   threadId,
-    message_id:  tgData.result.message_id,
-  })
+  if (isFestival) {
+    const title = escapeMarkdown(event.title)
+    const url   = `https://citreasurehunt.com/events/${event.short_id}-${slugify(event.title)}`
+    const disciplines: string[] = event.discipline ?? []
+    const isCi = disciplines.includes('contact_improvisation')
+    const disciplineTag = !isCi && disciplines.length ? `[${disciplines.join(', ')}] ` : ''
+    const text = `New: ${disciplineTag}${toFlag(event.country)} ${formatDates(event.start_date, event.end_date)} — [${title}](${url}), ${escapeMarkdown(location)}`
+
+    const listRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        message_thread_id: threadId,
+        text,
+        parse_mode: 'Markdown',
+        link_preview_options: { is_disabled: true },
+      }),
+    })
+    if (!(await recordAnnouncement(listRes))) {
+      return new Response('telegram error', { status: 500 })
+    }
+
+    if (!(await recordAnnouncement(await sendRichCard()))) {
+      return new Response('telegram error', { status: 500 })
+    }
+  } else {
+    if (!(await recordAnnouncement(await sendRichCard()))) {
+      return new Response('telegram error', { status: 500 })
+    }
+  }
 
   console.log(`Announced: ${event.short_id} — ${event.title}`)
   return new Response('ok', { status: 200 })
