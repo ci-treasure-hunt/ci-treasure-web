@@ -10,6 +10,11 @@ const WORKSHOP_THREAD_IDS: Record<string, number> = {
   emea:     Number(Deno.env.get('TELEGRAM_WORKSHOP_EMEA_THREAD_ID')!),
   apac:     Number(Deno.env.get('TELEGRAM_WORKSHOP_APAC_THREAD_ID')!),
 }
+// Festivals' full rich-card post lives in its own topic, separate from FESTIVAL_THREAD_ID
+// (which stays the terse running index — t.me/citreasurehunt/174). This is that dedicated
+// full-post topic (t.me/citreasurehunt/426), the festival equivalent of a regional workshop
+// topic. Decided 2026-09-14.
+const FESTIVAL_CARD_THREAD_ID = Number(Deno.env.get('TELEGRAM_FESTIVAL_CARD_THREAD_ID')!)
 
 // Same three business regions as lib/continents.ts's CONTINENT_COUNTRIES — duplicated here
 // because edge functions run standalone in Deno and can't import from lib/. Keep in sync if
@@ -181,11 +186,16 @@ Deno.serve(async (req) => {
     ? FESTIVAL_THREAD_ID
     : WORKSHOP_THREAD_IDS[regionFor(event.country) ?? ''] ?? FESTIVAL_THREAD_ID
 
+  // Full post goes to a different topic for festivals (FESTIVAL_CARD_THREAD_ID) than for
+  // workshops (their own regional topic doubles as both index and full post — there's no
+  // separate terse line there).
+  const cardThreadId = isFestival ? FESTIVAL_CARD_THREAD_ID : threadId
+
   // Same rich photo-card format as the public channel — price/level/teachers, not just a
   // title. Originally only the 1-3 day workshop path got this (2026-07-22: those days have no
   // equivalent "list" to fall back on), while festivals got just the terse index line below.
-  // Festivals now get both: the line still serves as this topic's running index, but the card
-  // gives the event the same visibility everyone else gets. Decided 2026-09-14.
+  // Festivals now get both: the index line stays in FESTIVAL_THREAD_ID, the card goes to its
+  // own topic. Decided 2026-09-14.
   const { data: teacherRows } = await supabase
     .from('event_teachers')
     .select('role, profiles(name)')
@@ -205,14 +215,14 @@ Deno.serve(async (req) => {
   // than skipping outright (unlike the channel's photo-first design) — an event with no photo
   // still deserves a real announcement here, since for 1-3 day events this topic is its only
   // group visibility.
-  async function sendRichCard(): Promise<Response> {
+  async function sendRichCard(toThreadId: number): Promise<Response> {
     return event.image_url
       ? fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: CHAT_ID,
-            message_thread_id: threadId,
+            message_thread_id: toThreadId,
             photo: event.image_url,
             caption,
             parse_mode: 'HTML',
@@ -223,7 +233,7 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: CHAT_ID,
-            message_thread_id: threadId,
+            message_thread_id: toThreadId,
             text: caption,
             parse_mode: 'HTML',
             link_preview_options: { is_disabled: true },
@@ -231,7 +241,7 @@ Deno.serve(async (req) => {
         })
   }
 
-  async function recordAnnouncement(tgRes: Response): Promise<boolean> {
+  async function recordAnnouncement(fromThreadId: number, tgRes: Response): Promise<boolean> {
     const tgData = await tgRes.json()
     if (!tgData.ok) {
       console.error('Telegram error:', JSON.stringify(tgData))
@@ -241,7 +251,7 @@ Deno.serve(async (req) => {
       entity_type: 'event',
       entity_id:   event.id,
       chat_id:     Number(CHAT_ID),
-      thread_id:   threadId,
+      thread_id:   fromThreadId,
       message_id:  tgData.result.message_id,
     })
     return true
@@ -266,15 +276,15 @@ Deno.serve(async (req) => {
         link_preview_options: { is_disabled: true },
       }),
     })
-    if (!(await recordAnnouncement(listRes))) {
+    if (!(await recordAnnouncement(threadId, listRes))) {
       return new Response('telegram error', { status: 500 })
     }
 
-    if (!(await recordAnnouncement(await sendRichCard()))) {
+    if (!(await recordAnnouncement(cardThreadId, await sendRichCard(cardThreadId)))) {
       return new Response('telegram error', { status: 500 })
     }
   } else {
-    if (!(await recordAnnouncement(await sendRichCard()))) {
+    if (!(await recordAnnouncement(threadId, await sendRichCard(threadId)))) {
       return new Response('telegram error', { status: 500 })
     }
   }
