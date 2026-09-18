@@ -493,7 +493,11 @@ async function buildEventDetail(
       .select("id, short_id, title, type, start_date, end_date, series_order")
       .eq("series_id", row.series_id)
       .eq("status", "published")
-      .order("series_order", { ascending: true });
+      // series_order is NULL for recurring series by design (D-02: interchangeable instances have
+      // no position), so ordering by it alone leaves those siblings in arbitrary order. Nulls last,
+      // then chronological, which keeps sequential series numbered and gives recurring ones dates.
+      .order("series_order", { ascending: true, nullsFirst: false })
+      .order("start_date", { ascending: true });
 
     if (siblingsData) {
       seriesSiblings = siblingsData.map((sib) => ({
