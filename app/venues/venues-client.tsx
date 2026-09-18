@@ -284,7 +284,7 @@ function VenueCard({ venue }: { venue: VenueListItem }) {
 
         <div className="mt-auto flex flex-wrap gap-2 pt-1">
           {venue.website && (
-            <a href={venue.website} target="_blank" rel="noopener noreferrer" className={PLATFORM_ICON_CLASS} aria-label="Website">
+            <a href={venue.website} target="_blank" rel="noopener" className={PLATFORM_ICON_CLASS} aria-label="Website">
               <Globe className="size-4" />
             </a>
           )}
@@ -293,7 +293,7 @@ function VenueCard({ venue }: { venue: VenueListItem }) {
               key={i}
               href={link.url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className={PLATFORM_ICON_CLASS}
               aria-label={link.label}
             >

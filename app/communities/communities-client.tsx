@@ -484,42 +484,42 @@ export function CommunityCard({ community, onShowOnMap }: CommunityCardProps) {
           </button>
         )}
         {community.websiteUrl && (
-          <a href={community.websiteUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Website">
+          <a href={community.websiteUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Website">
             <ExternalLink className="size-4" />
           </a>
         )}
         {community.facebookGroupUrl && (
-          <a href={community.facebookGroupUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Facebook group">
+          <a href={community.facebookGroupUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Facebook group">
             <FacebookIcon />
           </a>
         )}
         {community.facebookPageUrl && (
-          <a href={community.facebookPageUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Facebook page">
+          <a href={community.facebookPageUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Facebook page">
             <FacebookIcon />
           </a>
         )}
         {community.instagramUrl && (
-          <a href={community.instagramUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Instagram">
+          <a href={community.instagramUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Instagram">
             <InstagramIcon />
           </a>
         )}
         {community.calendarUrl && (
-          <a href={community.calendarUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Calendar">
+          <a href={community.calendarUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Calendar">
             <CalendarDays className="size-4" />
           </a>
         )}
         {community.telegramChannelUrl && !isPrivateGroupInvite(community.telegramChannelUrl) && (
-          <a href={community.telegramChannelUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Telegram channel">
+          <a href={community.telegramChannelUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Telegram channel">
             <MessageCircle className="size-4" />
           </a>
         )}
         {community.whatsappChannelUrl && !isPrivateGroupInvite(community.whatsappChannelUrl) && (
-          <a href={community.whatsappChannelUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="WhatsApp channel">
+          <a href={community.whatsappChannelUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="WhatsApp channel">
             <MessageCircle className="size-4" />
           </a>
         )}
         {community.newsletterUrl && (
-          <a href={community.newsletterUrl} target="_blank" rel="noopener noreferrer" className={linkIconClass} aria-label="Newsletter">
+          <a href={community.newsletterUrl} target="_blank" rel="noopener" className={linkIconClass} aria-label="Newsletter">
             <Send className="size-4" />
           </a>
         )}
@@ -527,7 +527,7 @@ export function CommunityCard({ community, onShowOnMap }: CommunityCardProps) {
           <a
             href={community.otherResourceUrl}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             className={linkIconClass}
             aria-label={
               isMessengerUrl(community.otherResourceUrl)

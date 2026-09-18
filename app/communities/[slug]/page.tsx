@@ -426,7 +426,8 @@ function SocialLink({ href, icon, label }: { href: string; icon: React.ReactNode
     <a
       href={href}
       target="_blank"
-      rel="noreferrer"
+      // noopener, not noreferrer — see components/social-link.tsx (I-173 attribution)
+      rel="noopener"
       className="inline-flex items-center justify-between rounded-xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-(--color-pine) hover:text-(--color-pine)"
     >
       <span className="flex items-center gap-3">

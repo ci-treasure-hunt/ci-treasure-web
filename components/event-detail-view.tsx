@@ -345,7 +345,11 @@ export function EventDetailView({
                         key={`${item.type}-${item.url}`}
                         href={item.url}
                         target="_blank"
-                        rel="noreferrer"
+                        // noopener, not noreferrer: organizers need to see citreasurehunt.com in
+                        // their own analytics (I-173 attribution). The site-wide
+                        // Referrer-Policy: strict-origin-when-cross-origin means only the bare
+                        // origin is sent, never the event path.
+                        rel="noopener"
                         className="inline-flex items-center justify-between rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-(--color-pine) hover:text-(--color-pine)"
                       >
                         {getLinkLabel(item.type, item.label)}

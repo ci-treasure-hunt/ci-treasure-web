@@ -13,7 +13,9 @@ export function SocialLink({
     <a
       href={href}
       target="_blank"
-      rel="noreferrer"
+      // noopener, not noreferrer: these point at the entity's own site/socials, and they should
+      // be able to see citreasurehunt.com as a referrer (I-173). Referrer-Policy sends origin only.
+      rel="noopener"
       className="inline-flex items-center justify-between rounded-xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-(--color-pine) hover:text-(--color-pine)"
     >
       <span className="flex items-center gap-3">
