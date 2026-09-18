@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
   type EventListItem,
+  formatCardTimeRange,
   formatEventDateRange,
   getEventHref,
   getEventLocation,
@@ -12,6 +13,7 @@ import {
 import { getCountryFlag } from "@/lib/utils";
 
 export function EntityEventCard({ event }: { event: EventListItem }) {
+  const timeRange = formatCardTimeRange(event);
   return (
     <Link
       href={getEventHref(event)}
@@ -35,6 +37,12 @@ export function EntityEventCard({ event }: { event: EventListItem }) {
             <CalendarDays className="h-3.5 w-3.5" />
             {formatEventDateRange(event)}
           </p>
+          {timeRange ? (
+            <p className="flex items-center gap-1.5">
+              <Clock3 className="h-3.5 w-3.5" />
+              {timeRange}
+            </p>
+          ) : null}
           <p className="flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5" />
             {getEventLocation(event)}

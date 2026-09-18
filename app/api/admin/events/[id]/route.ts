@@ -76,6 +76,12 @@ export async function PUT(
         status: payload.status,
         start_date: payload.startDate,
         end_date: payload.endDate,
+        // Only written when the caller actually sent the field. `payload` is untyped
+        // (request.json()), and the admin form is the only current caller, but an update that
+        // simply omits these shouldn't silently wipe a time the organizer or /addevent set —
+        // same reasoning as the lat/lng spread below.
+        ...(payload.startTime !== undefined ? { start_time: payload.startTime?.trim() || null } : {}),
+        ...(payload.endTime !== undefined ? { end_time: payload.endTime?.trim() || null } : {}),
         timezone: payload.timezone,
         city: payload.city,
         country: payload.country,

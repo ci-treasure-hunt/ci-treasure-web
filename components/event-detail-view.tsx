@@ -51,8 +51,10 @@ export function EventDetailView({
   countryLink: CountryLink;
   preview?: boolean;
 }) {
-  const isSingleDay = event.startDate === event.endDate;
-  const timeRange = isSingleDay && (event.startTime || event.endTime) ? formatTimeRange(event) : "";
+  // I-170: was gated to single-day events only. formatTimeRange() already handles the
+  // multi-day case ("starts X first day, ends Y last day"), so a short block with a daily
+  // schedule (e.g. a 3-day workshop) can show it too, not just literal single-day events.
+  const timeRange = event.startTime || event.endTime ? formatTimeRange(event) : "";
 
   // Registration links are tied to one instance of the event and routinely go dead once it's
   // over (organizers take the signup page down post-event) — and even when they don't, nobody

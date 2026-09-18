@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
         status: payload.status,
         start_date: payload.startDate,
         end_date: payload.endDate,
+        start_time: payload.startTime?.trim() || null,
+        end_time: payload.endTime?.trim() || null,
         timezone: payload.timezone,
         city: payload.city,
         country: payload.country,

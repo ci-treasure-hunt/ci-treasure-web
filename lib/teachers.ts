@@ -371,8 +371,8 @@ export async function getTeacherEvents(profileId: string): Promise<{
     return { upcoming: [], past: [] };
   }
   const supabase = createStaticClient();
-  const fields = `role, teacher_id, events (id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, status, hide)`;
-  const orgFields = `organizer_id, events (id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, status, hide)`;
+  const fields = `role, teacher_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, status, hide)`;
+  const orgFields = `organizer_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, status, hide)`;
 
   const [{ data: asTeacher }, { data: asOrganizer }] = await Promise.all([
     supabase.from("event_teachers").select(fields).eq("teacher_id", profileId),

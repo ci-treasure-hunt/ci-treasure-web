@@ -107,6 +107,13 @@ export type OrganizerEventFormData = {
   type: string;
   startDate: string;
   endDate: string;
+  // HH:MM, optional. I-170: for a single-day event this is the whole schedule; for a short
+  // multi-day block (workshop, lab, etc.) these are the first day's start and the last day's
+  // end, matching formatTimeRange()'s existing "starts X first day, ends Y last day" phrasing
+  // in lib/events.ts — not a daily-repeating window, since the schema has no day-of-week
+  // concept (that's I-171's recurrence work, not this one's).
+  startTime: string;
+  endTime: string;
   timezone: string;
   city: string;
   country: string;
@@ -141,6 +148,8 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     type: "workshop",
     startDate: "",
     endDate: "",
+    startTime: "",
+    endTime: "",
     timezone: "", // no default — see the blank <option> in event-form.tsx for why
     city: "",
     country: "",
@@ -247,6 +256,8 @@ type EventRowForForm = {
   type: string;
   start_date: string | null;
   end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   timezone: string | null;
   city: string | null;
   country: string | null;
@@ -272,6 +283,9 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     type: row.type ?? "workshop",
     startDate: row.start_date ?? "",
     endDate: row.end_date ?? "",
+    // Stored HH:MM:SS → HH:MM for the <input type="time"> in event-form.tsx.
+    startTime: row.start_time?.slice(0, 5) ?? "",
+    endTime: row.end_time?.slice(0, 5) ?? "",
     timezone: row.timezone ?? "Europe/Berlin",
     city: row.city ?? "",
     country: row.country ?? "",
@@ -306,12 +320,22 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
   };
 }
 
+// I-171: jam/class are inherently recurring formats (weekly jam, ongoing class), not one-off
+// events with a different label. Unblocking single-day submission for them without recurrence
+// support (day-of-week, weekly/biweekly cadence) would invite "our weekly Tuesday jam" to be
+// submitted as a single dated row, which doesn't fit the events model and has to be cleaned up
+// later. Stays gated until I-171 ships its own submission path.
+const RECURRING_TYPES = new Set(["jam", "class"]);
+
 // Validation shared by create + edit. `enforceMinDuration` is only passed true from
-// createEvent — single-day jams/classes are blocked at submission time (2026-07-05
-// decision) because neither the organizer nor admin web forms capture start/end time
-// of day yet, and a single-day listing without a time is barely usable. Editing an
-// existing event never re-checks this, so already-linked single-day events (added via
-// /addevent or admin, which do capture time) stay editable.
+// createEvent. Until 2026-09-18 this flatly blocked any same-day submission (2026-07-05
+// decision) because neither the organizer nor admin web forms captured start/end time of day,
+// and a single-day listing without a time is barely usable (I-170). Now: a same-day event for a
+// one-off format is allowed once it has a start time — the actual problem the 2026-07-05 guard
+// was standing in for. Recurring formats (RECURRING_TYPES) stay blocked regardless of time,
+// since the real gap for them is recurrence support (I-171), not a missing time field. Editing
+// an existing event never re-checks this, so already-linked single-day events (added via
+// /addevent or admin) stay editable.
 export function validateOrganizerEvent(
   data: OrganizerEventFormData,
   options?: { enforceMinDuration?: boolean }
@@ -321,7 +345,12 @@ export function validateOrganizerEvent(
   if (!data.endDate) return "End date is required.";
   if (data.endDate < data.startDate) return "End date can't be before the start date.";
   if (options?.enforceMinDuration && data.endDate === data.startDate) {
-    return "Self-service submission currently requires events spanning 2+ days. For single-day jams, classes, or workshops, please share it in our Telegram group and we'll add it manually.";
+    if (RECURRING_TYPES.has(data.type)) {
+      return "Weekly jams and ongoing classes aren't supported for self-service submission yet — share it in our Telegram group and we'll add it manually.";
+    }
+    if (!data.startTime.trim()) {
+      return "Add a start time for a single-day event.";
+    }
   }
   if (!data.city.trim()) return "City is required.";
   if (!data.country.trim()) return "Country is required.";

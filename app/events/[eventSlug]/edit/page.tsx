@@ -32,7 +32,7 @@ export default async function EditEventPage({
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, short_id, title, type, start_date, end_date, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, level, language, features, discipline, cancelled, cancelled_text, price, links, segments, status, user_id",
+      "id, short_id, title, type, start_date, end_date, start_time, end_time, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, level, language, features, discipline, cancelled, cancelled_text, price, links, segments, status, user_id",
     )
     .ilike("short_id", parsed.shortId)
     .maybeSingle();

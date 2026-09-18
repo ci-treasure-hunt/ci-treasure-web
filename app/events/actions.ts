@@ -50,6 +50,8 @@ function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, tim
     type: data.type,
     start_date: data.startDate,
     end_date: data.endDate,
+    start_time: data.startTime.trim() || null,
+    end_time: data.endTime.trim() || null,
     timezone,
     city: data.city.trim(),
     country: normalizeCountry(data.country),

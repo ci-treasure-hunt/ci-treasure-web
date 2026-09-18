@@ -20,7 +20,7 @@ export default async function AdminEditEventPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, title, type, status, start_date, end_date, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, cancelled, cancelled_text, hide, price, links")
+        .select("id, title, type, status, start_date, end_date, start_time, end_time, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, cancelled, cancelled_text, hide, price, links")
         .eq("id", id)
         .single(),
       supabase
@@ -79,6 +79,9 @@ export default async function AdminEditEventPage({
     status: event.status,
     startDate: event.start_date,
     endDate: event.end_date,
+    // Stored HH:MM:SS → HH:MM for <input type="time">.
+    startTime: event.start_time?.slice(0, 5) ?? "",
+    endTime: event.end_time?.slice(0, 5) ?? "",
     timezone: event.timezone,
     city: event.city,
     country: event.country,

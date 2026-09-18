@@ -56,6 +56,13 @@ export type AdminEventFormData = {
   status: string;
   startDate: string;
   endDate: string;
+  // HH:MM, optional. I-170: same meaning as the organizer form's fields — for a single-day
+  // event the whole schedule, for a multi-day one the first day's start and the last day's
+  // end (matching formatTimeRange() in lib/events.ts). Admins previously had no way to set
+  // these from the dashboard at all, so an organizer-submitted time could be read but never
+  // corrected without going to SQL.
+  startTime: string;
+  endTime: string;
   timezone: string;
   city: string;
   country: string;
@@ -82,6 +89,8 @@ export function createEmptyEventFormData(): AdminEventFormData {
     status: "draft",
     startDate: "",
     endDate: "",
+    startTime: "",
+    endTime: "",
     timezone: "Europe/Berlin",
     city: "",
     country: "",

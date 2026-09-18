@@ -24,6 +24,11 @@ export type EventListItem = {
   type: string;
   startDate: string;
   endDate: string;
+  // HH:MM:SS or null. I-170. Card-level display only shows these for a single-day event —
+  // see formatCardTimeRange() below. Multi-day "first day / last day" phrasing stays on the
+  // detail page (formatTimeRange() in lib/events.ts), which also has the timezone to caption it.
+  startTime: string | null;
+  endTime: string | null;
   city: string;
   country: string;
   imageUrl: string | null;
@@ -198,4 +203,17 @@ export function formatEventDateRange(event: Pick<EventListItem, "startDate" | "e
     day: "numeric",
     year: "numeric",
   }).format(end)}`;
+}
+
+// I-170: card-level time-of-day, single-day events only. No timezone caption here (unlike
+// formatTimeRange() in lib/events.ts, used on the detail page) — a card already shows city and
+// country, and repeating "(Europe/Berlin)" on every card in a list is clutter the detail page
+// can afford but a grid can't. Multi-day events don't get a card-level time at all: the "first
+// day start / last day end" phrasing only makes sense with room to explain it.
+export function formatCardTimeRange(event: Pick<EventListItem, "startDate" | "endDate" | "startTime" | "endTime">) {
+  if (event.startDate !== event.endDate) return "";
+  if (!event.startTime && !event.endTime) return "";
+  const start = event.startTime ? event.startTime.slice(0, 5) : "TBA";
+  const end = event.endTime ? event.endTime.slice(0, 5) : "";
+  return end ? `${start} - ${end}` : start;
 }

@@ -130,6 +130,15 @@ export function EventForm({
               <Field label="End date">
                 <input type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} className={inputClassName} />
               </Field>
+              {/* Always shown here, unlike the organizer form's ≤4-day gate: an admin fixing a
+                  festival's arrival/departure times is a real case, and this form is used by
+                  people who know what the two fields mean. */}
+              <Field label="Start time">
+                <input type="time" value={form.startTime} onChange={(event) => setForm({ ...form, startTime: event.target.value })} className={inputClassName} />
+              </Field>
+              <Field label="End time">
+                <input type="time" value={form.endTime} onChange={(event) => setForm({ ...form, endTime: event.target.value })} className={inputClassName} />
+              </Field>
               <div className="md:col-span-2">
                 <Field label="Description">
                   <textarea

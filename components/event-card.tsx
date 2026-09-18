@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, Clock3, MapPin } from "lucide-react";
 
-import { formatEventDateRange, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
+import { formatCardTimeRange, formatEventDateRange, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
 import { getMediumUrl, getSmallUrl, toCdnUrl } from "@/lib/image-url";
 
 export function EventCard({ event, compact = false }: { event: EventListItem; compact?: boolean }) {
   const imageUrl = event.imageUrl?.trim() ?? "";
   const renderImage = imageUrl.length > 0;
+  const timeRange = formatCardTimeRange(event);
 
   if (compact) {
     return (
@@ -33,7 +34,10 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
               )}
             </div>
             <h2 className="truncate font-serif text-sm font-semibold leading-snug text-slate-950">{event.title}</h2>
-            <p className="text-xs text-slate-500">{formatEventDateRange(event)}</p>
+            <p className="text-xs text-slate-500">
+              {formatEventDateRange(event)}
+              {timeRange ? ` · ${timeRange}` : ""}
+            </p>
             {/* slate-500, not slate-400: slate-400 measured 2.63:1 on white, below WCAG's 4.5:1 minimum */}
             <p className="text-xs text-slate-500">{event.city}, {getCountryLabel(event.country)}</p>
           </div>
@@ -79,6 +83,12 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
               <CalendarDays className="mt-0.5 size-4 text-(--color-pine)" />
               <dd>{formatEventDateRange(event)}</dd>
             </div>
+            {timeRange ? (
+              <div className="flex items-start gap-2">
+                <Clock3 className="mt-0.5 size-4 text-(--color-pine)" />
+                <dd>{timeRange}</dd>
+              </div>
+            ) : null}
             <div className="flex items-start gap-2">
               <MapPin className="mt-0.5 size-4 text-(--color-pine)" />
               <dd>

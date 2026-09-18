@@ -174,6 +174,8 @@ export function mapEventRow(row: SupabaseEventRow): EventListItem {
     type: row.type,
     startDate: row.start_date,
     endDate: row.end_date,
+    startTime: row.start_time,
+    endTime: row.end_time,
     city: row.city,
     country: row.country,
     imageUrl: row.image_url,
@@ -352,7 +354,7 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from("events")
-      .select("id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, discipline, cancelled")
+      .select("id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled")
       .eq("status", "published")
       .gte("end_date", today)
       .order("start_date", { ascending: true });
@@ -400,7 +402,7 @@ export async function getEventsByType(type: string, today: string): Promise<{ ev
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from("events")
-      .select("id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, discipline, cancelled, series_id")
+      .select("id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled, series_id")
       .eq("status", "published")
       .eq("type", type)
       .contains("discipline", ["contact_improvisation"])

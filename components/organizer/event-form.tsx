@@ -57,6 +57,18 @@ function tzLabel(tz: string): string {
   return off ? `${tz} (${off})` : tz;
 }
 
+// I-170: whole-day span between the two date pickers, inclusive. Used only to decide whether
+// the time fields are worth showing — a 2-week festival has no use for a single "first day
+// start / last day end" pair, but a 1-4 day workshop does (matches formatTimeRange()'s existing
+// phrasing in lib/events.ts).
+function daySpan(startDate: string, endDate: string): number | null {
+  if (!startDate || !endDate) return null;
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  return days > 0 ? days : null;
+}
+
 export function OrganizerEventForm({
   mode,
   eventId,
@@ -90,6 +102,13 @@ export function OrganizerEventForm({
         : [...prev.discipline, value],
     }));
   }
+
+  const span = daySpan(form.startDate, form.endDate);
+  const isSingleDay = form.startDate === form.endDate && form.startDate !== "";
+  // I-170: short blocks (workshops, labs, etc. — festivals/retreats/intensives are exempt in
+  // practice since they run far longer) benefit from a daily time window too, not just
+  // single-day events. 4 days is the same cutoff the spec settled on.
+  const showTimeFields = span != null && span <= 4;
 
   function toggleLanguage(code: string) {
     setForm((prev) => ({
@@ -148,6 +167,22 @@ export function OrganizerEventForm({
           <Field label="End date *">
             <input type="date" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} className={inputClassName} />
           </Field>
+          {showTimeFields ? (
+            <>
+              <Field label={isSingleDay ? "Start time *" : "Start time (first day)"}>
+                <input type="time" value={form.startTime} onChange={(e) => set("startTime", e.target.value)} className={inputClassName} />
+              </Field>
+              <Field label={isSingleDay ? "End time" : "End time (last day)"}>
+                <input type="time" value={form.endTime} onChange={(e) => set("endTime", e.target.value)} className={inputClassName} />
+              </Field>
+              {isSingleDay ? (
+                <p className="-mt-2 text-xs text-slate-500 md:col-span-2">
+                  A start time is required for a single-day event — this is what makes it show up
+                  properly instead of just a bare date.
+                </p>
+              ) : null}
+            </>
+          ) : null}
           <Field label="Timezone">
             <select value={form.timezone} onChange={(e) => set("timezone", e.target.value)} className={inputClassName}>
               {/* Left blank, the timezone is auto-detected server-side from the event's

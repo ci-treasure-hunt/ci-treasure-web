@@ -138,7 +138,7 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
   const today = new Date().toISOString().split("T")[0];
 
   const EVENT_COLS =
-    "id, short_id, title, description, type, start_date, end_date, city, country, image_url, lat, lng, discipline, cancelled";
+    "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled";
 
   const [{ communities: allSiteCommunities }, { data: teacherRows }, { data: eventRows }, { data: venueRows }] =
     await Promise.all([
