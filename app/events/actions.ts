@@ -322,6 +322,18 @@ export async function checkSimilarProfileNames(name: string): Promise<SimilarPro
 // hand editing to, so it stays admin-only until someone fills in a bio/photo and approves it.
 // Deliberately thin: no bio, no photo, no socials — an organizer speaking for someone else
 // shouldn't be the one writing their bio (same reasoning as "no profile portraits").
+// Longest real profile name is 30 characters (checked live 2026-09-19); 120 is room to spare.
+// `name` is an unbounded text column and this is a registered action endpoint taking raw JSON,
+// so the cap is what stops a megabyte of text being written straight through the admin client.
+const MAX_SUGGESTED_NAME = 120;
+
+// How many un-reviewed stubs one account may have outstanding. This writes with the admin
+// client (RLS can't express "a stub for someone else"), so without a ceiling one authenticated
+// account could create profiles rows without limit and bury the review queue. Anyone hitting
+// this legitimately has more unlisted people than a single event plausibly needs, and the queue
+// drains as soon as they're reviewed.
+const MAX_PENDING_SUGGESTIONS = 10;
+
 export async function suggestPersonProfile(
   name: string,
   kind: "teacher" | "organizer",
@@ -330,6 +342,12 @@ export async function suggestPersonProfile(
   if (!trimmed) {
     return { success: false, error: "Name is required." };
   }
+  if (trimmed.length > MAX_SUGGESTED_NAME) {
+    return { success: false, error: "That name is too long." };
+  }
+  // The union type is a compile-time promise, and this is reachable as a plain HTTP endpoint
+  // with a JSON body, so narrow it at runtime the same way /api/admin/profiles does.
+  const resolvedKind = kind === "organizer" ? "organizer" : "teacher";
 
   const supabase = await createClient();
   const {
@@ -341,13 +359,32 @@ export async function suggestPersonProfile(
 
   const admin = createAdminClient();
 
-  // Best-effort breadcrumb for enrichment ("who suggested this, in case it needs a follow-up
-  // question") — never blocks on it, a stub is still useful with no traceability.
+  // Must own a profile, matching createEvent's gate. Both real entry points guarantee it
+  // (/events/new redirects to /dashboard/claim without one, and editing requires being the
+  // event's owner or a linked organizer), so this costs no legitimate caller anything while
+  // keeping a fresh throwaway account from reaching an admin-client insert at all. It also
+  // doubles as the enrichment breadcrumb: who suggested this, if it needs a follow-up question.
   const { data: submitter } = await admin
     .from("profiles")
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (!submitter) {
+    return { success: false, error: "Create your own profile before suggesting other people." };
+  }
+
+  const { count: pending } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("source", "organizer_submitted")
+    .eq("visibility", "shadow")
+    .eq("source_id", submitter.id);
+  if ((pending ?? 0) >= MAX_PENDING_SUGGESTIONS) {
+    return {
+      success: false,
+      error: "You have several suggested people waiting for review already. We'll get to those first.",
+    };
+  }
 
   const slug = await uniqueProfileSlug(admin, trimmed);
   const { data: inserted, error } = await admin
@@ -355,10 +392,10 @@ export async function suggestPersonProfile(
     .insert({
       name: trimmed,
       slug,
-      is_teacher: kind === "teacher",
-      is_organizer: kind === "organizer",
+      is_teacher: resolvedKind === "teacher",
+      is_organizer: resolvedKind === "organizer",
       source: "organizer_submitted",
-      source_id: submitter?.id ?? null,
+      source_id: submitter.id,
     })
     .select("id")
     .single();
@@ -367,7 +404,7 @@ export async function suggestPersonProfile(
     return { success: false, error: error?.message ?? "Could not create profile." };
   }
 
-  notifyAdminNewPersonSuggestion(trimmed, kind).catch(() => {});
+  notifyAdminNewPersonSuggestion(trimmed, resolvedKind).catch(() => {});
 
   return { success: true, profileId: inserted.id };
 }

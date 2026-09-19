@@ -44,3 +44,31 @@ export async function notifyAdminTeacherAdded(
     }),
   });
 }
+
+// Organizer credit is at least as sensitive as a teacher credit: "co-organized by <well-known
+// name>" lends an event borrowed credibility, and nothing about adding it is visible to that
+// person otherwise. addOrganizer shipped without this (2026-09-19) while addTeacher had it from
+// the start, so the quieter of the two was the one worth watching.
+export async function notifyAdminOrganizerAdded(
+  actorName: string,
+  organizerName: string,
+  eventTitle: string,
+  shortId: string,
+) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const text = `👥 ${actorName} added ${organizerName} as organizer of ${eventTitle} — https://citreasurehunt.com/events/${shortId}`;
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_thread_id: EVENT_THREAD_ID,
+      text,
+      link_preview_options: { is_disabled: true },
+    }),
+  });
+}

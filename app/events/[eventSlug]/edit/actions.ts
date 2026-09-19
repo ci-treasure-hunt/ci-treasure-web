@@ -7,7 +7,7 @@ import { sendEmail } from "@/lib/email";
 import { buildEventSlug } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyAdminTeacherAdded } from "@/lib/notify";
+import { notifyAdminOrganizerAdded, notifyAdminTeacherAdded } from "@/lib/notify";
 
 type TeacherActionResult = { success: boolean; error?: string };
 
@@ -249,7 +249,7 @@ export async function addOrganizer(
   // organizer_submitted stub is shadow, so the caller's own client cannot see it.
   const { data: profile, error: fetchError } = await createAdminClient()
     .from("profiles")
-    .select("name")
+    .select("name, user_id")
     .eq("id", profileId)
     .single();
 
@@ -269,6 +269,39 @@ export async function addOrganizer(
       return { success: false, error: `${profile.name} is already listed as an organizer.` };
     }
     return { success: false, error: insertError.message };
+  }
+
+  // Same two notifications addTeacher sends, for the same reason: being credited on someone
+  // else's event is something you should hear about, and an unreviewed credit added to an
+  // already-published event is something an admin should see.
+  const { data: event } = await supabase
+    .from("events")
+    .select("title, short_id, status")
+    .eq("id", eventId)
+    .single();
+
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const actorName = actorProfile?.name ?? user.email ?? "Unknown organizer";
+
+  if (profile.user_id) {
+    const { data: addedUser } = await createAdminClient().auth.admin.getUserById(profile.user_id);
+    const email = addedUser?.user?.email;
+    if (email) {
+      await sendEmail({
+        to: email,
+        subject: `You were added as an organizer of ${event?.title}`,
+        text: `${actorName} added you as an organizer of ${event?.title}. Not right? Reply to this email or contact hello@citreasurehunt.com and we'll remove it.`,
+      });
+    }
+  }
+
+  if (!(await isAdminEmail(user.email)) && event?.status === "published") {
+    await notifyAdminOrganizerAdded(actorName, profile.name, event.title, event.short_id || "");
   }
 
   revalidatePath("/dashboard");
