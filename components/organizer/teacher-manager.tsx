@@ -5,6 +5,8 @@ import { Plus, X, Loader2, Search } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { addTeacher, removeTeacher, updateTeacherRole } from "@/app/events/[eventSlug]/edit/actions";
+import { SuggestPerson } from "@/components/organizer/suggest-person";
+import { TEACHER_ROLE_OPTIONS } from "@/lib/organizer-events";
 
 type Teacher = {
   id: string;
@@ -21,7 +23,11 @@ type ProfileResult = {
   country: string | null;
 };
 
-const ROLES = ["teacher", "musician", "facilitator", "guest", "assistant", "intensive"];
+// Was a local list that had drifted from TEACHER_ROLE_OPTIONS (it carried "facilitator", which
+// the shared list was missing despite 27 live rows using it — the shared list has since gained
+// it). One source of truth now, so the create form, the admin form and this all offer the same
+// roles.
+const ROLES = TEACHER_ROLE_OPTIONS;
 
 export function TeacherManager({
   eventId,
@@ -166,14 +172,19 @@ export function TeacherManager({
             )}
           </div>
 
-          {search.length >= 2 && results.length === 0 && !isSearching && (
-            <div className="mt-2 rounded-2xl border border-(--color-sand-strong) bg-white p-4 text-sm text-slate-600">
-              Teacher not listed? Contact us at{" "}
-              <a href="mailto:hello@citreasurehunt.com" className="font-medium text-(--color-pine) hover:underline">
-                hello@citreasurehunt.com
-              </a>{" "}
-              and we&apos;ll add them.
-            </div>
+          {/* `!selectedProfile` matters: picking someone from the dropdown sets `search` to
+              their name and clears `results`, which used to satisfy this condition and show
+              "not listed, contact us" directly above the person you had just selected. */}
+          {search.length >= 2 && results.length === 0 && !isSearching && !selectedProfile && (
+            <SuggestPerson
+              query={search}
+              kind="teacher"
+              onPick={(profileId, name) => {
+                setSelectedProfile({ id: profileId, name, city: null, country: null });
+                setSearch(name);
+                setResults([]);
+              }}
+            />
           )}
 
           {results.length > 0 && (

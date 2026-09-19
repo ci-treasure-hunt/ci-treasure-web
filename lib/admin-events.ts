@@ -29,7 +29,10 @@ export const EVENT_STATUS_OPTIONS = ["draft", "published"] as const;
 // this recurring. `facebook_page`/`facebook_group` deliberately excluded here — those
 // belong on the teacher/organizer profile, never the event, per link-types.md.
 export const LINK_TYPE_OPTIONS = ["website", "registration", "info_pack", "schedule", "facebook_event", "video", "telegram", "whatsapp", "instagram", "youtube", "other"] as const;
-export const TEACHER_ROLE_OPTIONS = ["teacher", "assistant", "guest", "musician", "intensive"] as const;
+// "facilitator" added 2026-09-19: 27 live event_teachers rows use it and announce-format's
+// TEACHER_ROLES counts it as a headline teaching role, but it was missing here, so neither the
+// organizer form nor the admin form could set it — a facilitator credit silently became "teacher".
+export const TEACHER_ROLE_OPTIONS = ["teacher", "facilitator", "assistant", "guest", "musician", "intensive"] as const;
 export const ORGANIZER_ROLE_OPTIONS = ["lead", "co-organizer", "hosting_venue"] as const;
 
 export type AdminPriceItem = {

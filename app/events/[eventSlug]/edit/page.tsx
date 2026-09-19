@@ -6,6 +6,7 @@ import { TeacherManager } from "@/components/organizer/teacher-manager";
 import { getKnownDisciplines, parseEventSlug } from "@/lib/events";
 import { eventRowToFormData } from "@/lib/organizer-events";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getEntityEmail } from "@/lib/entity-email";
 type SegmentDisplay = { title?: string; teachers?: Array<string | { name?: string }> };
@@ -75,25 +76,33 @@ export default async function EditEventPage({
   });
   const availablePractices = await getKnownDisciplines();
 
-  const { data: teachers } = await supabase
+  // Admin client: PostgREST applies RLS to embedded resources too, so with the caller's client
+  // a shadow profile (an organizer_submitted stub awaiting review) came back as profiles: null
+  // and the t.profiles.id access below threw, crashing this whole page for an organizer who had
+  // just suggested a teacher (2026-09-19). Edit access for this event is already authorized
+  // above, and the embed exposes only name/city/country for people credited on it.
+  const { data: teachers } = await createAdminClient()
     .from("event_teachers")
     .select("role, profiles(id, name, city, country)")
     .eq("event_id", event.id);
 
   type EventTeacherRow = {
     role: string;
-    profiles: { id: string; name: string; city: string | null; country: string | null };
+    profiles: { id: string; name: string; city: string | null; country: string | null } | null;
   };
   // profiles(...) is a to-one join, but the untyped Supabase client infers it as an array —
-  // same friction lib/geocode.ts documents. Runtime shape (and the .profiles.id access below)
-  // is a single object, so cast rather than fight the generic client's inferred type.
-  const initialTeachers = ((teachers ?? []) as unknown as EventTeacherRow[]).map((t) => ({
-    id: t.profiles.id,
-    name: t.profiles.name,
-    role: t.role,
-    city: t.profiles.city,
-    country: t.profiles.country,
-  }));
+  // same friction lib/geocode.ts documents. Runtime shape is a single object, so cast rather
+  // than fight the generic client's inferred type. Still filtered for null defensively: a
+  // dangling teacher_id must never take the page down, whatever the reason.
+  const initialTeachers = ((teachers ?? []) as unknown as EventTeacherRow[])
+    .filter((t) => t.profiles)
+    .map((t) => ({
+      id: t.profiles!.id,
+      name: t.profiles!.name,
+      role: t.role,
+      city: t.profiles!.city,
+      country: t.profiles!.country,
+    }));
 
   const segments = (event.segments?.items ?? event.segments ?? []) as SegmentDisplay[];
   const hasSegments = Array.isArray(segments) && segments.length > 0;
@@ -114,10 +123,14 @@ export default async function EditEventPage({
         </div>
 
         <div className="mt-8">
-          <OrganizerEventForm mode="edit" eventId={event.id} initial={initial} availablePractices={availablePractices} />
+          <OrganizerEventForm
+            mode="edit"
+            eventId={event.id}
+            initial={initial}
+            availablePractices={availablePractices}
+            extraSections={<TeacherManager eventId={event.id} initialTeachers={initialTeachers} />}
+          />
         </div>
-
-        <TeacherManager eventId={event.id} initialTeachers={initialTeachers} />
 
         {hasSegments ? (
           <section className="mt-6 rounded-[1.75rem] border border-white/80 bg-white/70 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">

@@ -75,11 +75,18 @@ export function OrganizerEventForm({
   eventId,
   initial,
   availablePractices,
+  extraSections,
 }: {
   mode: "create" | "edit";
   eventId?: string;
   initial?: OrganizerEventFormData;
   availablePractices: string[];
+  // Rendered just above the save panel. Edit mode passes TeacherManager here: it writes
+  // immediately via its own server actions rather than through this form's state, but it was
+  // previously rendered by the page *after* this whole component, which put "Teachers" below
+  // the "Save changes" button and read as though it belonged to something else entirely
+  // (reported 2026-09-19). A slot keeps its independent saving while fixing where it sits.
+  extraSections?: React.ReactNode;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<OrganizerEventFormData>(
@@ -475,6 +482,8 @@ export function OrganizerEventForm({
           />
         </>
       ) : null}
+
+      {extraSections}
 
       <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}

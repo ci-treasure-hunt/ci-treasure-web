@@ -58,7 +58,13 @@ export async function addTeacher(
     return { success: false, error: "Not authorized" };
   }
 
-  const { data: teacher, error: fetchTeacherError } = await supabase
+  // Admin client, not the caller's: profiles_select_public only exposes visibility = 'public'
+  // (or your own row), so a just-suggested organizer_submitted stub is invisible here and this
+  // lookup failed with "Teacher profile not found" — blocking the very teacher the organizer
+  // had been allowed to add (2026-09-19). Authorization for this event is already settled by
+  // isAuthorized() above, and event_teachers_insert gates on the event, never the teacher row,
+  // so reading the name here grants nothing the caller couldn't already do.
+  const { data: teacher, error: fetchTeacherError } = await createAdminClient()
     .from("profiles")
     .select("name, user_id")
     .eq("id", profileId)
