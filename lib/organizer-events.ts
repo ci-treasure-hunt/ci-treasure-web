@@ -334,6 +334,14 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
 // later. Stays gated until I-171 ships its own submission path.
 const RECURRING_TYPES = new Set(["jam", "class"]);
 
+// Exported so the form can grey these out in the Type dropdown instead of letting someone fill
+// in a whole submission and only hit the wall on save (reported 2026-09-19). Blocking them
+// outright in the picker doesn't cost a legitimate case: a multi-day jam gathering is long_jam,
+// which stays available, and 34 of 34 live multi-day jam events use exactly that.
+export function isRecurringType(type: string): boolean {
+  return RECURRING_TYPES.has(type);
+}
+
 // Validation shared by create + edit. `enforceMinDuration` is only passed true from
 // createEvent. Until 2026-09-18 this flatly blocked any same-day submission (2026-07-05
 // decision) because neither the organizer nor admin web forms captured start/end time of day,
@@ -353,7 +361,11 @@ export function validateOrganizerEvent(
   if (data.endDate < data.startDate) return "End date can't be before the start date.";
   if (options?.enforceMinDuration && data.endDate === data.startDate) {
     if (RECURRING_TYPES.has(data.type)) {
-      return "Weekly jams and ongoing classes aren't supported for self-service submission yet — share it in our Telegram group and we'll add it manually.";
+      // Reachable only by a direct API call now that the form greys these out (isRecurringType).
+      // Points at the local community, not our Telegram group: the group's topics are the
+      // festival index and the regional workshop lists, for things people travel to, and a
+      // weekly jam or ongoing class belongs with its own local scene (corrected 2026-09-19).
+      return "Weekly jams and ongoing classes aren't supported for self-service submission yet, we're building that next. For now, share it with your local CI community, which you can find at citreasurehunt.com/communities.";
     }
     if (!data.startTime.trim()) {
       return "Add a start time for a single-day event.";

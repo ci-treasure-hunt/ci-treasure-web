@@ -207,3 +207,111 @@ export async function removeTeacher(
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+// Organizer management is gated more tightly than teacher management, deliberately mirroring
+// RLS: event_organizers_insert/_delete allow the event owner, an editor, or an admin, but NOT
+// someone merely linked as an organizer (unlike event_teachers, whose policies also accept
+// is_event_organizer). Checking it here means a co-organizer gets a sentence instead of a bare
+// "violates row-level security policy". Who is credited with running an event is also exactly
+// the kind of thing that shouldn't be editable by everyone it's shared with.
+async function canManageOrganizers(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventId: string,
+  user: { id: string; email?: string },
+) {
+  const { data: event } = await supabase
+    .from("events")
+    .select("user_id, editors")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!event) return false;
+  if (event.user_id === user.id) return true;
+  if (event.editors?.includes(user.id)) return true;
+  return isAdminEmail(user.email);
+}
+
+export async function addOrganizer(
+  eventId: string,
+  profileId: string,
+): Promise<TeacherActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Not signed in" };
+  if (!(await canManageOrganizers(supabase, eventId, user))) {
+    return { success: false, error: "Only the event's owner can change who is organizing it." };
+  }
+
+  // Admin client for the same reason as addTeacher's lookup: a just-suggested
+  // organizer_submitted stub is shadow, so the caller's own client cannot see it.
+  const { data: profile, error: fetchError } = await createAdminClient()
+    .from("profiles")
+    .select("name")
+    .eq("id", profileId)
+    .single();
+
+  if (fetchError || !profile) {
+    return { success: false, error: "Profile not found" };
+  }
+
+  // Role is always 'lead'. co-organizer was abolished as a distinct role, and hosting_venue is
+  // an admin-side concept, so this form never offers a choice.
+  const { error: insertError } = await supabase
+    .from("event_organizers")
+    .insert({ event_id: eventId, organizer_id: profileId, role: "lead" });
+
+  if (insertError) {
+    // UNIQUE(event_id, organizer_id): say what happened rather than leaking the constraint.
+    if (insertError.code === "23505") {
+      return { success: false, error: `${profile.name} is already listed as an organizer.` };
+    }
+    return { success: false, error: insertError.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function removeOrganizer(
+  eventId: string,
+  profileId: string,
+): Promise<TeacherActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Not signed in" };
+  if (!(await canManageOrganizers(supabase, eventId, user))) {
+    return { success: false, error: "Only the event's owner can change who is organizing it." };
+  }
+
+  // An event with no organizer credit at all renders an "unclaimed organizer" state on its
+  // public page, so don't let the list be emptied from here. Handing an event over means
+  // adding the new organizer first, then stepping back.
+  const { count } = await supabase
+    .from("event_organizers")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .not("organizer_id", "is", null);
+
+  if ((count ?? 0) <= 1) {
+    return { success: false, error: "An event needs at least one organizer. Add another before removing this one." };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("event_organizers")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("organizer_id", profileId);
+
+  if (deleteError) {
+    return { success: false, error: deleteError.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}

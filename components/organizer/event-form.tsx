@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -18,6 +19,7 @@ import {
   TEACHER_ROLE_OPTIONS,
   TIMEZONE_OPTIONS,
   createEmptyOrganizerEventFormData,
+  isRecurringType,
   type AdminLinkItem,
   type AdminPriceItem,
   type OrganizerEventFormData,
@@ -162,12 +164,31 @@ export function OrganizerEventForm({
           </Field>
           <Field label="Type">
             <select value={form.type} onChange={(e) => set("type", e.target.value)} className={inputClassName}>
-              {EVENT_TYPE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
+              {EVENT_TYPE_OPTIONS.map((o) => {
+                // Greyed out rather than rejected on save: a weekly jam or ongoing class needs
+                // recurrence support (I-171) that doesn't exist yet, and finding that out after
+                // filling in the whole form is a bad way to learn it. Never disables the value
+                // an event already has, so an existing jam/class stays editable.
+                const comingSoon = isRecurringType(o) && form.type !== o;
+                return (
+                  <option key={o} value={o} disabled={comingSoon}>
+                    {o}
+                    {comingSoon ? " (coming soon)" : ""}
+                  </option>
+                );
+              })}
             </select>
+            {mode === "create" ? (
+              <p className="mt-1 text-xs text-slate-500">
+                Weekly jams and ongoing classes need repeating dates, which we&apos;re building
+                next. A multi-day jam gathering is a long_jam. For a weekly jam or an ongoing
+                class, share it with your{" "}
+                <Link href="/communities" className="font-medium text-(--color-pine) hover:underline">
+                  local CI community
+                </Link>
+                .
+              </p>
+            ) : null}
           </Field>
           <Field label="Start date *">
             <input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} className={inputClassName} />

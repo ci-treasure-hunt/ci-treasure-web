@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { OrganizerEventForm } from "@/components/organizer/event-form";
 import { TeacherManager } from "@/components/organizer/teacher-manager";
+import { OrganizerManager } from "@/components/organizer/organizer-manager";
 import { getKnownDisciplines, parseEventSlug } from "@/lib/events";
 import { eventRowToFormData } from "@/lib/organizer-events";
 import { createClient } from "@/lib/supabase/server";
@@ -104,6 +105,26 @@ export default async function EditEventPage({
       country: t.profiles!.country,
     }));
 
+  // Same admin-client + null-filter reasoning as the teachers query above. The null filter also
+  // does real work here beyond shadow profiles: an I-153 community-credited row has
+  // organizer_id NULL by design (organizer_id XOR community_id), so it has no profile to show.
+  const { data: organizerRows } = await createAdminClient()
+    .from("event_organizers")
+    .select("profiles(id, name, city, country)")
+    .eq("event_id", event.id);
+
+  type EventOrganizerRow = {
+    profiles: { id: string; name: string; city: string | null; country: string | null } | null;
+  };
+  const initialOrganizers = ((organizerRows ?? []) as unknown as EventOrganizerRow[])
+    .filter((o) => o.profiles)
+    .map((o) => ({
+      id: o.profiles!.id,
+      name: o.profiles!.name,
+      city: o.profiles!.city,
+      country: o.profiles!.country,
+    }));
+
   const segments = (event.segments?.items ?? event.segments ?? []) as SegmentDisplay[];
   const hasSegments = Array.isArray(segments) && segments.length > 0;
 
@@ -128,7 +149,12 @@ export default async function EditEventPage({
             eventId={event.id}
             initial={initial}
             availablePractices={availablePractices}
-            extraSections={<TeacherManager eventId={event.id} initialTeachers={initialTeachers} />}
+            extraSections={
+              <>
+                <TeacherManager eventId={event.id} initialTeachers={initialTeachers} />
+                <OrganizerManager eventId={event.id} initialOrganizers={initialOrganizers} />
+              </>
+            }
           />
         </div>
 
