@@ -3,9 +3,9 @@
 import { redirect } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { slugify } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
 import { safeExternalUrl } from "@/lib/url-safety";
+import { uniqueProfileSlug } from "@/lib/profile-slug";
 
 export type SimilarProfile = {
   id: string;
@@ -38,25 +38,6 @@ export async function checkSimilarProfiles(name: string): Promise<SimilarProfile
     bioSnippet: p.bio_snippet,
     visibility: p.visibility,
   }));
-}
-
-// Find a unique slug (idx_profiles_slug is UNIQUE on lower(slug)).
-async function uniqueProfileSlug(admin: ReturnType<typeof createAdminClient>, name: string) {
-  const base = slugify(name) || "profile";
-  let candidate = base;
-  for (let i = 2; i < 100; i += 1) {
-    const { data } = await admin
-      .from("profiles")
-      .select("id")
-      .ilike("slug", candidate)
-      .maybeSingle();
-    if (!data) {
-      return candidate;
-    }
-    candidate = `${base}-${i}`;
-  }
-  // Extremely unlikely fallback: suffix with a random token.
-  return `${base}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export async function createProfile(input: {

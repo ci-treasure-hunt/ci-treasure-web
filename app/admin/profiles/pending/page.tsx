@@ -42,7 +42,14 @@ export default async function AdminPendingProfilesPage() {
             return (
             <li key={profile.id} className="flex flex-col gap-3 py-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="lg:pr-6">
-                <p className="font-semibold text-slate-950">{profile.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-slate-950">{profile.name}</p>
+                  {profile.source === "organizer_submitted" ? (
+                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">
+                      Suggested by organizer
+                    </span>
+                  ) : null}
+                </div>
                 <p className="mt-1 text-sm text-slate-600">
                   {[roleTags(profile).join(", "), [profile.city, profile.country].filter(Boolean).join(", ")]
                     .filter(Boolean)
@@ -51,7 +58,11 @@ export default async function AdminPendingProfilesPage() {
                 {profile.bio ? (
                   <p className="mt-2 max-w-xl text-sm text-slate-700">{profile.bio}</p>
                 ) : (
-                  <p className="mt-2 text-sm italic text-slate-400">No bio submitted.</p>
+                  <p className="mt-2 text-sm italic text-slate-400">
+                    {profile.source === "organizer_submitted"
+                      ? "Name-only stub: add a bio, photo, and city before approving."
+                      : "No bio submitted."}
+                  </p>
                 )}
                 <div className="mt-2 flex flex-wrap gap-3 text-sm">
                   {website ? (
@@ -71,7 +82,11 @@ export default async function AdminPendingProfilesPage() {
                   ) : null}
                 </div>
                 <p className="mt-2 text-sm text-slate-500">
-                  Submitted by: {profile.submitterEmail ?? "— unknown —"}
+                  {profile.source === "organizer_submitted"
+                    ? profile.suggestedBy
+                      ? `No account; suggested by ${profile.suggestedBy}.`
+                      : "No account; suggested by an organizer while submitting an event."
+                    : `Submitted by: ${profile.submitterEmail ?? "unknown"}`}
                 </p>
               </div>
               <ProfileReviewActions profileId={profile.id} />

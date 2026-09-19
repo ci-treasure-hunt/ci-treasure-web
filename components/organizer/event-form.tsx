@@ -8,13 +8,14 @@ import { disciplineLabel } from "@/lib/event-display";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { CurrencyPicker } from "@/components/shared/currency-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
-import { InlineTeacherPicker } from "@/components/organizer/inline-teacher-picker";
+import { PersonPicker } from "@/components/organizer/person-picker";
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import {
   EVENT_TYPE_OPTIONS,
   LANGUAGE_OPTIONS,
   LEVEL_OPTIONS,
   LINK_TYPE_OPTIONS,
+  TEACHER_ROLE_OPTIONS,
   TIMEZONE_OPTIONS,
   createEmptyOrganizerEventFormData,
   type AdminLinkItem,
@@ -177,7 +178,7 @@ export function OrganizerEventForm({
               </Field>
               {isSingleDay ? (
                 <p className="-mt-2 text-xs text-slate-500 md:col-span-2">
-                  A start time is required for a single-day event — this is what makes it show up
+                  A start time is required for a single-day event: it&apos;s what makes it show up
                   properly instead of just a bare date.
                 </p>
               ) : null}
@@ -191,7 +192,7 @@ export function OrganizerEventForm({
                   events (harmless only by the accident of a shared UTC offset with Berlin).
                   Only pick one here if the auto-detected zone would be wrong (e.g. an online
                   event, or a location that doesn't geocode cleanly). */}
-              <option value="">— Auto-detect from location —</option>
+              <option value="">Auto-detect from location</option>
               {/* Keep the current value selectable even if it isn't in the curated list. */}
               {(TIMEZONE_OPTIONS as readonly string[]).includes(form.timezone) || !form.timezone
                 ? null
@@ -207,7 +208,7 @@ export function OrganizerEventForm({
             <select value={form.level} onChange={(e) => set("level", e.target.value)} className={inputClassName}>
               {LEVEL_OPTIONS.map((o) => (
                 <option key={o} value={o}>
-                  {o === "" ? "— unspecified —" : o}
+                  {o === "" ? "Unspecified" : o}
                 </option>
               ))}
             </select>
@@ -255,7 +256,7 @@ export function OrganizerEventForm({
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Practice *</h3>
         <p className="mt-1 text-sm text-slate-600">
           Select every practice taught at this event. Contact Improvisation is checked by
-          default — untick it only if this event doesn&apos;t include CI at all. Missing a
+          default; untick it only if this event doesn&apos;t include CI at all. Missing a
           practice? Message us and we&apos;ll add it as an option.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -315,7 +316,7 @@ export function OrganizerEventForm({
               />
             </Field>
             <p className="mt-1 text-xs text-slate-500">
-              Pick an existing venue if it&apos;s already listed, or type a name/address — used to
+              Pick an existing venue if it&apos;s already listed, or type a name/address: used to
               place the event on the map.
             </p>
           </div>
@@ -415,19 +416,19 @@ export function OrganizerEventForm({
 
       <ArraySection
         title="Pricing"
-        description="One row per price tier — click + Add for each (Early bird, Regular, Social...). Amounts in major units (e.g. 150 for €150), and pick the real currency you charge in, not your own currency: a Danish workshop priced in DKK stays DKK here, even if you also mention a EUR estimate elsewhere. The third field is a short label for the tier (e.g. 'Early bird'), not a second price. Left blank rows are ignored."
+        description="Add one row per price tier: click + Add for each (e.g. Early bird, Regular, Social). Enter amounts in major units, so 150 means €150, not cents. Pick the real currency you charge in, not your own: a Danish workshop priced in DKK stays DKK here, even if you also mention a EUR estimate elsewhere. Left blank rows are ignored."
         items={form.priceItems}
         onAdd={() => set("priceItems", [...form.priceItems, emptyPriceItem()])}
         onRemove={(i) => set("priceItems", form.priceItems.filter((_, idx) => idx !== i))}
         render={(item, i) => (
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_2fr]">
-            <input value={item.amount} onChange={(e) => set("priceItems", patch(form.priceItems, i, { amount: e.target.value }))} className={inputClassName} placeholder="150" />
+            <input value={item.amount} onChange={(e) => set("priceItems", patch(form.priceItems, i, { amount: e.target.value }))} className={inputClassName} placeholder="e.g. 150" />
             <CurrencyPicker
               value={item.currency}
               onChange={(code) => set("priceItems", patch(form.priceItems, i, { currency: code }))}
               inputClassName={inputClassName}
             />
-            <input value={item.description} onChange={(e) => set("priceItems", patch(form.priceItems, i, { description: e.target.value }))} className={inputClassName} placeholder="Early bird (a label, not a price)" />
+            <input value={item.description} onChange={(e) => set("priceItems", patch(form.priceItems, i, { description: e.target.value }))} className={inputClassName} placeholder="e.g. Early bird (a tier name, not a price)" />
           </div>
         )}
       />
@@ -456,7 +457,23 @@ export function OrganizerEventForm({
       />
 
       {mode === "create" ? (
-        <InlineTeacherPicker items={form.teachers} onChange={(teachers) => set("teachers", teachers)} />
+        <>
+          <PersonPicker
+            title="Teachers"
+            description="Add every teacher or musician linked to this event."
+            kind="teacher"
+            roleOptions={TEACHER_ROLE_OPTIONS}
+            items={form.teachers}
+            onChange={(teachers) => set("teachers", teachers)}
+          />
+          <PersonPicker
+            title="Organizers"
+            description="Add anyone else co-organizing this event with you. You don't need to add yourself; you're already linked as the lead organizer."
+            kind="organizer"
+            items={form.organizers}
+            onChange={(organizers) => set("organizers", organizers)}
+          />
+        </>
       ) : null}
 
       <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">

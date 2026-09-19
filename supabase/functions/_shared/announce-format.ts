@@ -165,6 +165,28 @@ export function headlinePrice(price: { items?: PriceItem[] } | null): string | n
   return `From ${formatted}${suffix}`
 }
 
+// Time-of-day for a single-day event, e.g. "10:30-18:00". Multi-day events get nothing: the
+// stored pair means "first day's start, last day's end" (I-170), which needs a sentence to
+// explain and only has room for one on the event page itself. No timezone either — the caption
+// already carries a flag and a location, and a local reader reads a local event in local time
+// (same reasoning as formatCardTimeRange in ci-treasure-web/lib/event-display.ts).
+//
+// Added 2026-09-19, before inviting one-day workshop submissions: a 1-day event is excluded
+// from the group by day-span (see announce-event), so this channel card is its only
+// announcement, and "Sep 26" alone doesn't say whether it's a morning, an evening or all day.
+export function formatTimeOfDay(
+  start_date: string,
+  end_date: string | null,
+  start_time: string | null,
+  end_time: string | null,
+): string | null {
+  if (end_date && end_date !== start_date) return null
+  if (!start_time) return null
+  const start = start_time.slice(0, 5)
+  const end = end_time ? end_time.slice(0, 5) : null
+  return end && end !== start ? `${start}-${end}` : start
+}
+
 export type RichCaptionEvent = {
   type: string
   title: string
@@ -172,6 +194,8 @@ export type RichCaptionEvent = {
   country: string
   start_date: string
   end_date: string | null
+  start_time?: string | null
+  end_time?: string | null
   price: { items?: PriceItem[] } | null
   level: string | null
   discipline: string[] | null
@@ -183,10 +207,17 @@ export type RichCaptionEvent = {
 export function buildRichCaption(event: RichCaptionEvent, teacherNames: string[], location: string): string {
   const eventUrl = `https://citreasurehunt.com/events/${event.short_id}-${slugify(event.title)}`
 
+  const timeOfDay = formatTimeOfDay(
+    event.start_date,
+    event.end_date,
+    event.start_time ?? null,
+    event.end_time ?? null,
+  )
+
   const lines: string[] = [
     `${TYPE_EMOJI[event.type] ?? '📌'} <a href="${eventUrl}">${escapeHtml(event.title)}</a>`,
     `${toFlag(event.country)} ${escapeHtml(location)}`,
-    `📅 ${formatDates(event.start_date, event.end_date)}`,
+    `📅 ${formatDates(event.start_date, event.end_date)}${timeOfDay ? ` · ${timeOfDay}` : ''}`,
   ]
 
   const price = headlinePrice(event.price)

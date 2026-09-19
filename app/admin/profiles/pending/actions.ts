@@ -26,7 +26,15 @@ export type PendingProfile = {
   isTeacher: boolean;
   isOrganizer: boolean;
   isMusician: boolean;
+  // "self_submitted" (has an account, edits it themselves) vs "organizer_submitted" (name-only
+  // stub, added 2026-09-19 — see suggestPersonProfile in app/events/actions.ts). Distinguished
+  // in the UI because they need opposite handling: the first is close to ready, the second
+  // needs a bio/photo enriched before it can go anywhere near "approve".
+  source: string | null;
   submitterEmail: string | null;
+  // Name of the organizer's own profile, when an organizer_submitted stub recorded one
+  // (source_id) — a breadcrumb for "who suggested this, worth asking them for more."
+  suggestedBy: string | null;
   createdAt: string;
 };
 
@@ -37,14 +45,22 @@ export async function getPendingProfiles(): Promise<PendingProfile[]> {
   const { data } = await admin
     .from("profiles")
     .select(
-      "id, name, slug, bio, city, country, website, facebook, instagram, is_teacher, is_organizer, is_musician, user_id, created_at",
+      "id, name, slug, bio, city, country, website, facebook, instagram, is_teacher, is_organizer, is_musician, user_id, source, source_id, created_at",
     )
     .eq("visibility", "shadow")
-    .eq("source", "self_submitted")
+    .in("source", ["self_submitted", "organizer_submitted"])
     .order("created_at", { ascending: true });
 
   const rows = data ?? [];
   const emails = await Promise.all(rows.map((row) => submitterEmail(admin, row.user_id)));
+  const suggesterIds = rows
+    .filter((row) => row.source === "organizer_submitted" && row.source_id)
+    .map((row) => row.source_id as string);
+  const { data: suggesters } =
+    suggesterIds.length > 0
+      ? await admin.from("profiles").select("id, name").in("id", suggesterIds)
+      : { data: [] as { id: string; name: string }[] };
+  const suggesterNames = new Map((suggesters ?? []).map((p) => [p.id, p.name]));
 
   return rows.map((row, i) => ({
     id: row.id,
@@ -59,7 +75,9 @@ export async function getPendingProfiles(): Promise<PendingProfile[]> {
     isTeacher: row.is_teacher,
     isOrganizer: row.is_organizer,
     isMusician: row.is_musician,
+    source: row.source,
     submitterEmail: emails[i],
+    suggestedBy: row.source_id ? suggesterNames.get(row.source_id) ?? null : null,
     createdAt: row.created_at,
   }));
 }

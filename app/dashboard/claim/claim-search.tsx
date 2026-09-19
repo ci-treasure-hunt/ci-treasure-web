@@ -87,16 +87,22 @@ export function ClaimSearch() {
             </ul>
           )}
 
-          <div className="mt-6">
-            <Link
-              href="/dashboard/new-profile"
-              className="inline-block rounded-full border border-(--color-sand-strong) px-5 py-3 text-sm font-semibold text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
-            >
-              None of these are me, add a new profile
-            </Link>
-          </div>
         </div>
       ) : null}
+
+      {/* Outside the `searched` branch since 2026-09-19: this used to appear only after a
+          search had run, so someone who has never been listed (exactly who an invitation to
+          submit an event brings in) landed on a bare search box with no visible way forward.
+          /events/new redirects here when the account has no profile yet, so this is the top of
+          that funnel, not only a fallback for a failed search. */}
+      <div className="mt-6">
+        <Link
+          href="/dashboard/new-profile"
+          className="inline-block rounded-full border border-(--color-sand-strong) px-5 py-3 text-sm font-semibold text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
+        >
+          {searched ? "None of these are me, add a new profile" : "I'm not listed yet, add a new profile"}
+        </Link>
+      </div>
     </div>
   );
 }

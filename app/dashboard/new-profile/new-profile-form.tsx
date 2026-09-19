@@ -24,7 +24,11 @@ export function NewProfileForm() {
     startTransition(async () => {
       const result = await createProfile({ name, website, isOrganizer, isTeacher, isMusician });
       if (result.success) {
-        router.push("/dashboard");
+        // Straight to the edit screen, not /dashboard: editing is unrestricted before admin
+        // review (see requestMoreInfo's own email, which points here), and a stub with just a
+        // name is exactly what needs a bio/photo/city added next. Landing on /dashboard first
+        // made that a second, skippable step.
+        router.push("/dashboard/profile/edit");
       } else {
         setError(result.error ?? "Could not create profile.");
       }
@@ -164,7 +168,7 @@ export function NewProfileForm() {
         {pending ? "Checking…" : "Create profile"}
       </button>
       <p className="text-sm text-slate-500">
-        This is just the basics — you can add a bio, photo, city, and social links once your
+        This is just the basics: you can add a bio, photo, city, and social links once your
         profile is created.
       </p>
     </form>

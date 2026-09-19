@@ -766,14 +766,20 @@ export function stripMarkdown(text: string) {
     .trim();
 }
 
-export function formatTimeRange(event: Pick<EventDetail, "startTime" | "endTime" | "timezone">) {
+export function formatTimeRange(
+  event: Pick<EventDetail, "startTime" | "endTime" | "timezone" | "startDate" | "endDate">,
+) {
   if (!event.startTime && !event.endTime) {
     return event.timezone;
   }
 
   const start = event.startTime ? event.startTime.slice(0, 5) : "TBA";
   const end = event.endTime ? event.endTime.slice(0, 5) : "TBA";
-  if (event.startTime && event.endTime && event.startTime !== event.endTime) {
+  // Bug fixed 2026-09-19: this used to branch on startTime !== endTime, which is true for the
+  // ordinary single-day case (e.g. 10:00-17:00) — so every single-day event with a distinct end
+  // time got the multi-day "first day / last day" phrasing. The phrasing is only meaningful when
+  // the event actually spans more than one date.
+  if (event.startTime && event.endTime && event.startDate !== event.endDate) {
     return `Starts ${start} first day · ends ${end} last day (${event.timezone})`;
   }
   return `${start}${event.endTime ? ` - ${end}` : ""} (${event.timezone})`;

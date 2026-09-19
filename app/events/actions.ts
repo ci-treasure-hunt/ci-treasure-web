@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 import tzlookup from "tz-lookup";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { uniqueProfileSlug } from "@/lib/profile-slug";
 type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string };
 
 // Columns written from the organizer form. Status is handled separately so an
@@ -163,9 +164,9 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     console.error("event_organizers link failed:", linkError.message);
   }
 
-  // Teachers picked in the create form (InlineTeacherPicker) — can only be written now,
-  // since event_teachers needs the real id this insert just produced. Non-fatal for the
-  // same reason as the organizer link above: the event already exists either way.
+  // Teachers picked in the create form (PersonPicker) — can only be written now, since
+  // event_teachers needs the real id this insert just produced. Non-fatal for the same reason
+  // as the organizer link above: the event already exists either way.
   let teacherWarning: string | undefined;
   if (data.teachers?.length) {
     const { error: teacherError } = await supabase.from("event_teachers").insert(
@@ -174,6 +175,23 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     if (teacherError) {
       console.error("event_teachers link failed:", teacherError.message);
       teacherWarning = "Event created, but teachers couldn't be linked — add them from the edit page.";
+    }
+  }
+
+  // Additional organizers picked in the create form, added 2026-09-19 alongside the same
+  // PersonPicker teachers use. Filter out the submitter's own profile: they're already linked
+  // above, and event_organizers has a UNIQUE(event_id, organizer_id) that a re-add would trip.
+  // Always 'lead' regardless of whatever role the item carries (co-organizer is not a role this
+  // form offers, see OrganizerEventFormData's comment on `organizers`).
+  let organizerWarning: string | undefined;
+  const extraOrganizers = (data.organizers ?? []).filter((o) => o.profileId !== profile.id);
+  if (extraOrganizers.length) {
+    const { error: organizerError } = await supabase.from("event_organizers").insert(
+      extraOrganizers.map((o) => ({ event_id: inserted.id, organizer_id: o.profileId, role: "lead" })),
+    );
+    if (organizerError) {
+      console.error("event_organizers extra link failed:", organizerError.message);
+      organizerWarning = "Event created, but the extra organizers couldn't be linked — add them from the edit page.";
     }
   }
 
@@ -188,7 +206,11 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   }
 
   revalidatePath("/dashboard");
-  return { success: true, slug: buildEventSlug(inserted.short_id, inserted.title), warning: teacherWarning ?? warning };
+  return {
+    success: true,
+    slug: buildEventSlug(inserted.short_id, inserted.title),
+    warning: teacherWarning ?? organizerWarning ?? warning,
+  };
 }
 
 export async function updateEvent(
@@ -265,6 +287,117 @@ export async function updateEvent(
   revalidatePath("/");
   revalidatePath(`/events/${buildEventSlug(updated.short_id, updated.title)}`);
   return { success: true, slug: buildEventSlug(updated.short_id, updated.title), warning };
+}
+
+export type SimilarProfileMatch = { id: string; name: string; bioSnippet: string | null };
+
+// Dedup guard for suggestPersonProfile, added 2026-09-19 after shipping it without one — an
+// organizer's search can miss a real match (typo, nickname, maiden name) and the picker only
+// offers "suggest new" once search comes back empty, so without this a near-duplicate stub was
+// one typo away. Mirrors checkSimilarProfiles in app/dashboard/new-profile/actions.ts exactly,
+// including the same security reasoning: search_similar_profiles is SECURITY DEFINER and can
+// see shadow profiles a normal session can't, so this only runs signed in.
+export async function checkSimilarProfileNames(name: string): Promise<SimilarProfileMatch[]> {
+  if (name.trim().length < 3) return [];
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase.rpc("search_similar_profiles", { p_name: name.trim() });
+
+  return (data ?? []).map((p: { id: string; name: string; bio_snippet: string | null }) => ({
+    id: p.id,
+    name: p.name,
+    bioSnippet: p.bio_snippet,
+  }));
+}
+
+// Organizers drafting an event can suggest a teacher or co-organizer who isn't listed yet,
+// instead of only getting a "contact us" dead end (found live 2026-09-19: the picker offered no
+// way to add someone real). Creates a name-only stub for admin enrichment, same shape as the
+// self-submitted profile flow but with no account behind it — there is no consenting person to
+// hand editing to, so it stays admin-only until someone fills in a bio/photo and approves it.
+// Deliberately thin: no bio, no photo, no socials — an organizer speaking for someone else
+// shouldn't be the one writing their bio (same reasoning as "no profile portraits").
+export async function suggestPersonProfile(
+  name: string,
+  kind: "teacher" | "organizer",
+): Promise<{ success: boolean; profileId?: string; error?: string }> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { success: false, error: "Name is required." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "You are not signed in." };
+  }
+
+  const admin = createAdminClient();
+
+  // Best-effort breadcrumb for enrichment ("who suggested this, in case it needs a follow-up
+  // question") — never blocks on it, a stub is still useful with no traceability.
+  const { data: submitter } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const slug = await uniqueProfileSlug(admin, trimmed);
+  const { data: inserted, error } = await admin
+    .from("profiles")
+    .insert({
+      name: trimmed,
+      slug,
+      is_teacher: kind === "teacher",
+      is_organizer: kind === "organizer",
+      source: "organizer_submitted",
+      source_id: submitter?.id ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !inserted) {
+    return { success: false, error: error?.message ?? "Could not create profile." };
+  }
+
+  notifyAdminNewPersonSuggestion(trimmed, kind).catch(() => {});
+
+  return { success: true, profileId: inserted.id };
+}
+
+// Same admin topic as new-profile notifications (dashboard/new-profile/actions.ts) — both land
+// in the same /admin/profiles/pending queue. No personal data (I-159): the submitter isn't named.
+async function notifyAdminNewPersonSuggestion(name: string, kind: "teacher" | "organizer") {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const threadId = process.env.TELEGRAM_PROFILE_THREAD_ID
+    ? Number(process.env.TELEGRAM_PROFILE_THREAD_ID)
+    : undefined;
+
+  const text = [
+    `An organizer suggested a ${kind} who isn't listed yet: "${name}".`,
+    "Review: https://citreasurehunt.com/admin/profiles/pending",
+  ].join("\n");
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      ...(threadId ? { message_thread_id: threadId } : {}),
+      text,
+      link_preview_options: { is_disabled: true },
+    }),
+  });
 }
 
 // Admin group topic for pending-event submissions (env-overridable).

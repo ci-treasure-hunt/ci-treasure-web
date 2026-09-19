@@ -140,6 +140,11 @@ export type OrganizerEventFormData = {
   // event id that doesn't exist yet at this point. Always empty when hydrated from an
   // existing event (see eventRowToFormData); createEvent is the only consumer.
   teachers: OrganizerTeacherItem[];
+  // Same create-mode-only reasoning as teachers, added 2026-09-19: additional organizers
+  // beyond the submitter, who is always linked as lead separately in createEvent. `role` is
+  // carried for shape reuse with teachers but ignored on write — createEvent always inserts
+  // these as 'lead' (co-organizer was abolished as a distinct role, see feedback memory).
+  organizers: OrganizerTeacherItem[];
 };
 
 export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
@@ -164,6 +169,7 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     languagesOther: "",
     features: "",
     teachers: [],
+    organizers: [],
     discipline: ["contact_improvisation"],
     cancelled: false,
     cancelledText: "",
@@ -317,6 +323,7 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     // Edit mode manages teachers live via TeacherManager, not this field — see its comment
     // on OrganizerEventFormData.
     teachers: [],
+    organizers: [],
   };
 }
 
