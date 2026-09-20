@@ -85,50 +85,10 @@ export type TeacherProfile = {
   claim_pending_user_id: string | null;
 };
 
-export async function getAllPublicTeachers(): Promise<TeacherProfile[]> {
-  if (!hasSupabaseEnv()) {
-    return [];
-  }
-  const supabase = await createClient();
-
-  // Fetch teachers
-  const { data: teachers, error } = await supabase
-    .from("profiles")
-    .select(`
-      id, name, slug, city, country, is_nomadic,
-      is_teacher, is_organizer, is_musician,
-      visibility, show_in_list
-    `)
-    .eq("is_teacher", true)
-    .eq("visibility", "public")
-    .eq("show_in_list", true)
-    .order("name", { ascending: true });
-
-  if (error || !teachers) {
-    console.error("Error fetching teachers:", error);
-    return [];
-  }
-
-  // Fetch event counts for these teachers (published only)
-  const teacherIds = teachers.map(t => t.id);
-  const { data: eventCounts, error: countsError } = await supabase
-    .from("event_teachers")
-    .select("teacher_id, events!inner(status)")
-    .in("teacher_id", teacherIds)
-    .eq("events.status", "published");
-
-  const countsMap: Record<string, number> = {};
-  if (!countsError && eventCounts) {
-    eventCounts.forEach(ec => {
-      countsMap[ec.teacher_id] = (countsMap[ec.teacher_id] || 0) + 1;
-    });
-  }
-
-  return teachers.map(t => ({
-    ...t,
-    event_count: countsMap[t.id] || 0
-  })) as TeacherProfile[];
-}
+// getAllPublicTeachers() removed 2026-09-19: dead code, and the second of two queries filtered
+// on profiles.show_in_list. Nothing had imported it (the name only matched greps as a prefix of
+// getAllPublicTeachersForIndex). Deleted rather than left in place so the stale flag has no
+// remaining reader to be revived by accident. getListedPeople() below is the listing.
 
 // I-150: lightweight list for the /teachers page's plain server-rendered index (EntityIndex),
 // which pulls the Suspense-equivalent /teachers "coming soon" stub out of a JS-only dead end.
@@ -261,19 +221,9 @@ export async function getListedPeople(): Promise<ListedPerson[]> {
     });
 }
 
-export async function getAllPublicTeachersForIndex(): Promise<Pick<TeacherProfile, "slug" | "name" | "country">[]> {
-  if (!hasSupabaseEnv()) return [];
-  const supabase = createStaticClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("slug, name, country")
-    .eq("is_teacher", true)
-    .eq("visibility", "public")
-    .eq("show_in_list", true);
-
-  if (error || !data) return [];
-  return data;
-}
+// getAllPublicTeachersForIndex() removed 2026-09-19: the /teachers crawlable EntityIndex now
+// maps getListedPeople() instead, so the browsable list and the index cannot disagree. It was
+// the reason they did: it filtered on show_in_list while the list beside it derived inclusion.
 
 // I-172: the public detail-page fetchers below use createStaticClient() (cookie-free), not
 // createClient(). This is load-bearing for caching, not a style choice: createClient() calls

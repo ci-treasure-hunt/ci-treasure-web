@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Globe, MapPin } from "lucide-react";
 import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site";
-import { getAllPublicTeachersForIndex, getListedPeople } from "@/lib/teachers";
+import { getListedPeople } from "@/lib/teachers";
 import { getCountryLabel } from "@/lib/event-display";
 import { EntityIndex } from "@/components/entity-index";
 import { TeachersClient } from "./teachers-client";
@@ -42,10 +42,14 @@ export const metadata: Metadata = {
 export const revalidate = 86400;
 
 export default async function TeachersPage() {
-  const [teachers, people] = await Promise.all([
-    getAllPublicTeachersForIndex(),
-    getListedPeople(),
-  ]);
+  // One source of truth for both blocks below. The crawlable index used to run its own query
+  // filtered on profiles.show_in_list, which is the flag getListedPeople() was written to stop
+  // depending on: it was populated by a one-off bulk UPDATE on 2026-07-10 and nothing has
+  // maintained it since. So the derived fix reached the browsable list and not the index, and
+  // the index quietly omitted hundreds of people the list showed (I-074, fixed 2026-09-19).
+  // Newly relevant because organizer-suggested profiles default to show_in_list = false, so
+  // every teacher approved through that flow would have been missing from the index for good.
+  const people = await getListedPeople();
 
   // Country options for the filter, built from who is actually listed rather than a static list,
   // so a country with nobody in it never appears as a dead option.
@@ -103,10 +107,12 @@ export default async function TeachersPage() {
         <EntityIndex
           basePath="/teachers"
           label="teachers"
-          items={teachers.map((t) => ({
-            slug: t.slug,
-            name: t.name,
-            country: t.country ? getCountryLabel(t.country) : null,
+          items={people.map((p) => ({
+            slug: p.slug,
+            name: p.name,
+            // Already resolved server-side by getListedPeople; see ListedPerson.countryLabel for
+            // why it is never recomputed from the ISO code at this layer.
+            country: p.countryLabel,
           }))}
         />
       </div>
