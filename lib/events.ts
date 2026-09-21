@@ -600,11 +600,32 @@ export async function getEventBySlug(shortId: string): Promise<EventDetail | nul
   // (past) events stay publicly readable so their pages keep working for SEO + history,
   // rendered as "ended"; drafts/pending/rejected stay excluded by RLS regardless of query.
   const supabase = await createClient();
-  const { data: eventRow } = await supabase
-    .from("events")
-    .select(EVENT_DETAIL_COLUMNS)
-    .ilike("short_id", shortId)
-    .maybeSingle();
+
+  // Exact match first, then a case-insensitive fallback. This used to be a single
+  // .ilike(...).maybeSingle(), which is a bug: short_id is case-sensitive base62, so
+  // generate_short_id() is free to mint both "CIbs" and "CIBs" as distinct IDs — and it did.
+  // ilike then matched both rows, maybeSingle() errors on more than one, and BOTH events 404ed:
+  // "Campamento CImbiosis" and the September edition of "CI Basics with Adrian Russi, Bern",
+  // the latter while still linked from the homepage and /workshops (found via Ahrefs 2026-09-21,
+  // broken since the second ID was minted on 2026-08-28).
+  //
+  // The fallback keeps the old forgiveness for a hand-typed or lower-cased URL, but only when it
+  // resolves unambiguously. A row reached that way has a short_id in different case to the one
+  // requested, so the page's slug check permanent-redirects to the canonical URL.
+  let eventRow: unknown = (
+    await supabase.from("events").select(EVENT_DETAIL_COLUMNS).eq("short_id", shortId).maybeSingle()
+  ).data;
+
+  if (!eventRow) {
+    const { data: fuzzy } = await supabase
+      .from("events")
+      .select(EVENT_DETAIL_COLUMNS)
+      .ilike("short_id", shortId)
+      .limit(2);
+    if (fuzzy?.length === 1) {
+      eventRow = fuzzy[0];
+    }
+  }
 
   if (!eventRow) {
     return null;
