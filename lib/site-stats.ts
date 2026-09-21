@@ -1,6 +1,7 @@
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { getVenueCountries } from "@/lib/venues";
 import { getCommunityCountries } from "@/lib/communities";
+import { getListedPeople } from "@/lib/teachers";
 
 // I-156: the four database-derived figures /about quotes ("the site lists {publishedEvents}
 // upcoming and past events across {eventCountries} countries..."). Kept out of lib/events.ts
@@ -33,25 +34,31 @@ export async function getSiteStats(): Promise<SiteStats> {
 
   try {
     const supabase = createStaticClient();
-    const [eventsResult, profilesResult, venueCountries, communityCountries] = await Promise.all([
+    const [eventsResult, listedPeople, venueCountries, communityCountries] = await Promise.all([
       // "Past events stay online instead of being deleted" -- published (upcoming) and archived
       // (past) are both real, publicly-visible events; draft/rejected are not. Matches the
       // sitemap's hide=false filter, but deliberately includes archived where the sitemap
       // (an SEO decision, not a data-quality one) does not.
       supabase.from("events").select("country").in("status", ["published", "archived"]).eq("hide", false),
-      // Same admission rule as the /teachers listing (I-074): teacher OR organizer, public, listed.
-      supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .or("is_teacher.eq.true,is_organizer.eq.true")
-        .eq("visibility", "public")
-        .eq("show_in_list", true),
+      // The same function /teachers lists from, so the count and the list can never disagree.
+      //
+      // This used to be its own count query filtered on show_in_list, under a comment claiming it
+      // matched the /teachers admission rule. It stopped matching on 2026-09-19, when I-074 moved
+      // that listing onto a derived rule (public, plus a credit on a published or archived event,
+      // or a confirmed teacher flag) precisely because show_in_list is a stale one-off backfill
+      // from 2026-07-10 that nothing maintains. The count kept reading the flag, so the site
+      // advertised 546 people while the page beside it listed everyone who qualified: 259 public
+      // teacher/organizer profiles have the flag off and were being left out of the headline.
+      //
+      // Costs more than a head-count query (three reads rather than one), which is accepted:
+      // every caller is a statically generated page with a long revalidate, and duplicating the
+      // admission rule here is exactly the bug being fixed.
+      getListedPeople(),
       getVenueCountries(),
       getCommunityCountries(),
     ]);
 
     if (eventsResult.error) throw new Error(eventsResult.error.message);
-    if (profilesResult.error) throw new Error(profilesResult.error.message);
 
     const eventCountrySet = new Set((eventsResult.data ?? []).map((row) => row.country).filter((c): c is string => !!c));
 
@@ -59,7 +66,7 @@ export async function getSiteStats(): Promise<SiteStats> {
       publishedEvents: eventsResult.data?.length ?? 0,
       eventCountries: eventCountrySet.size,
       venueCount: venueCountries.count,
-      profileCount: profilesResult.count ?? 0,
+      profileCount: listedPeople.length,
       communityCount: communityCountries.count,
       communityCountries: communityCountries.countries.length,
     };
