@@ -78,8 +78,40 @@ async function interpolateStats(markdown: string): Promise<string> {
   });
 }
 
+// A single-pass regex removal can leave the delimiter behind when occurrences are nested
+// ("<!-- <!-- -->" leaves a stray "-->"), so this re-applies the replace until it stops
+// changing anything — CodeQL's js/incomplete-multi-character-sanitization concern.
+function removeUntilStable(input: string, pattern: RegExp): string {
+  let result = input;
+  let previous: string;
+  do {
+    previous = result;
+    result = result.replace(pattern, "");
+  } while (result !== previous);
+  return result;
+}
+
 function stripEditorialComments(markdown: string): string {
-  return markdown.replace(/<!--[\s\S]*?-->\n*/g, "");
+  return removeUntilStable(markdown, /<!--[\s\S]*?-->\n*/g);
+}
+
+function stripTags(html: string): string {
+  return removeUntilStable(html, /<[^>]+>/g);
+}
+
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  "#39": "'",
+};
+
+// One pass over all five entities together, not five sequential .replace() calls: decoding
+// &amp; first and then re-scanning for &lt; etc. double-unescapes "&amp;lt;" (literal text
+// "&lt;") into "<" (CodeQL's js/double-escaping).
+function decodeHtmlEntities(text: string): string {
+  return text.replace(/&(amp|lt|gt|quot|#39);/g, (_match, entity: string) => HTML_ENTITIES[entity]);
 }
 
 // GitHub-flavoured heading slugs, because that is the dialect the glossary's hand-written index
@@ -87,14 +119,10 @@ function stripEditorialComments(markdown: string): string {
 // with no id, so without this every one of those links is dead. Post-processing the HTML rather
 // than overriding marked's renderer deliberately: the renderer signature has changed across marked
 // majors (v5 and again v16), a regex over the output has not.
+// Decode entities before stripping tags, not after: stripping first and decoding after can
+// turn a harmless "&lt;script&gt;" into a literal "<script>" that never gets tag-stripped.
 function slugifyHeading(text: string): string {
-  return text
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+  return stripTags(decodeHtmlEntities(text))
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
@@ -111,7 +139,7 @@ function splitLeadingH1(html: string): { heading: string; body: string } {
   const match = html.match(/^\s*<h1[^>]*>([\s\S]*?)<\/h1>\s*/);
   if (!match) return { heading: "", body: html };
   return {
-    heading: match[1].replace(/<[^>]+>/g, "").trim(),
+    heading: stripTags(match[1]).trim(),
     body: html.slice(match[0].length),
   };
 }
