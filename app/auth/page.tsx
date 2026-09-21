@@ -1,10 +1,64 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 // I-165: was a local SAFE_NEXT regex that missed "/\host". Shared with app/auth/confirm/route.ts
 // and app/admin/login/page.tsx.
-import { safeNext } from "@/lib/site";
+import { safeNext, SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
+
+// The share card for every auth-gated URL is generated here, not on the page being linked to.
+// An anonymous request for /events/new 307s straight to /auth?next=/events/new before that page
+// renders, so a link-preview fetcher never sees the target's own metadata and putting it there
+// would do nothing. This page had none at all, so it inherited the homepage's title and
+// description wholesale (Next.js does not deep-merge nested metadata keys — the same gap fixed
+// on /teachers, /venues and /communities in I-150), and a link to the submission form previewed
+// as the homepage.
+const DESTINATION_META: Record<string, { title: string; description: string }> = {
+  "/events/new": {
+    title: "Submit an event",
+    description:
+      "Add a Contact Improvisation workshop, lab, jam gathering or festival to CI Treasure Hunt. One-day and multi-day events both welcome.",
+  },
+};
+
+const DEFAULT_META = {
+  title: "Sign in",
+  description:
+    "Sign in to claim your profile, edit your bio, photo and links, and submit events to CI Treasure Hunt.",
+};
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<{ next?: string }>;
+}): Promise<Metadata> {
+  const params = (await searchParams) ?? {};
+  // safeNext, not the raw param: this ends up in the rendered page, and the same open-redirect
+  // shape I-165 closed for the form target applies to anything derived from it.
+  const meta = DESTINATION_META[safeNext(params.next)] ?? DEFAULT_META;
+  return {
+    title: meta.title,
+    description: meta.description,
+    // robots.ts already disallows /auth for "*", so this is belt and braces rather than the
+    // mechanism: it only matters if a fetcher with its own allow group also indexes.
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `${SITE_URL}/auth`,
+      siteName: "CI Treasure Hunt",
+      type: "website",
+      images: [{ url: SITE_OG_IMAGE, width: 1280, height: 1024, type: "image/jpeg" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: meta.title,
+      description: meta.description,
+      images: [SITE_OG_IMAGE],
+    },
+  };
+}
 
 async function sendMagicLink(formData: FormData) {
   "use server";

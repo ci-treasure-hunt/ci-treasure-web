@@ -31,6 +31,22 @@ const BLOCKED_AI_AND_SEO_BOTS = [
   "Amazonbot",
   "Bytespider", // ByteDance/TikTok; heavy, and a poor robots-compliance record
   "CCBot", // Common Crawl, the dataset most training corpora are built from
+  // Added 2026-09-21. Ahrefs' "inconsistent AI training bot policy" check was right: these two
+  // are training crawlers of exactly the kind the list above blocks, and were allowed only
+  // because their user agents were not known when this file was written (the note further down
+  // used to say DeepSeek had no identifier that could be verified).
+  //
+  // Both carry a caveat worth knowing rather than discovering later: DeepSeek and xAI publish
+  // these names, but multiple independent reports have them crawling with ordinary browser user
+  // agents instead, so neither rule may bind anything in practice. They cost a line each and
+  // close the stated-policy gap; they are not a guarantee. Firewall rules are the real remedy
+  // if the traffic shows up, same as the Bytespider note above.
+  "DeepSeekBot", // matching is case-insensitive, so this also covers "DeepseekBot"
+  "xAI-Bot",
+  "xAI-Grok",
+  "GrokBot",
+  // Grok-DeepSearch is deliberately NOT blocked: it is the user-triggered, citing side of xAI,
+  // which belongs with ChatGPT-User and Claude-User in the allowed list below.
   // Scrapers and dataset resellers
   "Diffbot",
   "ImagesiftBot",
@@ -77,6 +93,33 @@ export default function robots(): MetadataRoute.Robots {
     // crawl budget, not a security boundary (the real gate is proxy.ts's auth check).
     rules: [
       ...BLOCKED_AI_AND_SEO_BOTS.map((userAgent) => ({ userAgent, disallow: "/" })),
+      // Link-preview fetchers, given their own group so the disallow list below does not reach
+      // them. The note at the top of this file already says these are deliberately not blocked,
+      // but that intent was silently defeated for the auth-gated paths: in robots.txt a named
+      // agent obeys only its own matching group, and with no group of their own these all fell
+      // back to "*". So every /events/new link Jan shared to a Facebook group or Telegram was
+      // unpreviewable — no title, no description, no image — which matters most for exactly the
+      // link an announcement post is built around (found 2026-09-21).
+      //
+      // Safe to open: a preview fetch is a single on-demand request for a URL someone already
+      // chose to share, not a crawl, so it costs nothing in crawl budget or ISR writes (I-172).
+      // These paths stay out of the search index via the "*" group below, which is untouched.
+      {
+        userAgent: [
+          "facebookexternalhit", // Facebook, Messenger
+          "Facebot",
+          "Twitterbot",
+          "LinkedInBot",
+          "TelegramBot",
+          "WhatsApp",
+          "Slackbot-LinkExpanding",
+          "Discordbot",
+          // Applebot is deliberately NOT here: it renders iMessage previews but is also a real
+          // search crawler, and giving it its own group would lift the "*" disallow and let it
+          // index /dashboard and /auth. Losing the iMessage card is the cheaper side of that trade.
+        ],
+        allow: "/",
+      },
       {
         userAgent: "*",
         allow: "/",

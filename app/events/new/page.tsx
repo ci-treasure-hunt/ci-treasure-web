@@ -5,6 +5,10 @@ import { OrganizerEventForm } from "@/components/organizer/event-form";
 import { getKnownDisciplines } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
 
+// No metadata export here on purpose. The redirect below fires before this page renders for
+// anyone signed out, and a link-preview fetcher is always signed out, so the share card for
+// citreasurehunt.com/events/new comes from app/auth/page.tsx's generateMetadata instead. Edit
+// the "/events/new" entry in its DESTINATION_META map to change how this link previews.
 export default async function NewEventPage() {
   const supabase = await createClient();
   const {
