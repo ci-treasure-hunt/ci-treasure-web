@@ -110,7 +110,14 @@ export default function robots(): MetadataRoute.Robots {
       //
       // Safe to open: a preview fetch is a single on-demand request for a URL someone already
       // chose to share, not a crawl, so it costs nothing in crawl budget or ISR writes (I-172).
-      // These paths stay out of the search index via the "*" group below, which is untouched.
+      //
+      // Kept even though Facebook demonstrably ignores it (2026-09-21). Tested through Facebook's
+      // own Sharing Debugger: /, /robots.txt and /teachers/<slug> all fetched fine, /dashboard
+      // fetched fine only because the "*" list said "/dashboard/" with a trailing slash and so
+      // never matched it, and /events/new, the one URL the "*" group really disallowed, was the
+      // only 403. So Facebook applied "*" rather than this group, despite its own error text
+      // telling you to allowlist facebookexternalhit. The group still binds the other fetchers
+      // here, which is why it stays; the real fix for Facebook is the "*" list below.
       {
         userAgent: [
           "facebookexternalhit", // Facebook, Messenger
@@ -123,7 +130,9 @@ export default function robots(): MetadataRoute.Robots {
           "Discordbot",
           // Applebot is deliberately NOT here: it renders iMessage previews but is also a real
           // search crawler, and giving it its own group would lift the "*" disallow and let it
-          // index /dashboard and /auth. Losing the iMessage card is the cheaper side of that trade.
+          // crawl /admin and /dashboard. Losing the iMessage card is the cheaper side of that
+          // trade. (/auth is no longer in that list, so it is not part of this reasoning; it is
+          // held out of the index by its own noindex tag instead.)
         ],
         allow: "/",
       },
@@ -134,7 +143,24 @@ export default function robots(): MetadataRoute.Robots {
         // JSON endpoints with no unique content to rank, not linked from anywhere crawlable, but
         // blocking them rules out any chance of a response surfacing in search results and saves
         // crawl budget.
-        disallow: ["/admin/", "/dashboard/", "/auth", "/events/new", "/events/*/edit", "/api/"],
+        //
+        // /events/new and /auth were here until 2026-09-21 and had to come out. Facebook applies
+        // this group rather than its own (see the note above), so disallowing /events/new made
+        // every share of the submission link unpreviewable, and that link is what an announcement
+        // post is built around. Keeping them out of the index is now the meta robots noindex on
+        // app/auth/page.tsx, which is the correct mechanism anyway: a robots.txt disallow stops a
+        // crawler fetching the page at all, so it never reads the noindex and the URL can still
+        // surface on anchor text alone. /events/new needs no tag of its own, since it redirects to
+        // /auth and the directive is taken from the redirect target.
+        //
+        // Cost, accepted: crawlers may now walk /auth?next=... variants, which is crawl budget
+        // I-172 was trying to reclaim. Bounded by there being one sign-in link in the header, and
+        // worth it against silently breaking the preview on every auth-gated link we share.
+        //
+        // Trailing slashes removed from /admin and /dashboard as well. "/dashboard/" never matched
+        // the URL /dashboard, which is why Facebook fetched that one happily while /events/new
+        // came back 403; the pair of results is what identified the bug.
+        disallow: ["/admin", "/dashboard", "/events/*/edit", "/api/"],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
