@@ -28,7 +28,14 @@ const BLOCKED_AI_AND_SEO_BOTS = [
   "Google-Extended", // Gemini training only; no effect on Google Search
   "Applebot-Extended", // Apple AI training only; plain Applebot (Siri/Spotlight) stays allowed
   "Meta-ExternalAgent", // Meta AI training; facebookexternalhit (link previews) is separate
-  "Amazonbot",
+  // Amazonbot was here until 2026-09-21, removed deliberately. Amazon runs three agents and the
+  // other two, Amzn-SearchBot and Amzn-User, were never listed, so they fell through to "*" and
+  // were allowed. Blocking one of three bought nothing: Amazon reached the same pages anyway,
+  // and the only effect was the split policy Ahrefs flags. Amazon publishes no training-only
+  // opt-out agent (no equivalent of Google-Extended), so the choice was all-in or all-out, and
+  // in is consistent with the reasoning below for ChatGPT-User and friends: Alexa and Rufus are
+  // assistant surfaces where being the answer to "where are the CI festivals in Portugal" is
+  // the point. To reverse, put "Amazonbot" back and add "Amzn-SearchBot" and "Amzn-User".
   "Bytespider", // ByteDance/TikTok; heavy, and a poor robots-compliance record
   "CCBot", // Common Crawl, the dataset most training corpora are built from
   // Added 2026-09-21. Ahrefs' "inconsistent AI training bot policy" check was right: these two
