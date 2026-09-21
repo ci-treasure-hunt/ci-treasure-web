@@ -16,6 +16,15 @@ const supabase = (supabaseUrl && supabaseKey)
   ? createClient(supabaseUrl, supabaseKey)
   : null;
 
+// Deliberately a local copy of lib/events.ts's slugify() rather than an import. That module
+// pulls in the cookie-aware Supabase server client at module scope, and importing it here risks
+// flipping this route from ISR to dynamic — the exact regression I-172 was about, and expensive
+// on a route that enumerates every event, teacher, venue and community URL.
+//
+// The two MUST stay byte-identical: this builds the event URLs, lib/events.ts's buildEventSlug()
+// builds the ones the site actually links to and the revalidate webhook busts. If they drift,
+// every event URL in the sitemap 404s while the real pages stay fine, which is close to invisible
+// in testing. Verified identical 2026-09-21.
 const SLUG_CHAR_MAP: Record<string, string> = {
   ł: "l", ø: "o", ß: "ss", đ: "d", ð: "d", þ: "th", æ: "ae", å: "a",
 };
@@ -50,10 +59,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [{ data: events }, { data: venues }, { data: profiles }, { data: communities }, countrySummaries] =
     await Promise.all([
+      // Archived included, not just published (fixed 2026-09-21). An archived event with
+      // hide=false still serves a live, fully indexable page — events_select_public grants
+      // public reads for published AND archived, and app/events/[eventSlug]/page.tsx sets no
+      // noindex — so filtering to published here left 230 crawlable pages out of the sitemap.
+      // Ahrefs found 193 of them ("Indexable page not in sitemap"), the ones still linked from
+      // teacher, venue and country pages.
+      //
+      // Counter-intuitively this should REDUCE crawl load rather than add to it (I-172): Google
+      // already crawls these pages, and a stable lastModified on a page that no longer changes
+      // is the strongest available signal to stop re-crawling it. Listing them also keeps the
+      // rankings past editions have accumulated, which real queries land on.
       supabase
         .from("events")
-        .select("short_id, title, updated_at")
-        .eq("status", "published")
+        .select("short_id, title, updated_at, status")
+        .in("status", ["published", "archived"])
         .eq("hide", false),
       supabase
         .from("venues")
@@ -87,12 +107,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/feedback`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
-  const eventUrls: MetadataRoute.Sitemap = (events ?? []).map((e) => ({
-    url: `${SITE_URL}/events/${e.short_id}-${slugify(e.title)}`,
-    lastModified: new Date(e.updated_at),
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
+  const eventUrls: MetadataRoute.Sitemap = (events ?? []).map((e) => {
+    const isArchived = e.status === "archived";
+    return {
+      url: `${SITE_URL}/events/${e.short_id}-${slugify(e.title)}`,
+      lastModified: new Date(e.updated_at),
+      // A past event's page is finished: nothing about it will change again, so say so rather
+      // than inviting a weekly recrawl of what is now the larger half of the sitemap.
+      changeFrequency: isArchived ? ("yearly" as const) : ("weekly" as const),
+      priority: isArchived ? 0.3 : 0.8,
+    };
+  });
 
   const venueUrls: MetadataRoute.Sitemap = (venues ?? [])
     .filter((v) => v.slug)
