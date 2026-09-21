@@ -157,9 +157,9 @@ are precise about which branch is which, so it's worth asking instead of assumin
 
 ## Practices CI dancers also do
 
-The practices above are the ones people usually weigh against CI when deciding what to try. Nobody
-picks between CI and the ones below: CI dancers commonly train in these as well, and they appear on
-CI [festival](/festivals) programs more often than most of what's on this page.
+The practices above are the ones people usually weigh against CI when deciding what to try. The
+ones below are different: people do them alongside CI, not instead of it, and they regularly
+appear on CI [festival](/festivals) programs.
 
 **Somatic movement** is the broad label for practices working from internal sensation and attention
 instead of from a shape to achieve: Feldenkrais, Alexander Technique, Continuum and others. Most of
