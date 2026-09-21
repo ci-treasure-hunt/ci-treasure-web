@@ -6,7 +6,7 @@ keywords: ["contact improvisation vs 5rhythms", "contact improvisation vs ecstat
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-09-02
+updated: 2026-09-21
 ---
 
 # Contact Improvisation vs. Other Movement Practices
@@ -157,21 +157,24 @@ are precise about which branch is which, so it's worth asking instead of assumin
 
 ## Practices CI dancers also do
 
-The practices above are the ones people usually weigh against CI when deciding what to try. This
-next group sits differently. CI dancers commonly train in these as well, and they appear on CI
-[festival](/festivals) programs more often than most of what's on this page.
+The practices above are the ones people usually weigh against CI when deciding what to try. Nobody
+picks between CI and the ones below: CI dancers commonly train in these as well, and they appear on
+CI [festival](/festivals) programs more often than most of what's on this page.
 
 **Somatic movement** is the broad label for practices working from internal sensation and attention
-instead of from a shape to achieve: Feldenkrais, Alexander Technique, Continuum and others. It's
-the description that appears most often next to CI in event listings, and a great many CI teachers
-hold a training in one somatic practice or another.
+instead of from a shape to achieve: Feldenkrais, Alexander Technique, Continuum and others. Most of
+the practices below belong to it as well. It's the description that appears most often next to CI
+in event listings, and a great many CI teachers hold a training in one somatic practice or another.
+Feldenkrais and Alexander Technique also turn up as festival classes in their own right, the latter
+noticeably more often in recent years.
 
 **Body-Mind Centering** (BMC) is the somatic practice most closely entangled with CI. Bonnie
 Bainbridge Cohen founded her school in 1973, the year after CI's first performances, and wrote for
 *Contact Quarterly*, CI's own journal, from 1980 to 2009; the collected essays were published by
-the journal's own book imprint. BMC works from experiential anatomy, studying the body's systems,
-bones, organs, fluids and nerves from the inside rather than from a diagram. Many CI teachers hold
-a BMC training, and it's taught at CI festivals in its own right.
+the journal's own book imprint. BMC works from experiential anatomy and developmental movement:
+studying the body's systems, bones, organs, fluids, nerves and more from the inside rather than
+from a diagram, and re-travelling the movement patterns infants pass through. Many CI teachers
+hold a BMC training, and it's taught at CI festivals in its own right.
 
 **Axis Syllabus** is a reference system for human movement assembled by Frey Faust, built on
 anatomy, biomechanics and physics, not on any one dance style. Faust is a second-generation
@@ -180,12 +183,13 @@ overlap. It isn't a dance form and isn't a style of CI; it's a framework for und
 bodies move, and it's commonly taught alongside CI, not as an alternative to it.
 
 **Authentic Movement** pairs a mover, who dances with the eyes closed and follows whatever impulse
-arrives, with a witness, who watches without directing and afterwards speaks about what they saw in
-themselves while watching. It grew out of Mary Starks Whitehouse's work in the 1950s and was
-developed further by Janet Adler. It isn't a partner practice and involves no contact, but the
-witnessing half of it has fed CI directly: the word *witnessing* means much the same thing at a
-jam, where sitting out and watching is understood as participation (see the
-[glossary](/guides/glossary)). Many teachers work in both.
+arrives, with a witness, who watches without directing or judging and afterwards speaks about what
+they saw in themselves while watching. It grew out of Mary Starks Whitehouse's work in the 1950s
+and was developed further by Janet Adler. It isn't a partner practice and involves no contact, but
+both halves of it feed CI directly. The word *witnessing* means much the same thing at a jam, where
+sitting out and watching is understood as participation (see the
+[glossary](/guides/glossary)). And the mover's side, following inner impulse with the eyes closed,
+is close to what CI dancers do when they dance alone inside a jam. Many teachers work in both.
 
 **Butoh** emerged in Japan in the late 1950s, with Tatsumi Hijikata and Kazuo Ohno, and developed
 entirely separately from CI. What it shares is a way of working: movement driven by internal image
@@ -198,7 +202,8 @@ trademarked, with training that leads to a certificate. 5Rhythms and Body-Mind C
 registered marks with their own teacher certification, and AcroYoga teachers are certified by the
 organizations that teach it. CI has none of that. Anyone can call themselves a CI teacher, which
 is a direct result of the 1970s decision not to trademark the form. It means a certified 5Rhythms
-teacher has met a defined standard, and that judging a CI teacher is on you.
+teacher has met a defined standard, and that working out whether a CI teacher is any good is left
+to you.
 
 ## Quick comparison
 
