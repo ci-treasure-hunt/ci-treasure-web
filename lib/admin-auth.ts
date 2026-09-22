@@ -1,18 +1,11 @@
 import { redirect } from "next/navigation";
 
+import { isAdminEmail } from "@/lib/admin-emails";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminUser = {
   email: string;
 };
-
-// Returns null rather than throwing when unset: isAdminEmail() below is called from
-// /dashboard on every page load (not just admin pages), so a missing env var must fail
-// closed (nobody is admin) instead of crashing the dashboard for every signed-in user.
-function getAdminEmail() {
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  return adminEmail || null;
-}
 
 export async function getSessionUserEmail() {
   const supabase = await createClient();
@@ -25,10 +18,10 @@ export async function getSessionUserEmail() {
 
 export async function getAdminUser(): Promise<AdminUser | null> {
   const email = await getSessionUserEmail();
-  if (!email || email !== getAdminEmail()) {
+  if (!isAdminEmail(email)) {
     return null;
   }
-  return { email };
+  return { email: email! };
 }
 
 export async function requireAdminUser() {
@@ -39,6 +32,5 @@ export async function requireAdminUser() {
   return user;
 }
 
-export async function isAdminEmail(email: string | null | undefined) {
-  return Boolean(email && email.trim().toLowerCase() === getAdminEmail());
-}
+// Re-exported so existing importers of "@/lib/admin-auth" keep working unchanged.
+export { isAdminEmail };

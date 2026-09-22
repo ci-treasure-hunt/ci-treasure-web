@@ -1,9 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-function getAdminEmail() {
-  return process.env.ADMIN_EMAIL?.trim().toLowerCase();
-}
+import { isAdminEmail } from "@/lib/admin-emails";
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({
@@ -41,9 +39,7 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     const isLoginPage = pathname === "/admin/login";
     const isForbiddenPage = pathname === "/admin/forbidden";
-    const adminEmail = getAdminEmail();
-    const userEmail = user?.email?.trim().toLowerCase() ?? null;
-    const isAdmin = Boolean(adminEmail && userEmail === adminEmail);
+    const isAdmin = isAdminEmail(user?.email);
 
     if (!user && !isLoginPage) {
       const loginUrl = new URL("/admin/login", request.url);

@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
+import { isAdminEmail } from "@/lib/admin-emails";
+
 export async function requireAdminRequestUser(request: NextRequest): Promise<User> {
   const responseCookies: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
@@ -24,10 +26,7 @@ export async function requireAdminRequestUser(request: NextRequest): Promise<Use
     data: { user },
   } = await supabase.auth.getUser();
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const userEmail = user?.email?.trim().toLowerCase() ?? null;
-
-  if (!user || !adminEmail || userEmail !== adminEmail) {
+  if (!user || !isAdminEmail(user.email)) {
     throw new Error("Unauthorized");
   }
 
