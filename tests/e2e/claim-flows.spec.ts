@@ -99,6 +99,12 @@ test.describe('I-118 claim flows (authenticated)', () => {
     await page.goto(
       `${baseURL}/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink&next=/dashboard`,
     );
+    // /auth/confirm stopped consuming the token on the GET itself (2026-09-22): email security
+    // scanners pre-fetch links and were burning the single-use token before the real click, so
+    // verification now sits behind an explicit button press. A scanner issues GETs and does not
+    // submit forms; a real sign-in, and this test, click through.
+    await page.getByRole('button', { name: 'Finish signing in' }).click();
+    await page.waitForURL(/\/dashboard/);
   }
 
   test('claiming a no-organizer event: CTA -> submit -> dashboard shows pending', async ({ page, baseURL }) => {

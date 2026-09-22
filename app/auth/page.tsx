@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { CookieCheck } from "@/components/auth/cookie-check";
+import { OtpCodeForm } from "@/components/auth/otp-code-form";
 import { createClient } from "@/lib/supabase/server";
-// I-165: was a local SAFE_NEXT regex that missed "/\host". Shared with app/auth/confirm/route.ts
+// I-165: was a local SAFE_NEXT regex that missed "/\host". Shared with app/auth/confirm/page.tsx
 // and app/admin/login/page.tsx.
 import { safeNext, SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
 
@@ -117,12 +119,24 @@ export default async function AuthPage({
           you&apos;re in, you can claim your profile (update your bio, photo, and links), edit your listed
           events, and submit new ones.
         </p>
+        <p className="mt-4 rounded-2xl bg-(--color-mist) px-4 py-3 text-sm leading-6 text-slate-600">
+          Two things this needs, worth knowing before you start. Open the link in the same browser
+          you used to request it, and allow first-party cookies for this site. On phones the email
+          app often opens links in a different browser than the one you started in, which stops
+          sign-in from completing. If that happens, come back to this tab and use the numbered code
+          from the email instead.
+        </p>
+
+        <CookieCheck />
+
         {sentEmail ? (
           <p className="mt-4 text-sm text-emerald-700">
             Magic link sent to {sentEmail}. Check your inbox (and spam) — the link signs you in.
           </p>
         ) : null}
         {errorMessage ? <p className="mt-4 text-sm text-rose-700">{errorMessage}</p> : null}
+
+        {sentEmail ? <OtpCodeForm email={sentEmail} next={next} /> : null}
 
         <form action={sendMagicLink} className="mt-8 space-y-4">
           <input type="hidden" name="next" value={next} />
