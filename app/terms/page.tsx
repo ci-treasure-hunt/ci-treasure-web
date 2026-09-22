@@ -11,7 +11,7 @@ export default function TermsPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-5 py-14 sm:px-8">
       <h1 className="font-serif text-4xl text-slate-950">Terms of Service</h1>
       <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-        <p className="text-sm text-slate-500">Last updated: August 2026</p>
+        <p className="text-sm text-slate-500">Last updated: September 2026</p>
         <section>
           <h2 className="font-semibold text-slate-950">1. Scope</h2>
           <p>
@@ -56,9 +56,9 @@ export default function TermsPage() {
         <section>
           <h2 className="font-semibold text-slate-950">6. Accounts and submissions</h2>
           <p>
-            Organizers may create an account (by email magic link) to claim a profile and submit or edit their own
-            event listings. You are responsible for activity under your account and for keeping your email access
-            secure. You may only submit content you have the right to publish, and it must be accurate and not
+            Organizers may create an account, either by emailed sign-in link or code or by signing in with
+            Google, to claim a profile and submit or edit their own event listings. You are responsible for
+            activity under your account and for keeping your email or Google account access secure. You may only submit content you have the right to publish, and it must be accurate and not
             misleading. Submitted events are reviewed before publication unless your account is marked trusted; we
             may edit, decline, unpublish, or remove any listing at our discretion, for example if it is
             inaccurate, off-topic, or violates these terms. Claiming a profile that is not yours is not permitted.

@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-5 py-14 sm:px-8">
       <h1 className="font-serif text-4xl text-slate-950">Privacy Policy</h1>
       <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-        <p className="text-sm text-slate-500">Last updated: August 2026</p>
+        <p className="text-sm text-slate-500">Last updated: September 2026</p>
         <section>
           <h2 className="font-semibold text-slate-950">1. Controller</h2>
           <p>
@@ -296,13 +296,41 @@ export default function PrivacyPage() {
           <h2 className="font-semibold text-slate-950">12. Accounts and login</h2>
           <p>
             If you create an account to manage your events, we use Supabase Auth (Supabase Inc., US) to sign you
-            in by magic link. We store your email address and an internal user identifier, and set a session
-            cookie so you stay signed in. We do not use passwords, sign-in is by emailed link only. The session
-            cookie is strictly necessary for login and is not used for tracking or profiling. Legal basis:
-            Art.&nbsp;6(1)(b) GDPR: processing necessary to provide the account and organizer tools you request.
-            We keep your account for as long as you have one; ask us to delete it and we remove it, along with the
-            email address and identifier stored with it. Data transfers to Supabase are governed by Standard
-            Contractual Clauses (SCCs) under
+            in. We never use passwords. There are two ways in, and you choose which.
+          </p>
+          <p className="mt-2">
+            <strong className="font-semibold text-slate-950">By emailed link or code.</strong>{" "}
+            We email you a single-use sign-in link together with a six-digit code, and either one signs you in.
+            Section 13 covers how that email is delivered.
+          </p>
+          <p className="mt-2">
+            <strong className="font-semibold text-slate-950">With your Google account.</strong>{" "}
+            If you choose this, you are sent to Google to sign in there, and Google then tells us your email
+            address, whether Google has verified it, your name, a link to your Google profile picture, and the
+            account identifier Google uses for you. We keep that record so you can sign in again. We do not use
+            your Google profile picture anywhere on this site: a profile page has a photo only if you uploaded
+            one yourself, as described in section 7. We ask Google for nothing beyond the above, and we have no
+            access to your Gmail, contacts, calendar, or any other Google service. Google learns that you are
+            signing in to this site. Google LLC is based in the US, and transfers are governed by Standard
+            Contractual Clauses (SCCs) under Art.&nbsp;46(2)(c) GDPR. See{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              className="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google&apos;s privacy policy
+            </a>
+            . Signing in with Google is optional; the emailed link or code does the same job without involving
+            Google.
+          </p>
+          <p className="mt-2">
+            Either way, we store your email address and an internal user identifier, and set a session cookie so
+            you stay signed in. That cookie is strictly necessary for login and is not used for tracking or
+            profiling. Legal basis: Art.&nbsp;6(1)(b) GDPR: processing necessary to provide the account and
+            organizer tools you request. We keep your account for as long as you have one; ask us to delete it
+            and we remove it, along with the email address, the identifier, and any Google identity linked to
+            it. Data transfers to Supabase are governed by Standard Contractual Clauses (SCCs) under
             Art.&nbsp;46(2)(c) GDPR. See{" "}
             <a href="https://supabase.com/privacy" className="underline" target="_blank" rel="noopener noreferrer">
               Supabase&apos;s privacy policy
@@ -311,9 +339,9 @@ export default function PrivacyPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">13. Transactional email (magic links &amp; notifications)</h2>
+          <h2 className="font-semibold text-slate-950">13. Transactional email (sign-in links &amp; notifications)</h2>
           <p>
-            Emails such as your sign-in magic link, and notifications about your event submissions or profile
+            Emails such as your sign-in link and code, and notifications about your event submissions or profile
             claims, are delivered through Resend (Resend, Inc., US). Resend receives your email address and the
             message content in order to send these emails. We have configured Resend&apos;s EU sending region
             (Ireland, <span className="font-mono text-sm">eu-west-1</span>), so message delivery is processed
