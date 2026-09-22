@@ -28,7 +28,7 @@ Join the community: [Telegram group](https://t.me/citreasurehunt) ·
 | Frontend | Next.js (App Router) |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Database | Supabase (PostgreSQL, eu-central-1) |
-| Auth | Supabase Auth (Magic Link) |
+| Auth | Supabase Auth (emailed link + six-digit code, or Sign in with Google) |
 | Hosting | Vercel |
 
 ---
