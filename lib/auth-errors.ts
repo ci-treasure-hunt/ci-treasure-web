@@ -27,3 +27,19 @@ export function explainConfirmError(rawMessage: string | null | undefined): stri
   // leave this blank: a person who gets this far already had something go wrong once.
   return "This link didn't complete sign-in. It may have expired, been used already, or opened in a different browser than the one you started with. Request a new email below and type the code from it into this page.";
 }
+
+// The OAuth equivalent. Kept separate because every message above talks about links, codes and
+// email apps, none of which exist in a Google sign-in, and the causes do not overlap either: the
+// browser is guaranteed to be the same one that started the flow, so a missing PKCE verifier here
+// can only mean cookies were blocked, never that the person switched browser.
+export function explainOAuthError(rawMessage: string | null | undefined): string {
+  const msg = (rawMessage ?? "").toLowerCase();
+
+  if (msg.includes("code verifier") || msg.includes("code challenge")) {
+    return "Google sent you back, but this browser didn't keep the sign-in cookie. Allow cookies for citreasurehunt.com and try again, or sign in with your email address instead.";
+  }
+  if (msg.includes("access_denied") || msg.includes("denied") || msg.includes("cancel")) {
+    return "Google sign-in was cancelled before it finished. Try again, or use the email option below.";
+  }
+  return "Google sign-in didn't complete. Try again, or sign in with your email address instead.";
+}

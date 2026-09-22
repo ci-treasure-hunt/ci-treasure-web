@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { CookieCheck } from "@/components/auth/cookie-check";
+import { GoogleButton } from "@/components/auth/google-button";
 import { OtpCodeForm } from "@/components/auth/otp-code-form";
 import { createClient } from "@/lib/supabase/server";
 // I-165: was a local SAFE_NEXT regex that missed "/\host". Shared with app/auth/confirm/page.tsx
@@ -115,18 +116,27 @@ export default async function AuthPage({
         <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--color-pine)">Sign in</p>
         <h1 className="mt-3 font-serif text-4xl text-slate-950">Manage your profile and events</h1>
         <p className="mt-4 text-base leading-7 text-slate-700">
-          Enter your email and we&apos;ll send you a magic link. Open it to sign in, no password needed.
-          Once you&apos;re in, you can claim your profile (update your bio, photo, and links), edit your
-          listed events, and submit new ones.
+          Sign in with Google, or have us email you a link. No password either way. Once you&apos;re in,
+          you can claim your profile (update your bio, photo, and links), edit your listed events,
+          and submit new ones.
         </p>
-        <p className="mt-4 rounded-2xl bg-(--color-mist) px-4 py-3 text-sm leading-6 text-slate-600">
-          Sign-in needs two things: open the link in the same browser you used to request it, and
+
+        <CookieCheck />
+
+        <GoogleButton next={next} />
+
+        <div className="mt-8 flex items-center gap-4">
+          <span className="h-px flex-1 bg-(--color-sand-strong)" />
+          <span className="text-sm text-slate-500">or use your email</span>
+          <span className="h-px flex-1 bg-(--color-sand-strong)" />
+        </div>
+
+        <p className="mt-6 rounded-2xl bg-(--color-mist) px-4 py-3 text-sm leading-6 text-slate-600">
+          If you go the email route, open the link in the same browser you used to request it, and
           allow first-party cookies for this site. On phones the email app often opens links in a
           different browser than the one you started in, which stops sign-in from completing. If
           that happens, come back to this tab and use the numbered code from the email instead.
         </p>
-
-        <CookieCheck />
 
         {sentEmail ? (
           <p className="mt-4 text-sm text-emerald-700">
