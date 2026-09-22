@@ -115,23 +115,23 @@ export default async function AuthPage({
         <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--color-pine)">Sign in</p>
         <h1 className="mt-3 font-serif text-4xl text-slate-950">Manage your profile and events</h1>
         <p className="mt-4 text-base leading-7 text-slate-700">
-          Enter your email and we&apos;ll send you a magic link. Open it to sign in — no password needed. Once
-          you&apos;re in, you can claim your profile (update your bio, photo, and links), edit your listed
-          events, and submit new ones.
+          Enter your email and we&apos;ll send you a magic link. Open it to sign in, no password needed.
+          Once you&apos;re in, you can claim your profile (update your bio, photo, and links), edit your
+          listed events, and submit new ones.
         </p>
         <p className="mt-4 rounded-2xl bg-(--color-mist) px-4 py-3 text-sm leading-6 text-slate-600">
-          Two things this needs, worth knowing before you start. Open the link in the same browser
-          you used to request it, and allow first-party cookies for this site. On phones the email
-          app often opens links in a different browser than the one you started in, which stops
-          sign-in from completing. If that happens, come back to this tab and use the numbered code
-          from the email instead.
+          Sign-in needs two things: open the link in the same browser you used to request it, and
+          allow first-party cookies for this site. On phones the email app often opens links in a
+          different browser than the one you started in, which stops sign-in from completing. If
+          that happens, come back to this tab and use the numbered code from the email instead.
         </p>
 
         <CookieCheck />
 
         {sentEmail ? (
           <p className="mt-4 text-sm text-emerald-700">
-            Magic link sent to {sentEmail}. Check your inbox (and spam) — the link signs you in.
+            Email sent to {sentEmail}. Check your inbox and your spam folder. It contains a link and
+            a code, either one signs you in.
           </p>
         ) : null}
         {errorMessage ? <p className="mt-4 text-sm text-rose-700">{errorMessage}</p> : null}

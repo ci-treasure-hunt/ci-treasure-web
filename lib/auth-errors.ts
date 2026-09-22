@@ -14,16 +14,16 @@ export function explainConfirmError(rawMessage: string | null | undefined): stri
   const msg = (rawMessage ?? "").toLowerCase();
 
   if (msg.includes("code verifier") || msg.includes("code challenge")) {
-    return "This link was opened in a different browser or app than the one you used to request it, so it can't finish signing you in. Go back to the browser or app where you entered your email and open the link there, or request a new link below and open it in the same tab.";
+    return "This link was opened in a different browser or app than the one you used to request it, so it can't finish signing you in. Request a new email below and type the code from it into this page. That works whichever app opens your email.";
   }
   if (msg.includes("expired")) {
     return "This link has expired. Request a new one below.";
   }
   if (msg.includes("already") || msg.includes("used") || msg.includes("invalid")) {
-    return "This link has already been used, or is no longer valid. Sometimes an email provider's security scanner opens a link before you do, which uses it up. Request a new one below.";
+    return "This link has already been used, or is no longer valid. Sometimes an email provider's security scanner opens a link before you do, which uses it up. Request a new email below and type the code from it instead of clicking the link.";
   }
   // No specific match, including the "no code and no token_hash at all" case (a stripped or
   // truncated URL, or a scanner-consumed link that never reached us with anything usable). Never
   // leave this blank: a person who gets this far already had something go wrong once.
-  return "This link didn't complete sign-in. It may have expired, been used already, or opened in a different browser than the one you started with. Request a new one below.";
+  return "This link didn't complete sign-in. It may have expired, been used already, or opened in a different browser than the one you started with. Request a new email below and type the code from it into this page.";
 }
