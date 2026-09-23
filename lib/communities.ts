@@ -112,7 +112,6 @@ export type CommunityDetail = {
   name: string;
   slug: string;
   type: string | null;
-  verified: boolean;
   city: string | null;
   country: string | null;
   region: string | null;
@@ -123,9 +122,6 @@ export type CommunityDetail = {
   focus: string[] | null;
   activity_level: string | null;
   languages: string[] | null;
-  audience_size: number | null;
-  friendliness: string | null;
-  contact_person: string | null;
   website: string | null;
   instagram: string | null;
   facebook_group: string | null;
@@ -345,10 +341,12 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
   const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("communities")
+    // I-111: verified, audience_size, friendliness and contact_person are internal and lose their
+    // anon SELECT grant in the Supabase-authoritative migration, so they must not be selected here.
     .select(`
-      id, name, slug, type, verified, city, country, region, continent,
-      lat, lng, description, focus, activity_level, languages, audience_size,
-      friendliness, contact_person, website, instagram, facebook_group,
+      id, name, slug, type, city, country, region, continent,
+      lat, lng, description, focus, activity_level, languages,
+      website, instagram, facebook_group,
       facebook_page, telegram_group, telegram_channel, whatsapp_channel,
       youtube, calendar, newsletter, other_resource,
       has_invites, has_telegram_invite, has_whatsapp_invite, has_signal_invite, has_line_invite,

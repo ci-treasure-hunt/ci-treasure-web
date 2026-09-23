@@ -11,7 +11,6 @@ import {
   MessageCircle,
   Send,
   Youtube,
-  Users,
   Languages,
   Target,
 } from "lucide-react";
@@ -196,11 +195,6 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
                       {community.activity_level}
                     </Badge>
                   )}
-                  {community.verified && (
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">
-                      Verified
-                    </Badge>
-                  )}
                 </div>
               </div>
             </div>
@@ -238,14 +232,6 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
                       <Languages className="h-4 w-4" /> Languages
                     </h3>
                     <p className="text-slate-700">{community.languages.join(", ")}</p>
-                  </div>
-                )}
-                {community.audience_size && (
-                  <div className="space-y-2">
-                    <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
-                      <Users className="h-4 w-4" /> Community size estimate
-                    </h3>
-                    <p className="text-slate-700">~{community.audience_size} members</p>
                   </div>
                 )}
               </section>
