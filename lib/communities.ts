@@ -34,11 +34,9 @@ export async function getPublishedInvitePlatforms(
   }
 }
 
-// Public submit/issue forms still live on Airtable until I-039 Step 2
-export const COMMUNITY_SUBMIT_URL =
-  "https://airtable.com/appQWr8oE2rc2URpU/pagqLIrZE1eCTbvqn/form";
-export const COMMUNITY_ISSUE_URL =
-  "https://airtable.com/appQWr8oE2rc2URpU/pagUNLXJ4aG1oRDJ3/form";
+// I-111: the public Add form, replacing the Airtable form. Corrections go through "Suggest an
+// edit" on each community's page (components/suggest-edit-button.tsx).
+export const COMMUNITY_SUBMIT_URL = "/communities/new";
 
 type CommunityRow = {
   id: string;

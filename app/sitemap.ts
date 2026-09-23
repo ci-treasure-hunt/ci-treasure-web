@@ -85,7 +85,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("visibility", "public"),
       supabase
         .from("communities")
-        .select("slug, airtable_updated_at")
+        .select("slug, updated_at")
         .is("deleted_at", null),
       // I-132 Step 2: a country only shows up here once it has a reviewed row in
       // country_summaries — same gate getCountryPageData() itself enforces, so a country never
@@ -141,10 +141,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((c) => c.slug)
     .map((c) => ({
       url: `${SITE_URL}/communities/${c.slug}`,
-      // airtable_updated_at, not synced_at — the daily sync touches every row's
-      // synced_at whether or not content changed, which would fake "modified today"
-      // for all 257 communities every run.
-      lastModified: c.airtable_updated_at ? new Date(c.airtable_updated_at) : undefined,
+      // I-111: updated_at, bumped by trigger on every edit. Only real edits touch the row
+      // since the daily Airtable sync was retired; before that it was airtable_updated_at.
+      lastModified: c.updated_at ? new Date(c.updated_at) : undefined,
       changeFrequency: "weekly",
       priority: 0.6,
     }));

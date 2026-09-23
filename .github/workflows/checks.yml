@@ -50,5 +50,11 @@ jobs:
       # rather than trusting to memory.
       #
       # npx --yes rather than a devDependency on tsx: keeps package-lock.json untouched.
+      #
+      # community-links.check.ts (I-111): classifyCommunityLinks keeps private group invites
+      # (WhatsApp/Telegram/Signal/LINE) out of public `communities` columns. Privacy-critical, same
+      # reason to enforce it.
       - name: Unit checks
-        run: npx --yes tsx tests/unit/url-safety.check.ts
+        run: |
+          npx --yes tsx tests/unit/url-safety.check.ts
+          npx --yes tsx tests/unit/community-links.check.ts
