@@ -404,8 +404,8 @@ export function CommunitiesClient({
         <section className="mt-12 rounded-2xl bg-(--color-pine) p-8 text-center text-white">
           <h2 className="mb-2 font-serif text-2xl">Know a community we&apos;re missing?</h2>
           <p className="mx-auto mb-6 max-w-2xl text-sm leading-6 text-white/75">
-            Add it, or just say hi in our global Telegram group. Something out of date? Use the report button on
-            the community&apos;s own page.
+            Add it, or just say hi in our global Telegram group. Something out of date? Open the community&apos;s
+            page and use &quot;Suggest an edit&quot;.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link

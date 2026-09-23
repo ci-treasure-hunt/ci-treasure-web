@@ -34,8 +34,8 @@ export async function getPublishedInvitePlatforms(
   }
 }
 
-// I-111: the public Add form, replacing the Airtable form. Corrections go through the Report
-// button on each community's page until the suggest-an-edit form (I-111 Stage 2) ships.
+// I-111: the public Add form, replacing the Airtable form. Corrections go through "Suggest an
+// edit" on each community's page (components/suggest-edit-button.tsx).
 export const COMMUNITY_SUBMIT_URL = "/communities/new";
 
 type CommunityRow = {

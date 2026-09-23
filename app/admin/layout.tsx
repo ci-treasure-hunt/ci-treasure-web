@@ -64,6 +64,19 @@ async function getPendingCommunityCount(): Promise<number> {
   }
 }
 
+async function getOpenCommunityEditCount(): Promise<number> {
+  try {
+    const supabase = createAdminClient();
+    const { count } = await supabase
+      .from("community_edit_suggestions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open");
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function getPendingProfileCount(): Promise<number> {
   try {
     const supabase = createAdminClient();
@@ -107,7 +120,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }>) {
   const adminUser = await getAdminUser();
-  const [openReports, pendingClaims, pendingEvents, pendingPhotos, pendingProfiles, pendingCommunities] = adminUser
+  const [openReports, pendingClaims, pendingEvents, pendingPhotos, pendingProfiles, pendingCommunities, communityEdits] = adminUser
     ? await Promise.all([
         getOpenReportCount(),
         getPendingClaimCount(),
@@ -115,8 +128,16 @@ export default async function AdminLayout({
         getPendingPhotoCount(),
         getPendingProfileCount(),
         getPendingCommunityCount(),
+        getOpenCommunityEditCount(),
       ])
-    : [0, 0, 0, 0, 0, 0];
+    : [0, 0, 0, 0, 0, 0, 0];
+  // New submissions first, then edit suggestions; the badge counts both.
+  const communitiesHref =
+    pendingCommunities > 0
+      ? "/admin/communities/pending"
+      : communityEdits > 0
+        ? "/admin/communities/edits"
+        : "/admin/communities";
 
   return (
     <main className="min-h-screen bg-(--color-mist) px-5 py-6 text-slate-900 sm:px-8 lg:px-10">
@@ -135,11 +156,11 @@ export default async function AdminLayout({
               Venues
             </Link>
             <Link
-              href={pendingCommunities > 0 ? "/admin/communities/pending" : "/admin/communities"}
+              href={communitiesHref}
               className="relative rounded-full border border-(--color-sand-strong) px-4 py-2 hover:border-(--color-pine) hover:text-(--color-pine)"
             >
               Communities
-              <NavBadge count={pendingCommunities} />
+              <NavBadge count={pendingCommunities + communityEdits} />
             </Link>
             <Link href="/admin/events/pending" className="relative rounded-full border border-(--color-sand-strong) px-4 py-2 hover:border-(--color-pine) hover:text-(--color-pine)">
               Pending

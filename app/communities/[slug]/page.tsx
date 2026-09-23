@@ -50,6 +50,7 @@ import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
+import { SuggestEditButton } from "@/components/suggest-edit-button";
 import { InviteButtons } from "@/components/invite-buttons";
 import { RevealEmail } from "@/components/reveal-email";
 import { RingSection } from "@/components/also-browse";
@@ -357,7 +358,8 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
             </aside>
           </div>
         </section>
-        <div className="text-center text-sm text-slate-400">
+        <div className="flex justify-center gap-6 text-sm text-slate-400">
+          <SuggestEditButton communityId={community.id} communityName={community.name} />
           <ReportButton
             entity_type="community"
             entity_id={community.id}

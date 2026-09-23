@@ -24,6 +24,7 @@ export type PendingCommunity = {
   links: Array<{ label: string; url: string }>;
   invitePlatforms: string[];
   hasEmail: boolean;
+  linksConsent: boolean;
   submitterContact: string | null;
   createdAt: string;
   possibleDuplicates: Array<{ id: string; name: string; city: string | null; status: string }>;
@@ -50,7 +51,7 @@ export async function getPendingCommunities(): Promise<PendingCommunity[]> {
   const { data, error } = await admin
     .from("communities")
     .select(
-      "id, name, slug, type, city, country, activity_level, focus, languages, description, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, has_email, submitter_contact, created_at, community_invites(platform)",
+      "id, name, slug, type, city, country, activity_level, focus, languages, description, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, has_email, links_consent, submitter_contact, created_at, community_invites(platform)",
     )
     .eq("status", "pending")
     .is("deleted_at", null)
@@ -79,6 +80,7 @@ export async function getPendingCommunities(): Promise<PendingCommunity[]> {
         links: LINK_LABELS.filter(([col]) => row[col]).map(([col, label]) => ({ label, url: row[col] as string })),
         invitePlatforms: ((c.community_invites ?? []) as Array<{ platform: string }>).map((i) => i.platform),
         hasEmail: c.has_email,
+        linksConsent: c.links_consent,
         submitterContact: c.submitter_contact,
         createdAt: c.created_at,
         possibleDuplicates: dupes ?? [],
@@ -126,7 +128,7 @@ export async function approveCommunity(id: string): Promise<{ success: boolean; 
 
   const { data: c, error } = await admin
     .from("communities")
-    .select("slug, city, country, address_for_map, lat, lng, status")
+    .select("slug, city, country, address_for_map, lat, lng, status, links_consent")
     .eq("id", id)
     .single();
   if (error || !c) return { success: false, error: error?.message ?? "Not found." };
@@ -150,9 +152,12 @@ export async function approveCommunity(id: string): Promise<{ success: boolean; 
   // Approval covers the links too (Jan, 2026-09-23: "new data = approval"). The submitter confirmed
   // on the form that they may share them, so a submitted group invite becomes revealable behind the
   // Turnstile check with the listing, instead of waiting for a separate per-link decision. The admin
-  // editor can still switch one off.
-  const { error: inviteError } = await admin.from("community_invites").update({ published: true }).eq("community_id", id);
-  if (inviteError) return { success: false, error: inviteError.message };
+  // editor can still switch one off. Only for Add-form rows (links_consent): a community added by
+  // research keeps its invites private until someone decides per link.
+  if (c.links_consent) {
+    const { error: inviteError } = await admin.from("community_invites").update({ published: true }).eq("community_id", id);
+    if (inviteError) return { success: false, error: inviteError.message };
+  }
 
   revalidatePath("/admin/communities/pending");
   revalidatePath("/admin/communities");

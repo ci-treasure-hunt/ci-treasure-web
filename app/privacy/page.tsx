@@ -415,6 +415,14 @@ export default function PrivacyPage() {
             delete your contact details on request. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in
             running a directory that people can add to, and in being able to ask about a submission.
           </p>
+          <p className="mt-2">
+            The &quot;Suggest an edit&quot; form on a community&apos;s page works the same way: we store which community
+            it concerns, the kind of change, what you write, and your optional name or contact, and nothing of it is
+            shown on the site. We apply the change by hand if it is right. It is also protected by the Turnstile check,
+            and we store a daily-rotating hash of your IP address to limit repeated suggestions, as for reports in
+            section 11. We keep a suggestion as a record of the listing&apos;s history and delete your contact details
+            on request. Legal basis: Art.&nbsp;6(1)(f) GDPR, as above.
+          </p>
         </section>
         <section>
           <h2 className="font-semibold text-slate-950">17. Changes to this policy</h2>

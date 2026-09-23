@@ -123,6 +123,8 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
       ...links.columns,
       ...inviteFlags(Object.keys(links.invites)),
       submitter_contact: submitterContact || null,
+      // Checked above; approveCommunity() publishes the invites only when this is set.
+      links_consent: true,
     })
     .select("id, slug")
     .single();

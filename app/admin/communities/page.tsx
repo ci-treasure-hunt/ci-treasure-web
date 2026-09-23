@@ -81,6 +81,10 @@ export default async function AdminCommunitiesPage({
     .select("id", { count: "exact", head: true })
     .eq("status", "pending")
     .is("deleted_at", null);
+  const { count: editCount } = await supabase
+    .from("community_edit_suggestions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "open");
 
   return (
     <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
@@ -98,6 +102,10 @@ export default async function AdminCommunitiesPage({
                 </Link>
               </>
             ) : null}
+            {" "}
+            <Link href="/admin/communities/edits" className={editCount ? "font-semibold text-amber-700 underline" : "underline"}>
+              {editCount ? `${editCount} edit suggestion${editCount === 1 ? "" : "s"} →` : "Edit suggestions"}
+            </Link>
           </p>
         </div>
         <Link href="/admin/communities/new" className="rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist)">

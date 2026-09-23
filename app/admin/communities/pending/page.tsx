@@ -62,7 +62,10 @@ export default async function AdminPendingCommunitiesPage() {
                   ))}
                   {c.invitePlatforms.map((p) => (
                     <li key={p} className="text-slate-500">
-                      🔒 {PLATFORM_LABEL[p] ?? p} invite (revealable behind the check once approved)
+                      🔒 {PLATFORM_LABEL[p] ?? p} invite{" "}
+                      {c.linksConsent
+                        ? "(revealable behind the check once approved)"
+                        : "(stays private on approval: not from the Add form, decide per link in the editor)"}
                     </li>
                   ))}
                   {c.hasEmail ? <li className="text-slate-500">✉ Community email given (see editor)</li> : null}
