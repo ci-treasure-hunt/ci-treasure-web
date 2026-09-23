@@ -55,7 +55,7 @@ const CLASSIFIER_TO_FORM = Object.fromEntries(
   Object.entries(LINK_FIELDS).map(([form, classifier]) => [classifier, form]),
 ) as Record<string, string>;
 
-async function createUniqueSlug(name: string, city: string): Promise<string> {
+export async function createUniqueSlug(name: string, city: string): Promise<string> {
   const supabase = createAdminClient();
   const base = slugify(name) || "community";
   // Includes soft-deleted rows: communities.slug is UNIQUE across all rows.

@@ -23,7 +23,13 @@ export const ACTIVITY_LEVELS = [
   "Overview / aggregator",
 ] as const;
 
-export const FOCUS_OPTIONS = ["Jams", "Classes", "Workshops", "Festivals", "Other"] as const;
+// What the public Add form offers (the admin-only values above are left out).
+export const PUBLIC_COMMUNITY_TYPES = COMMUNITY_TYPES.filter((t) => t !== "Teacher Network or Channel");
+export const PUBLIC_ACTIVITY_LEVELS = ACTIVITY_LEVELS.filter(
+  (a) => a !== "Inactive" && a !== "Overview / aggregator",
+);
+
+export const FOCUS_OPTIONS =["Jams", "Classes", "Workshops", "Festivals", "Other"] as const;
 
 export const FRIENDLINESS_OPTIONS = ["Open for collaboration", "Neutral"] as const;
 

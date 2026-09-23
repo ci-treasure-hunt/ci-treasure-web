@@ -76,6 +76,11 @@ export default async function AdminCommunitiesPage({
   const { data, error } = await dbQuery;
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as AdminCommunityRow[];
+  const { count: pendingCount } = await supabase
+    .from("communities")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+    .is("deleted_at", null);
 
   return (
     <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
@@ -85,6 +90,14 @@ export default async function AdminCommunitiesPage({
           <h2 className="mt-2 font-serif text-3xl text-slate-950">Manage communities</h2>
           <p className="mt-1 text-sm text-slate-600">
             {rows.length} shown{showArchived ? " (archived)" : ""}.
+            {pendingCount ? (
+              <>
+                {" "}
+                <Link href="/admin/communities/pending" className="font-semibold text-amber-700 underline">
+                  {pendingCount} pending review →
+                </Link>
+              </>
+            ) : null}
           </p>
         </div>
         <Link href="/admin/communities/new" className="rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist)">

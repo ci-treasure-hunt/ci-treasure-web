@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, ExternalLink, Lock, MapPin, MessageCircle, Send, Search, X, Filter, Map, List } from "lucide-react";
 
-import { COMMUNITY_ISSUE_URL, COMMUNITY_SUBMIT_URL, isLineUrl, isMessengerUrl, isPrivateGroupInvite, type Community } from "@/lib/communities";
+import { COMMUNITY_SUBMIT_URL, isLineUrl, isMessengerUrl, isPrivateGroupInvite, type Community } from "@/lib/communities";
 import { TELEGRAM_URL } from "@/lib/site";
 import { Button } from "@/components/ui/button";
 import { CONTINENT_COUNTRIES, CONTINENT_LABELS } from "@/lib/continents";
@@ -404,26 +404,15 @@ export function CommunitiesClient({
         <section className="mt-12 rounded-2xl bg-(--color-pine) p-8 text-center text-white">
           <h2 className="mb-2 font-serif text-2xl">Know a community we&apos;re missing?</h2>
           <p className="mx-auto mb-6 max-w-2xl text-sm leading-6 text-white/75">
-            Add it, flag something that&apos;s out of date, or just say hi in our global Telegram group.
+            Add it, or just say hi in our global Telegram group. Something out of date? Use the report button on
+            the community&apos;s own page.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href={COMMUNITY_SUBMIT_URL}
-              target="_blank"
-              rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-(--color-pine) transition hover:bg-slate-100"
             >
-              <ExternalLink className="size-4" />
               Add a community
-            </Link>
-            <Link
-              href={COMMUNITY_ISSUE_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/10 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/20"
-            >
-              <ExternalLink className="size-4" />
-              Suggest a correction
             </Link>
             <a
               href={TELEGRAM_URL}

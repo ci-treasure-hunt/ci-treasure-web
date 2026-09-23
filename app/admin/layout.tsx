@@ -50,6 +50,20 @@ async function getPendingEventCount(): Promise<number> {
   }
 }
 
+async function getPendingCommunityCount(): Promise<number> {
+  try {
+    const supabase = createAdminClient();
+    const { count } = await supabase
+      .from("communities")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .is("deleted_at", null);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function getPendingProfileCount(): Promise<number> {
   try {
     const supabase = createAdminClient();
@@ -93,15 +107,16 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }>) {
   const adminUser = await getAdminUser();
-  const [openReports, pendingClaims, pendingEvents, pendingPhotos, pendingProfiles] = adminUser
+  const [openReports, pendingClaims, pendingEvents, pendingPhotos, pendingProfiles, pendingCommunities] = adminUser
     ? await Promise.all([
         getOpenReportCount(),
         getPendingClaimCount(),
         getPendingEventCount(),
         getPendingPhotoCount(),
         getPendingProfileCount(),
+        getPendingCommunityCount(),
       ])
-    : [0, 0, 0, 0, 0];
+    : [0, 0, 0, 0, 0, 0];
 
   return (
     <main className="min-h-screen bg-(--color-mist) px-5 py-6 text-slate-900 sm:px-8 lg:px-10">
@@ -119,8 +134,12 @@ export default async function AdminLayout({
             <Link href="/admin/venues" className="rounded-full border border-(--color-sand-strong) px-4 py-2 hover:border-(--color-pine) hover:text-(--color-pine)">
               Venues
             </Link>
-            <Link href="/admin/communities" className="rounded-full border border-(--color-sand-strong) px-4 py-2 hover:border-(--color-pine) hover:text-(--color-pine)">
+            <Link
+              href={pendingCommunities > 0 ? "/admin/communities/pending" : "/admin/communities"}
+              className="relative rounded-full border border-(--color-sand-strong) px-4 py-2 hover:border-(--color-pine) hover:text-(--color-pine)"
+            >
               Communities
+              <NavBadge count={pendingCommunities} />
             </Link>
             <Link href="/admin/events/pending" className="relative rounded-full border border-(--color-sand-strong) px-4 py-2 hover:border-(--color-pine) hover:text-(--color-pine)">
               Pending

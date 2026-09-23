@@ -284,9 +284,9 @@ export default async function CountryPage({ params }: CountryPageProps) {
                 </div>
                 <p className="mt-3 text-sm text-slate-500">
                   Know a community in {labelWithArticle} we&apos;re missing?{" "}
-                  <a href={COMMUNITY_SUBMIT_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-(--color-pine) hover:underline">
+                  <Link href={COMMUNITY_SUBMIT_URL} className="font-medium text-(--color-pine) hover:underline">
                     Suggest it →
-                  </a>
+                  </Link>
                 </p>
               </section>
             )}
