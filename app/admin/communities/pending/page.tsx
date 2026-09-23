@@ -22,8 +22,8 @@ export default async function AdminPendingCommunitiesPage() {
         <div>
           <h2 className="font-serif text-3xl text-slate-950">Pending communities</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Submitted through the public Add form. Approving geocodes the location and publishes it. Private group invites
-            stay unrevealable until you tick &quot;Revealable&quot; in the editor.
+            Submitted through the public Add form. Approving geocodes the location, publishes it, and makes its group
+            links revealable behind the human check (the submitter confirmed they may share them).
           </p>
         </div>
         <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
@@ -62,7 +62,7 @@ export default async function AdminPendingCommunitiesPage() {
                   ))}
                   {c.invitePlatforms.map((p) => (
                     <li key={p} className="text-slate-500">
-                      🔒 {PLATFORM_LABEL[p] ?? p} invite (private, not revealable yet)
+                      🔒 {PLATFORM_LABEL[p] ?? p} invite (revealable behind the check once approved)
                     </li>
                   ))}
                   {c.hasEmail ? <li className="text-slate-500">✉ Community email given (see editor)</li> : null}

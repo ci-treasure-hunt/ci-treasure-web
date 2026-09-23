@@ -147,6 +147,13 @@ export async function approveCommunity(id: string): Promise<{ success: boolean; 
     .eq("id", id);
   if (updateError) return { success: false, error: updateError.message };
 
+  // Approval covers the links too (Jan, 2026-09-23: "new data = approval"). The submitter confirmed
+  // on the form that they may share them, so a submitted group invite becomes revealable behind the
+  // Turnstile check with the listing, instead of waiting for a separate per-link decision. The admin
+  // editor can still switch one off.
+  const { error: inviteError } = await admin.from("community_invites").update({ published: true }).eq("community_id", id);
+  if (inviteError) return { success: false, error: inviteError.message };
+
   revalidatePath("/admin/communities/pending");
   revalidatePath("/admin/communities");
   revalidatePath("/communities");

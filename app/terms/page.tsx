@@ -63,6 +63,10 @@ export default function TermsPage() {
             may edit, decline, unpublish, or remove any listing at our discretion, for example if it is
             inaccurate, off-topic, or violates these terms. Claiming a profile that is not yours is not permitted.
           </p>
+          <p className="mt-2">
+            Anyone can suggest a community without an account, using the &quot;Add a community&quot; form. Every
+            suggested community is reviewed before it is published, and the same rules apply to it.
+          </p>
         </section>
         <section>
           <h2 className="font-semibold text-slate-950">7. Content you submit</h2>
@@ -82,6 +86,12 @@ export default function TermsPage() {
             publishing it here does not infringe anyone else&apos;s rights. Past events stay online as an archive
             rather than being deleted, so this licence lasts for as long as the listing remains on the site. You can
             ask us to remove a listing at any time.
+          </p>
+          <p className="mt-2">
+            If you submit a link to a group chat, such as a WhatsApp, Telegram, Signal or LINE group, you confirm that
+            you are an organizer of that group or that sharing the link here is fine for it. Once the listing is
+            published, the link is shown behind a check that keeps automated scrapers out, and anyone who passes it can
+            use the link to join.
           </p>
         </section>
         <section>

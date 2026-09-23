@@ -357,10 +357,11 @@ export default function PrivacyPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">14. Community invite links</h2>
+          <h2 className="font-semibold text-slate-950">14. Group links and contact addresses behind a check</h2>
           <p>
             Some community pages hide their private Telegram/WhatsApp/Signal/LINE group link behind a
-            &quot;Request access&quot; button, to keep it from being scraped. Before revealing the link, we run a
+            &quot;Request access&quot; button, and contact email addresses on community, venue, profile and event
+            pages sit behind a &quot;Show email&quot; button, to keep them from being scraped. Before revealing either, we run a
             Cloudflare Turnstile check: Turnstile collects technical data (such as browser and device signals,
             including your IP address) and sends it to Cloudflare, Inc. (US) to verify you&apos;re not a bot. We
             also store a daily-rotating hash of your IP address ourselves to rate-limit repeated requests; like the
@@ -398,7 +399,25 @@ export default function PrivacyPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">16. Changes to this policy</h2>
+          <h2 className="font-semibold text-slate-950">16. Community submissions</h2>
+          <p>
+            Anyone can suggest a community through the &quot;Add a community&quot; form, without an account. We store
+            what you enter about the community: its name, place, type, description and links, and optionally a
+            contact email address for the community. After we have reviewed the submission, these details are shown on
+            the community&apos;s page. Links to group chats and the contact email address are shown only behind the
+            check described in section 14.
+          </p>
+          <p className="mt-2">
+            You can also leave your own name or contact details. That field is optional, is only for us in case we have
+            a question about the submission, and is never shown on the site. The form is protected by the Cloudflare
+            Turnstile check described in section 14; we do not store your IP address. We keep the submission, including
+            your optional contact details, for as long as the listing exists, or as a record if we decline it, and
+            delete your contact details on request. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in
+            running a directory that people can add to, and in being able to ask about a submission.
+          </p>
+        </section>
+        <section>
+          <h2 className="font-semibold text-slate-950">17. Changes to this policy</h2>
           <p>
             This policy will be updated when new features affecting data processing are added. The date at the top of
             this page reflects the most recent revision.

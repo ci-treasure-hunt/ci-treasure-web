@@ -45,6 +45,7 @@ export function CommunitySubmitForm() {
   const [links, setLinks] = useState<CommunityLinkInput>({});
   const [email, setEmail] = useState("");
   const [submitterContact, setSubmitterContact] = useState("");
+  const [linksConsent, setLinksConsent] = useState(false);
   const [token, setToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
 
@@ -76,6 +77,7 @@ export function CommunitySubmitForm() {
         links,
         email,
         submitterContact,
+        linksConsent,
         turnstileToken: token,
       });
       if (result.ok) {
@@ -225,8 +227,9 @@ export function CommunitySubmitForm() {
             Links <span className="text-rose-700">*</span>
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            At least one. A single group or chat link is enough. Links to private groups (like a WhatsApp group) are never
-            shown publicly; they stay hidden behind a check, and we only make them available when that&apos;s fine for the group.
+            At least one. A single group or chat link is enough. Everything you enter is shown on the listing once
+            we&apos;ve reviewed it. Links to groups and chats (like a WhatsApp group) sit behind a quick human check, so
+            bots can&apos;t collect them.
           </p>
           {err("links")}
         </div>
@@ -256,6 +259,14 @@ export function CommunitySubmitForm() {
       </div>
 
       <div className="space-y-3">
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={linksConsent} onChange={(e) => setLinksConsent(e.target.checked)} className="mt-1" />
+          <span>
+            I&apos;m an organizer of this community, or I&apos;ve checked that it&apos;s fine to share these links here.
+            <span className="text-rose-700"> *</span>
+          </span>
+        </label>
+        {err("linksConsent")}
         <Turnstile
           key={turnstileKey}
           siteKey={siteKey}
@@ -274,6 +285,7 @@ export function CommunitySubmitForm() {
         </button>
         <p className="text-xs text-slate-400">
           By submitting you agree that we publish the listing after review. See our{" "}
+          <Link href="/terms" className="underline hover:text-slate-600">terms</Link> and{" "}
           <Link href="/privacy" className="underline hover:text-slate-600">privacy policy</Link>.
         </p>
       </div>

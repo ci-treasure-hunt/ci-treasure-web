@@ -5,7 +5,10 @@
 //
 // Guards, in order: Turnstile (bots), a global cap on unreviewed submissions (floods), field
 // validation, then classifyCommunityLinks() so a group invite typed into any box is stored as a
-// private community_invites row (never revealable until an admin decides) and never on the row.
+// private community_invites row, never on the row. It becomes revealable behind Turnstile when the
+// admin approves the listing: the submitter confirms on the form that they may share the links
+// (required checkbox, re-checked here), and approval covers them ("new data = approval", Jan
+// 2026-09-23).
 // Writes use the service role with an explicit column list; anon has no INSERT grant or policy on
 // communities (20260923090000).
 //
@@ -36,6 +39,8 @@ export type CommunitySubmitInput = {
   links: CommunityLinkInput;
   email: string;
   submitterContact: string;
+  /** "I'm an organizer, or I've checked it's fine to share these links here." Required. */
+  linksConsent: boolean;
   turnstileToken: string;
 };
 
@@ -82,6 +87,7 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
     fieldErrors.activityLevel = "Please pick one of the options.";
   }
   if (email && !EMAIL_RE.test(email)) fieldErrors.email = "This doesn't look like an email address.";
+  if (!input.linksConsent) fieldErrors.linksConsent = "Please confirm that these links may be shared here.";
 
   const links = classifyCommunityLinks(input.links ?? {});
   for (const [field, message] of Object.entries(links.errors)) fieldErrors[`links.${field}`] = message;
@@ -128,8 +134,8 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
     community_id: row.id,
     platform,
     url,
-    // Never revealable on submission. Whether a private group link may be shown is a consent
-    // call the admin makes per link (organizer OK, already public elsewhere, or a public group).
+    // Not revealable while pending; approveCommunity() flips it with the listing. The submitter
+    // confirmed on the form that they may share the link ("new data = approval", 2026-09-23).
     published: false,
   }));
   if (inviteRows.length > 0) await supabase.from("community_invites").insert(inviteRows);
