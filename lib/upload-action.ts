@@ -8,7 +8,7 @@ import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 // app/api/organizer/event-image route handlers (Route Handlers, not Server Actions —
 // consistent with the rest of this app's upload routes, though that choice turned out to
 // be unrelated to the actual corruption bug; see toStorageBody in lib/supabase/admin.ts
-// for the real fix and docs/issues/i-122-image-handling.md for the full investigation).
+// for the real fix and ci-treasure-hunt/docs/issues/done/i-122-image-handling.md for the full investigation).
 // PNG accepted too (I-111 3a: phone screenshots from the public photo form); every upload is
 // re-encoded below, so nothing but JPEG/WebP ever reaches storage.
 const ALLOWED_TYPES = ["image/jpeg", "image/webp", "image/png"];

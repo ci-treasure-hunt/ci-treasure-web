@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 // U+FFFD sequence, confirmed independent of which `fetch` implementation the client uses).
 // Every call to `.storage.from(...).upload()` with in-memory image bytes MUST wrap the
 // buffer with this first — passing a raw Buffer/Uint8Array directly is the one thing proven
-// to break. See docs/issues/i-122-image-handling.md for the full investigation.
+// to break. See ci-treasure-hunt/docs/issues/done/i-122-image-handling.md for the full investigation.
 export function toStorageBody(buffer: Buffer, contentType: string): Blob {
   return new Blob([new Uint8Array(buffer)], { type: contentType });
 }
