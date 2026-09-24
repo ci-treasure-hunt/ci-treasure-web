@@ -423,6 +423,15 @@ export default function PrivacyPage() {
             section 11. We keep a suggestion as a record of the listing&apos;s history and delete your contact details
             on request. Legal basis: Art.&nbsp;6(1)(f) GDPR, as above.
           </p>
+          <p className="mt-2">
+            You can also send a photo for a community, from its page or with the &quot;Add a community&quot; form.
+            Photos can show people. We store the photo, the photographer credit you give, and your optional name or
+            contact, plus the same daily-rotating IP hash to limit repeated uploads. Every photo is reviewed before it
+            is shown; a photo we decline is deleted, and a published photo shows the credit you gave. If you appear in
+            a community photo and want it removed, use the report button on that page or email us, and we will take it
+            down. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in showing what a community looks like,
+            with the uploader&apos;s confirmation that the people in it agree.
+          </p>
         </section>
         <section>
           <h2 className="font-semibold text-slate-950">17. Changes to this policy</h2>

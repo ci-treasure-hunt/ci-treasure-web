@@ -18,7 +18,7 @@ export default async function AdminEditCommunityPage({
     supabase
       .from("communities")
       .select(
-        "id, name, slug, type, status, activity_level, focus, languages, description, city, country, region, address_for_map, lat, lng, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, contact_person, submitter_contact, audience_size, friendliness, last_verified, admin_notes, deleted_at, updated_at",
+        "id, name, slug, type, status, activity_level, focus, languages, description, city, country, region, address_for_map, lat, lng, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, contact_person, submitter_contact, audience_size, friendliness, last_verified, admin_notes, image_url, image_credit, deleted_at, updated_at",
       )
       .eq("id", id)
       .single(),
@@ -68,6 +68,8 @@ export default async function AdminEditCommunityPage({
     friendliness: c.friendliness ?? "",
     lastVerified: c.last_verified ?? "",
     adminNotes: c.admin_notes ?? "",
+    imageUrl: c.image_url ?? "",
+    imageCredit: c.image_credit ?? "",
     deletedAt: c.deleted_at,
   };
 

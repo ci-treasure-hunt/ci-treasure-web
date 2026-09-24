@@ -83,7 +83,8 @@ export default function TermsPage() {
           </p>
           <p className="mt-2">
             You confirm that you hold the rights to the content you submit, including photographs, and that
-            publishing it here does not infringe anyone else&apos;s rights. Past events stay online as an archive
+            publishing it here does not infringe anyone else&apos;s rights. For a photo that shows people, you also
+            confirm that they are fine with it being shown. Past events stay online as an archive
             rather than being deleted, so this licence lasts for as long as the listing remains on the site. You can
             ask us to remove a listing at any time.
           </p>

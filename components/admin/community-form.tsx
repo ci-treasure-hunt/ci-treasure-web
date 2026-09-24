@@ -14,6 +14,8 @@ import {
   createEmptyCommunityFormData,
   type AdminCommunityFormData,
 } from "@/lib/admin-communities";
+import { compressImageForUpload } from "@/lib/client-image-compress";
+import { PHOTO_ACCEPT } from "@/lib/community-photo-options";
 import { COMMUNITY_REGIONS } from "@/lib/community-regions";
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -56,6 +58,7 @@ export function CommunityForm({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
   const [isSaving, startSaveTransition] = useTransition();
 
   const set = <K extends keyof AdminCommunityFormData>(key: K, value: AdminCommunityFormData[K]) =>
@@ -223,6 +226,60 @@ export function CommunityForm({
                   </Field>
                 </>
               ) : null}
+            </div>
+          </Section>
+
+          <Section title="Photo">
+            <p className="text-sm text-slate-500">
+              A jam, class or group photo, not a single person&apos;s portrait and no flyers. Uploads here go live on
+              save; public uploads wait in the photo queue.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  accept={PHOTO_ACCEPT}
+                  disabled={uploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploading(true);
+                    setSaveError(null);
+                    try {
+                      const compressed = await compressImageForUpload(file);
+                      const body = new FormData();
+                      body.append("file", compressed);
+                      const response = await fetch("/api/admin/community-image", { method: "POST", body });
+                      const result = await response.json();
+                      if (!response.ok) throw new Error(result.error || "Failed to upload image.");
+                      set("imageUrl", result.url);
+                    } catch (error) {
+                      setSaveError(error instanceof Error ? error.message : "Failed to upload image.");
+                    } finally {
+                      setUploading(false);
+                      e.target.value = "";
+                    }
+                  }}
+                  className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium"
+                />
+                {uploading ? <p className="text-xs text-slate-500">Uploading...</p> : null}
+                <Field label='Credit (e.g. "Photo by Anna Weber")'>
+                  <input value={form.imageCredit} onChange={(e) => set("imageCredit", e.target.value)} className={inputClassName} />
+                </Field>
+              </div>
+              {form.imageUrl ? (
+                <div className="space-y-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.imageUrl} alt="Preview" className="aspect-video w-full rounded-2xl border border-slate-200 object-cover" />
+                  <button type="button" onClick={() => set("imageUrl", "")} className="text-sm text-rose-700 underline">
+                    Remove photo (on save)
+                  </button>
+                </div>
+              ) : (
+                <div className="flex aspect-video items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-400">
+                  No photo
+                </div>
+              )}
             </div>
           </Section>
 

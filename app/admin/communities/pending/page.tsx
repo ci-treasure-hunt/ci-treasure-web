@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { requireAdminUser } from "@/lib/admin-auth";
+import { getMediumUrl } from "@/lib/image-url";
 
 import { getPendingCommunities } from "./actions";
 import { CommunityReviewActions } from "./review-actions";
@@ -70,6 +71,20 @@ export default async function AdminPendingCommunitiesPage() {
                   ))}
                   {c.hasEmail ? <li className="text-slate-500">✉ Community email given (see editor)</li> : null}
                 </ul>
+
+                {c.pendingPhotoUrl ? (
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={getMediumUrl(c.pendingPhotoUrl)} alt="" className="h-20 w-28 rounded-xl border border-(--color-sand-strong) object-cover" />
+                    <p className="text-slate-500">
+                      Came with a photo, decided separately in{" "}
+                      <Link href="/admin/communities/photos" className="underline">
+                        Community photos
+                      </Link>
+                      .
+                    </p>
+                  </div>
+                ) : null}
 
                 <p className="text-slate-500">
                   Submitted {c.createdAt.slice(0, 10)}

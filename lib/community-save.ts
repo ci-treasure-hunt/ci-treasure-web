@@ -22,6 +22,7 @@ import { setEntityEmail } from "@/lib/entity-email";
 import { geocodeAddress } from "@/lib/geocode";
 import { slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { removeImageSet } from "@/lib/upload-action";
 
 export class CommunitySaveError extends Error {
   constructor(
@@ -196,7 +197,14 @@ export async function saveCommunity(
     friendliness: friendliness || null,
     last_verified: lastVerified || null,
     admin_notes: orNull(payload.adminNotes),
+    image_url: orNull(payload.imageUrl),
+    image_credit: orNull(payload.imageCredit),
   };
+
+  // A replaced or removed photo leaves its files behind in the bucket; clean them up after the save.
+  const { data: previousImage } = id
+    ? await supabase.from("communities").select("image_url").eq("id", id).maybeSingle()
+    : { data: null };
 
   let saved: { id: string; slug: string };
   if (id) {
@@ -212,6 +220,10 @@ export async function saveCommunity(
       .single();
     if (error) throw error;
     saved = data;
+  }
+
+  if (previousImage?.image_url && previousImage.image_url !== row.image_url) {
+    await removeImageSet(previousImage.image_url, "community-images");
   }
 
   // ---- Invites + email -------------------------------------------------------------------------

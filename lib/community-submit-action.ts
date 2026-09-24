@@ -20,6 +20,7 @@ import { PUBLIC_ACTIVITY_LEVELS, PUBLIC_COMMUNITY_TYPES, FOCUS_OPTIONS, parseLan
 import { classifyCommunityLinks, inviteFlags, type CommunityLinkInput } from "@/lib/community-links";
 import { deriveCommunityLocation } from "@/lib/community-regions";
 import { normalizePlaceCase } from "@/lib/place-case";
+import { createPhotoTicket } from "@/lib/community-photo-ticket";
 import { createUniqueSlug } from "@/lib/community-save";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -46,7 +47,9 @@ export type CommunitySubmitInput = {
 };
 
 export type CommunitySubmitResult =
-  | { ok: true }
+  // communityId + photoTicket let the form upload an optional photo to /api/communities/photo
+  // right after (I-111 3a); the ticket stands in for the Turnstile token already spent here.
+  | { ok: true; communityId: string; photoTicket: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
 const clip = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
@@ -148,7 +151,7 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
 
   await notifyTelegram({ name, city, country: worldwide ? "worldwide" : country, type });
 
-  return { ok: true };
+  return { ok: true, communityId: row.id, photoTicket: createPhotoTicket(row.id) };
 }
 
 async function notifyTelegram(info: { name: string; city: string; country: string; type: string }) {

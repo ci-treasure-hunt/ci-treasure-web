@@ -51,6 +51,8 @@ import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
 import { ogImage } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
 import { SuggestEditButton } from "@/components/suggest-edit-button";
+import { CommunityPhotoButton } from "@/components/community-photo-button";
+import { EntityImage } from "@/components/entity-image";
 import { InviteButtons } from "@/components/invite-buttons";
 import { RevealEmail } from "@/components/reveal-email";
 import { RingSection } from "@/components/also-browse";
@@ -95,15 +97,14 @@ export async function generateMetadata({ params }: CommunityPageProps): Promise<
       url: `${SITE_URL}/communities/${community.slug}`,
       siteName: "CI Treasure Hunt",
       type: "website",
-      // Communities have no image field of their own — always the site fallback, with its
-      // known dimensions (unlike events/teachers/venues, which probe their own photo).
-      images: [await ogImage(null)],
+      // I-111 3a: the community's own photo once one is approved, else the site fallback.
+      images: [await ogImage(community.image_url)],
     },
     twitter: {
       card: "summary_large_image",
       title: community.name,
       description,
-      images: [SITE_OG_IMAGE],
+      images: [community.image_url ?? SITE_OG_IMAGE],
     },
   };
 }
@@ -203,6 +204,10 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
 
           <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.4fr_0.8fr]">
             <div className="space-y-10">
+              {community.image_url && (
+                <EntityImage src={community.image_url} alt={community.name} credit={community.image_credit} />
+              )}
+
               {community.description && (
                 <section className="space-y-4">
                   <h2 className="font-serif text-2xl text-slate-950">About the community</h2>
@@ -358,7 +363,12 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
             </aside>
           </div>
         </section>
-        <div className="flex justify-center gap-6 text-sm text-slate-400">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
+          <CommunityPhotoButton
+            communityId={community.id}
+            communityName={community.name}
+            hasPhoto={Boolean(community.image_url)}
+          />
           <SuggestEditButton communityId={community.id} communityName={community.name} />
           <ReportButton
             entity_type="community"
