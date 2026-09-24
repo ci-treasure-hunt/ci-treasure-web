@@ -399,8 +399,15 @@ export default async function CountryPage({ params }: CountryPageProps) {
 // description, nothing to say why it's separated out) — backwards for the one community meant to
 // stand out. Surfaces `description` (unused by CompactCommunityRow) and a real button instead of
 // a bare icon.
+//
+// When an entry has both a website and a group to join (Spain's contactimprov.es, Italy's directory
+// site + national FB group), getPrimaryJoinUrl's website-first order would leave the group
+// unreachable from the card. So the primary button goes to the group, with the website as a second
+// button. Website-only entries keep the single button pointing at the website, as before.
 function NationalCommunitySpotlight({ community }: { community: Community }) {
-  const joinUrl = getPrimaryJoinUrl(community);
+  const groupUrl = getPrimaryJoinUrl({ ...community, websiteUrl: null, calendarUrl: null });
+  const joinUrl = groupUrl ?? community.websiteUrl;
+  const secondaryWebsiteUrl = groupUrl ? community.websiteUrl : null;
   return (
     <div className="rounded-xl border border-(--color-sand-strong) border-l-4 border-l-(--color-pine) bg-(--color-sand) p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -415,15 +422,29 @@ function NationalCommunitySpotlight({ community }: { community: Community }) {
             </p>
           )}
         </div>
-        {joinUrl && (
-          <a
-            href={joinUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-lg bg-(--color-pine) px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-          >
-            Join →
-          </a>
+        {(joinUrl || secondaryWebsiteUrl) && (
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {secondaryWebsiteUrl && (
+              <a
+                href={secondaryWebsiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border border-(--color-pine) px-4 py-2 text-sm font-medium text-(--color-pine) transition hover:bg-white"
+              >
+                Website
+              </a>
+            )}
+            {joinUrl && (
+              <a
+                href={joinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg bg-(--color-pine) px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+              >
+                Join →
+              </a>
+            )}
+          </div>
         )}
       </div>
       {community.description && <p className="mt-3 text-sm leading-6 text-slate-700">{community.description}</p>}
