@@ -85,6 +85,10 @@ export default async function AdminCommunitiesPage({
     .from("community_edit_suggestions")
     .select("id", { count: "exact", head: true })
     .eq("status", "open");
+  const { count: photoCount } = await supabase
+    .from("community_photo_submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
 
   return (
     <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
@@ -105,6 +109,10 @@ export default async function AdminCommunitiesPage({
             {" "}
             <Link href="/admin/communities/edits" className={editCount ? "font-semibold text-amber-700 underline" : "underline"}>
               {editCount ? `${editCount} edit suggestion${editCount === 1 ? "" : "s"} →` : "Edit suggestions"}
+            </Link>
+            {" "}
+            <Link href="/admin/communities/photos" className={photoCount ? "font-semibold text-amber-700 underline" : "underline"}>
+              {photoCount ? `${photoCount} photo${photoCount === 1 ? "" : "s"} to review →` : "Photos"}
             </Link>
           </p>
         </div>

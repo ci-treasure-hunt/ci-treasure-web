@@ -64,6 +64,9 @@ export type AdminCommunityFormData = {
   /** Comma-separated in the form, text[] in the DB. */
   languages: string;
   description: string;
+  /** I-111 3a: live photo, set by admin upload or by approving a public submission. */
+  imageUrl: string;
+  imageCredit: string;
 
   worldwide: boolean;
   city: string;
@@ -112,6 +115,8 @@ export function createEmptyCommunityFormData(): AdminCommunityFormData {
     focus: [],
     languages: "",
     description: "",
+    imageUrl: "",
+    imageCredit: "",
     worldwide: false,
     city: "",
     country: "",

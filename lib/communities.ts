@@ -138,6 +138,9 @@ export type CommunityDetail = {
   has_whatsapp_invite: boolean;
   has_signal_invite: boolean;
   has_line_invite: boolean;
+  // I-111 3a: the approved photo (large JPEG; medium/small derived via lib/image-url.ts).
+  image_url: string | null;
+  image_credit: string | null;
   associatedVenues: { slug: string; name: string; city: string | null; description: string | null; imageUrl: string | null }[];
   associatedPeople: { id: string; name: string; slug: string; city: string | null; bio: string | null; imageUrl: string | null; linkUrl: string | null }[];
 };
@@ -348,7 +351,7 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
       facebook_page, telegram_group, telegram_channel, whatsapp_channel,
       youtube, calendar, newsletter, other_resource,
       has_invites, has_telegram_invite, has_whatsapp_invite, has_signal_invite, has_line_invite,
-      has_email,
+      has_email, image_url, image_credit,
       community_venues ( venue:venue_id ( slug, name, city, description, image_url ) ),
       community_profiles ( profile:profile_id ( slug, name, city, bio, image_url, website, instagram, facebook ) )
     `)

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 import { CountryPicker } from "@/components/shared/country-picker";
+import { compressImageForUpload } from "@/lib/client-image-compress";
+import { PHOTO_ACCEPT, PHOTO_CONSENT_TEXT } from "@/lib/community-photo-options";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import {
   FOCUS_OPTIONS,
   LANGUAGE_OPTIONS,
@@ -46,6 +49,11 @@ export function CommunitySubmitForm() {
   const [email, setEmail] = useState("");
   const [submitterContact, setSubmitterContact] = useState("");
   const [linksConsent, setLinksConsent] = useState(false);
+  // I-111 3a: optional photo, uploaded after the submission succeeds (see uploadPhoto below).
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoCredit, setPhotoCredit] = useState("");
+  const [photoConsent, setPhotoConsent] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const [token, setToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
 
@@ -59,10 +67,40 @@ export function CommunitySubmitForm() {
   const toggle = (list: string[], value: string, on: boolean) =>
     on ? [...list, value] : list.filter((x) => x !== value);
 
+  // Sent to /api/communities/photo once the community exists, with the one-off ticket the submit
+  // action returned (the Turnstile token is already spent). It lands in the photo queue, pending
+  // like the community itself. A failed photo never fails the submission.
+  async function uploadPhoto(communityId: string, ticket: string): Promise<boolean> {
+    if (!photo) return true;
+    try {
+      const compressed = await compressImageForUpload(photo);
+      if (compressed.size > MAX_UPLOAD_BYTES) return false;
+      const body = new FormData();
+      body.append("communityId", communityId);
+      body.append("file", compressed);
+      body.append("credit", photoCredit);
+      body.append("contact", submitterContact);
+      body.append("consent", String(photoConsent));
+      body.append("ticket", ticket);
+      const res = await fetch("/api/communities/photo", { method: "POST", body });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setFieldErrors({});
+    if (photo && !photoConsent) {
+      setFieldErrors({ photoConsent: "Please confirm you may share this photo, or remove it." });
+      return;
+    }
+    if (photo && photo.size > 25 * 1024 * 1024) {
+      setFieldErrors({ photo: "This photo file is very large (over 25MB). Please choose a smaller one." });
+      return;
+    }
     startTransition(async () => {
       const result = await submitCommunity({
         name,
@@ -81,6 +119,8 @@ export function CommunitySubmitForm() {
         turnstileToken: token,
       });
       if (result.ok) {
+        const photoOk = await uploadPhoto(result.communityId, result.photoTicket);
+        setPhotoFailed(!photoOk);
         setDone(true);
         return;
       }
@@ -99,6 +139,12 @@ export function CommunitySubmitForm() {
         <p className="text-slate-700">
           We review every submission by hand, so it may take a few days before it shows up on the site.
         </p>
+        {photoFailed ? (
+          <p className="text-sm text-amber-700">
+            Your photo couldn&apos;t be uploaded, but the community was sent. You can add a photo from its page once it
+            is listed.
+          </p>
+        ) : null}
         <Link href="/communities" className="inline-block text-sm font-semibold text-(--color-pine) underline">
           Back to communities
         </Link>
@@ -244,6 +290,38 @@ export function CommunitySubmitForm() {
             {err(`links.${key}`)}
           </Field>
         ))}
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-slate-700">Photo (optional)</p>
+          <p className="mt-1 text-xs text-slate-500">
+            A photo of a jam, class or gathering works best. Please no portraits of a single person, and no flyers. We
+            look at it before it goes on the page.
+          </p>
+        </div>
+        <input
+          type="file"
+          accept={PHOTO_ACCEPT}
+          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+          className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-(--color-mist) file:px-4 file:py-2 file:text-sm file:font-medium"
+        />
+        {err("photo")}
+        {photo ? (
+          <>
+            <Field label='Photographer (shown as "Photo by ...")'>
+              <input value={photoCredit} onChange={(e) => setPhotoCredit(e.target.value)} className={inputClassName} maxLength={200} />
+            </Field>
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input type="checkbox" checked={photoConsent} onChange={(e) => setPhotoConsent(e.target.checked)} className="mt-1" />
+              <span>
+                {PHOTO_CONSENT_TEXT}
+                <span className="text-rose-700"> *</span>
+              </span>
+            </label>
+            {err("photoConsent")}
+          </>
+        ) : null}
       </div>
 
       <div className="space-y-4">

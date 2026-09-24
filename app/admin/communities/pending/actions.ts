@@ -25,6 +25,7 @@ export type PendingCommunity = {
   invitePlatforms: string[];
   hasEmail: boolean;
   linksConsent: boolean;
+  pendingPhotoUrl: string | null;
   submitterContact: string | null;
   createdAt: string;
   possibleDuplicates: Array<{ id: string; name: string; city: string | null; status: string }>;
@@ -51,7 +52,7 @@ export async function getPendingCommunities(): Promise<PendingCommunity[]> {
   const { data, error } = await admin
     .from("communities")
     .select(
-      "id, name, slug, type, city, country, activity_level, focus, languages, description, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, has_email, links_consent, submitter_contact, created_at, community_invites(platform)",
+      "id, name, slug, type, city, country, activity_level, focus, languages, description, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, has_email, links_consent, submitter_contact, created_at, community_invites(platform), community_photo_submissions(image_url, status)",
     )
     .eq("status", "pending")
     .is("deleted_at", null)
@@ -81,6 +82,9 @@ export async function getPendingCommunities(): Promise<PendingCommunity[]> {
         invitePlatforms: ((c.community_invites ?? []) as Array<{ platform: string }>).map((i) => i.platform),
         hasEmail: c.has_email,
         linksConsent: c.links_consent,
+        pendingPhotoUrl:
+          ((c.community_photo_submissions ?? []) as Array<{ image_url: string; status: string }>).find((p) => p.status === "pending")
+            ?.image_url ?? null,
         submitterContact: c.submitter_contact,
         createdAt: c.created_at,
         possibleDuplicates: dupes ?? [],
