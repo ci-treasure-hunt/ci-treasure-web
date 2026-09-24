@@ -58,3 +58,4 @@ jobs:
         run: |
           npx --yes tsx tests/unit/url-safety.check.ts
           npx --yes tsx tests/unit/community-links.check.ts
+          npx --yes tsx tests/unit/place-case.check.ts

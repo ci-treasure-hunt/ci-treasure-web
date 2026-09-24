@@ -19,6 +19,7 @@
 import { PUBLIC_ACTIVITY_LEVELS, PUBLIC_COMMUNITY_TYPES, FOCUS_OPTIONS, parseLanguages } from "@/lib/admin-communities";
 import { classifyCommunityLinks, inviteFlags, type CommunityLinkInput } from "@/lib/community-links";
 import { deriveCommunityLocation } from "@/lib/community-regions";
+import { normalizePlaceCase } from "@/lib/place-case";
 import { createUniqueSlug } from "@/lib/community-save";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -72,7 +73,8 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
   const type = clip(input.type, 60);
   const worldwide = Boolean(input.worldwide);
   const country = worldwide ? "" : clip(input.country, 2).toUpperCase();
-  const city = clip(input.city, 120);
+  // "milan" -> "Milan": places are shown in standard capitalization (lib/place-case.ts).
+  const city = normalizePlaceCase(clip(input.city, 120));
   const activityLevel = clip(input.activityLevel, 60);
   const description = clip(input.description, 4000);
   const email = clip(input.email, 200);
