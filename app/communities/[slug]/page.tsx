@@ -25,6 +25,7 @@ import { VenueCard } from "@/components/entity-cards";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import {
   formatEventDateRange,
+  GENERIC_ACCENT_GRADIENT,
   getCountryLabel,
   getCountryLabelWithArticle,
   getEventHref,
@@ -171,34 +172,41 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
         </div>
 
         <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_25px_90px_rgba(105,73,22,0.12)]">
-          <div className="border-b border-(--color-sand-strong) px-6 py-10 sm:px-8">
-            <div className="max-w-3xl space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl" aria-hidden="true">
-                  {getCountryFlag(community.country ?? "")}
-                </span>
-                <p className="text-sm font-semibold uppercase tracking-widest text-(--color-pine)">
-                  {community.city}{community.city && community.country && ", "}{getCountryLabel(community.country ?? "")}
-                  {community.region ? ` · ${community.region}` : ""}
-                </p>
-              </div>
-              <div className="space-y-3">
-                <h1 className="font-serif text-4xl leading-tight tracking-tight text-slate-950 sm:text-5xl">
-                  {community.name}
-                </h1>
+          {/* I-124 (I-111 3b): same header contract as venues and teachers (design.md D-03): gradient,
+              white text, min-h-52 anchored to the bottom. Same row grammar as the teacher header:
+              pills first (the solid pill is the type, what kind of community this is; activity level
+              is frosted, like a teacher's practice pills), then the name, then where it is. */}
+          <div className={`flex min-h-52 flex-col justify-end border-b border-(--color-sand-strong) ${GENERIC_ACCENT_GRADIENT} px-6 py-8 sm:px-8`}>
+            <div className="max-w-3xl space-y-3">
+              {community.type || community.activity_level ? (
                 <div className="flex flex-wrap gap-2">
-                  {community.type && (
-                    <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                  {community.type ? (
+                    <span className="inline-flex items-center rounded-full border border-white/80 bg-white/75 px-3 py-1 text-xs font-bold uppercase tracking-wider text-(--color-pine)">
                       {community.type}
-                    </Badge>
-                  )}
-                  {community.activity_level && (
-                    <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100">
+                    </span>
+                  ) : null}
+                  {community.activity_level ? (
+                    <span className="inline-flex items-center rounded-full border border-white/30 bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm">
                       {community.activity_level}
-                    </Badge>
-                  )}
+                    </span>
+                  ) : null}
                 </div>
-              </div>
+              ) : null}
+              <h1 className="font-serif text-4xl leading-tight tracking-tight text-white sm:text-5xl">
+                {community.name}
+              </h1>
+              <p className="flex items-center gap-2 text-white/90">
+                <MapPin className="h-4 w-4 shrink-0 text-white/70" />
+                {community.country ? (
+                  <span className="leading-none" title={getCountryLabel(community.country)}>
+                    {getCountryFlag(community.country)}
+                  </span>
+                ) : null}
+                <span>
+                  {community.city}{community.city && community.country && ", "}{getCountryLabel(community.country ?? "")}
+                  {community.region && community.region !== community.city ? ` · ${community.region}` : ""}
+                </span>
+              </p>
             </div>
           </div>
 
