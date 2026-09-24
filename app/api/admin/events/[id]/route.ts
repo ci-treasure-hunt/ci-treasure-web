@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminRequestUser } from "@/lib/admin-api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
+import { removeImageIfUnused } from "@/lib/upload-action";
 import { resolveVenueLocation } from "@/lib/geocode";
 
 import { setEntityEmail } from "@/lib/entity-email";
@@ -56,7 +57,7 @@ export async function PUT(
 
     const { data: current } = await supabase
       .from("events")
-      .select("lat, lng, venue_id")
+      .select("lat, lng, venue_id, image_url")
       .eq("id", id)
       .maybeSingle();
     const { venue_id, address, lat, lng } = await resolveVenueLocation(
@@ -102,6 +103,9 @@ export async function PUT(
     if (updateError) {
       throw updateError;
     }
+
+    // I-122: a replaced or removed image's files go once nothing else shows them.
+    await removeImageIfUnused(current?.image_url, imageUrl);
 
     // I-165 F3: see the POST route. Passing null/empty deletes the row, so clearing the
     // field in the admin form clears the stored address.

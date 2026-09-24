@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { geocodeAddress } from "@/lib/geocode";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { removeImageIfUnused } from "@/lib/upload-action";
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -33,6 +34,9 @@ export async function PUT(
     // null lat/lng on purpose, documented as "confirmed unfillable, don't re-research" in
     // I-088. Auto-retrying on every unrelated save would silently overwrite that deliberate
     // null with a misleading city-center approximation.
+    const { data: previousImage } = await supabase.from("venues").select("image_url").eq("id", id).maybeSingle();
+    const newImageUrl = String(payload.imageUrl ?? "").trim() || null;
+
     const manualLat = Number.parseFloat(String(payload.lat ?? ""));
     const manualLng = Number.parseFloat(String(payload.lng ?? ""));
     const hasManualCoords = Number.isFinite(manualLat) && Number.isFinite(manualLng);
@@ -73,7 +77,7 @@ export async function PUT(
         facebook: String(payload.facebook ?? "").trim() || null,
         instagram: String(payload.instagram ?? "").trim() || null,
         youtube: String(payload.youtube ?? "").trim() || null,
-        image_url: String(payload.imageUrl ?? "").trim() || null,
+        image_url: newImageUrl,
         image_credit: String(payload.imageCredit ?? "").trim() || null,
         admin_notes: String(payload.adminNotes ?? "").trim() || null,
         visibility: payload.visibility === "public" ? "public" : "hidden",
@@ -85,6 +89,9 @@ export async function PUT(
       .eq("id", id);
 
     if (error) throw error;
+
+    // I-122: a replaced or removed image's files go once nothing else shows them.
+    await removeImageIfUnused(previousImage?.image_url, newImageUrl);
 
     // I-165 F3: address goes to entity_emails, not venues.email.
     await setEntityEmail("venue", id, String(payload.email ?? ""));
