@@ -28,7 +28,7 @@ const SMALL_QUALITY = 70;
 
 // Buckets that hold the large/medium/small trio written here. I-111 3a generalised this from
 // event-images only, instead of copying it for communities.
-export type ImageBucket = "event-images" | "community-images";
+export type ImageBucket = "event-images" | "venue-images" | "community-images" | "profile-images";
 
 export async function resizeAndUploadEventImage(file: File): Promise<string> {
   return resizeAndUploadImage(file, "event-images");
@@ -127,5 +127,39 @@ export async function removeImageSet(publicUrl: string | null | undefined, bucke
     await createAdminClient().storage.from(bucket).remove([path, getMediumUrl(path), getSmallUrl(path)]);
   } catch {
     // Orphaned files cost a few KB; not worth failing an approval over.
+  }
+}
+
+// Buckets whose files are only ever referenced through an entity's image_url.
+const CLEANABLE_BUCKETS = ["event-images", "venue-images", "community-images", "profile-images"] as const;
+
+// I-122 leftover (2026-09-24): after a save replaces or clears an image, delete the old one, but
+// only once nothing points at it any more. Today no two rows share an image_url (checked
+// 2026-09-24), but a copied event or a pending community photo could, and deleting a file another
+// row still shows would break that page. The bucket comes from the URL itself; external URLs and
+// unknown buckets are left alone. Best effort, never throws.
+export async function removeImageIfUnused(previousUrl: string | null | undefined, currentUrl?: string | null): Promise<void> {
+  if (!previousUrl || previousUrl === currentUrl) return;
+  const bucket = CLEANABLE_BUCKETS.find((b) => previousUrl.includes(`/storage/v1/object/public/${b}/`));
+  if (!bucket) return;
+  try {
+    const admin = createAdminClient();
+    const referenced = await Promise.all([
+      admin.from("events").select("id", { count: "exact", head: true }).eq("image_url", previousUrl),
+      admin.from("event_series").select("id", { count: "exact", head: true }).eq("image_url", previousUrl),
+      admin.from("venues").select("id", { count: "exact", head: true }).eq("image_url", previousUrl),
+      admin.from("communities").select("id", { count: "exact", head: true }).eq("image_url", previousUrl),
+      admin.from("profiles").select("id", { count: "exact", head: true }).eq("image_url", previousUrl),
+      admin
+        .from("community_photo_submissions")
+        .select("id", { count: "exact", head: true })
+        .eq("image_url", previousUrl)
+        .eq("status", "pending"),
+    ]);
+    // A failed lookup counts as "still in use": better an orphan than a broken page.
+    if (referenced.some((r) => r.error || (r.count ?? 0) > 0)) return;
+    await removeImageSet(previousUrl, bucket);
+  } catch {
+    // Orphans cost a few KB; never fail a save over them.
   }
 }

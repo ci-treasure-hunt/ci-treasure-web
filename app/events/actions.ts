@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEventSlug } from "@/lib/events";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
+import { removeImageIfUnused } from "@/lib/upload-action";
 import { resolveVenueLocation } from "@/lib/geocode";
 import {
   BARE_EMAIL,
@@ -234,7 +235,7 @@ export async function updateEvent(
 
   const { data: current } = await supabase
     .from("events")
-    .select("lat, lng, venue_id")
+    .select("lat, lng, venue_id, image_url")
     .eq("id", eventId)
     .maybeSingle();
   const { venue_id, address, lat, lng } = await resolveVenueLocation(
@@ -275,6 +276,10 @@ export async function updateEvent(
   if (!updated) {
     return { success: false, error: "You don't have permission to edit this event." };
   }
+
+  // I-122: a replaced or removed image's files go once nothing else shows them. Only reached after
+  // the RLS-guarded update matched, so the caller could edit this event.
+  await removeImageIfUnused(current?.image_url, imageUrl);
 
   // I-165 F3. Only reached when the RLS-guarded update above actually matched a row, so the
   // caller's permission to edit this event is already proven.

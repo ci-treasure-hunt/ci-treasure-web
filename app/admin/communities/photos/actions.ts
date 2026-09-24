@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { removeImageSet } from "@/lib/upload-action";
+import { removeImageIfUnused, removeImageSet } from "@/lib/upload-action";
 
 export type PendingCommunityPhoto = {
   id: string;
@@ -85,9 +85,7 @@ export async function approveCommunityPhoto(id: string): Promise<{ success: bool
   if (error) return { success: false, error: error.message };
 
   // The photo it replaces is no longer referenced anywhere.
-  if (community?.image_url && community.image_url !== sub.image_url) {
-    await removeImageSet(community.image_url, "community-images");
-  }
+  await removeImageIfUnused(community?.image_url, sub.image_url);
 
   revalidatePath("/admin/communities/photos");
   revalidatePath("/admin", "layout");

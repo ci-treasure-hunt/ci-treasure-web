@@ -22,7 +22,7 @@ import { setEntityEmail } from "@/lib/entity-email";
 import { geocodeAddress } from "@/lib/geocode";
 import { slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { removeImageSet } from "@/lib/upload-action";
+import { removeImageIfUnused } from "@/lib/upload-action";
 
 export class CommunitySaveError extends Error {
   constructor(
@@ -222,9 +222,7 @@ export async function saveCommunity(
     saved = data;
   }
 
-  if (previousImage?.image_url && previousImage.image_url !== row.image_url) {
-    await removeImageSet(previousImage.image_url, "community-images");
-  }
+  await removeImageIfUnused(previousImage?.image_url, row.image_url);
 
   // ---- Invites + email -------------------------------------------------------------------------
   const { data: storedAfter } = await supabase.from("community_invites").select("platform").eq("community_id", saved.id);
