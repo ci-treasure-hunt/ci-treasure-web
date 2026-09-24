@@ -29,6 +29,9 @@ const NATIONAL_COMMUNITY_SLUGS: Record<string, string[]> = {
   // only country-wide one; Prague and Brno have their own separate city groups. No website on
   // file, same shape as Greece above.
   CZ: ["contact-improvisation-czech-republic"],
+  // The national Facebook group (~8,100 members), the only country-wide one; the 13 city and
+  // regional groups (Milan, Rome, Naples, Tuscany, ...) are listed separately.
+  IT: ["contact-improvisation-italy"],
 };
 
 export type CountrySummary = {
