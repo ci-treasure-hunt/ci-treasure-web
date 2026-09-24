@@ -153,6 +153,8 @@ export function padShortDescription(text: string, subject: string, min = 110, ma
 // Shared between the homepage practice filter and the organizer submission form.
 const DISCIPLINE_LABEL_OVERRIDES: Record<string, string> = {
   bmc: "BMC",
+  // The default split-and-capitalise would give "Eco Somatics"; the practice is written hyphenated.
+  eco_somatics: "Eco-Somatics",
 };
 
 export function disciplineLabel(value: string): string {

@@ -21,7 +21,7 @@
 //   CITH deliberately avoids). They can still be recorded as accurate column *data* via curated
 //   admin/enrichment backfill (I-135's picker-vs-data distinction) — they're just not
 //   self-claimable until there's a deliberate decision to broaden `/teachers` beyond CI.
-// - `ecosomatics` — curated-only for a different reason than the list above. It *is* CI-adjacent
+// - `eco_somatics` — curated-only for a different reason than the list above. It *is* CI-adjacent
 //   (CI programs carry it as their own content, e.g. an event titled "CI & Ecosomatics"), and is
 //   held back only as a deliberate first step: promote it here on evidence that organizers use it,
 //   the path `water_dance` took, rather than demote it after drift. Added 2026-09-24.
