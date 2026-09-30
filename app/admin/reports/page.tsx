@@ -8,7 +8,10 @@ const REASON_LABELS: Record<string, string> = {
   incorrect_info: "Incorrect info",
   spam_fake: "Spam / fake",
   copyright: "Copyright",
+  inappropriate_photo: "Inappropriate photo",
+  misleading_or_unsafe: "Misleading / safety",
   illegal_other: "Other / illegal",
+  privacy_objection: "Privacy objection",
 };
 
 async function resolveReport(formData: FormData) {

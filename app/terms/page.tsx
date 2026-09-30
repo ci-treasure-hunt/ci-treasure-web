@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service - CI Treasure Hunt",
@@ -32,19 +33,42 @@ export default function TermsPage() {
           <p>
             Listings are compiled from public sources. While we aim for accuracy, we cannot guarantee that event
             information is complete, correct, or current at all times. Always verify details directly with the
-            organizer before making travel or registration decisions. We accept no liability for cancelled, changed,
-            or incorrectly listed events.
+            organizer before making travel or registration decisions. Organizers can change or cancel events at any
+            time, and we are not responsible for those changes.
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">4. External links</h2>
+          <h2 className="font-semibold text-slate-950">4. Listings are not endorsements</h2>
+          <p>
+            Events listed or announced here are organized by third parties. We review submissions for fit with this
+            directory (see{" "}
+            <Link href="/faq" className="underline">
+              what we list
+            </Link>
+            ), but a listing, or an announcement in our channels, is not a recommendation or an endorsement. We do
+            not verify the qualifications, credentials or professional licences of teachers or organizers, and we
+            cannot guarantee the safety or quality of any event. Statements about what an event does for
+            participants, including therapeutic or health-related ones, come from the organizer and have not been
+            verified by us. Taking part in an event is a matter between you and its organizer, on the organizer&apos;s
+            terms.
+          </p>
+          <p className="mt-2">
+            If you think a listing is misleading or unsafe, use the Report button on its page, or email{" "}
+            <a href="mailto:hello@citreasurehunt.com" className="underline">
+              hello@citreasurehunt.com
+            </a>{" "}
+            if you would like a reply. We read every report.
+          </p>
+        </section>
+        <section>
+          <h2 className="font-semibold text-slate-950">5. External links</h2>
           <p>
             This website contains links to third-party sites. CI Treasure Hunt is not responsible for the content,
             availability, or privacy practices of those sites.
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">5. Acceptable use</h2>
+          <h2 className="font-semibold text-slate-950">6. Acceptable use</h2>
           <p>
             You may not use automated means like scraping, crawling, bulk downloading, or similar to systematically
             extract or reproduce a substantial portion of the data on this site or its underlying systems, without
@@ -54,14 +78,18 @@ export default function TermsPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">6. Accounts and submissions</h2>
+          <h2 className="font-semibold text-slate-950">7. Accounts and submissions</h2>
           <p>
             Organizers may create an account, either by emailed sign-in link or code or by signing in with
             Google, to claim a profile and submit or edit their own event listings. You are responsible for
             activity under your account and for keeping your email or Google account access secure. You may only submit content you have the right to publish, and it must be accurate and not
             misleading. Submitted events are reviewed before publication unless your account is marked trusted; we
-            may edit, decline, unpublish, or remove any listing at our discretion, for example if it is
-            inaccurate, off-topic, or violates these terms. Claiming a profile that is not yours is not permitted.
+            may edit, decline, unpublish, or remove any listing, for example if it is inaccurate, falls outside{" "}
+            <Link href="/faq" className="underline">
+              what we list
+            </Link>
+            , or violates these terms. If we decline or remove your listing, we will tell you why. Claiming a profile
+            that is not yours is not permitted.
           </p>
           <p className="mt-2">
             Anyone can suggest a community without an account, using the &quot;Add a community&quot; form. Every
@@ -69,7 +97,7 @@ export default function TermsPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">7. Content you submit</h2>
+          <h2 className="font-semibold text-slate-950">8. Content you submit</h2>
           <p>
             You keep ownership of anything you submit. By submitting content, such as event details, descriptions,
             images and links, you grant us a non-exclusive, worldwide, royalty-free licence to store, display,
@@ -96,14 +124,15 @@ export default function TermsPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">8. Changes</h2>
+          <h2 className="font-semibold text-slate-950">9. Changes</h2>
           <p>
-            We may update these terms when new features are added. Continued use of the site after changes constitutes
-            acceptance of the updated terms.
+            We may update these terms, for example when new features are added. The date at the top shows the latest
+            change. If you have an account, we will tell you about significant changes by email. If you do not agree
+            with a change, you can stop using the site and ask us to delete your account.
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">9. Governing law</h2>
+          <h2 className="font-semibold text-slate-950">10. Governing law</h2>
           <p>These terms are governed by the laws of the Federal Republic of Germany.</p>
         </section>
       </div>

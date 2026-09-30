@@ -13,6 +13,7 @@ const VALID_REASONS = [
   "spam_fake",
   "copyright",
   "inappropriate_photo",
+  "misleading_or_unsafe",
   "illegal_other",
   "privacy_objection",
 ] as const;
@@ -24,6 +25,7 @@ const REASON_LABELS: Record<string, string> = {
   spam_fake: "Spam or fake listing",
   copyright: "Copyright infringement",
   inappropriate_photo: "Inappropriate photo",
+  misleading_or_unsafe: "Misleading claims or safety concern",
   illegal_other: "Other / illegal content",
   privacy_objection: "Removal of my personal data (Art. 21 GDPR objection)",
 };

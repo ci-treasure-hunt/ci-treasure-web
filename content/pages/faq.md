@@ -45,8 +45,9 @@ you already use your phone.
 | [Instagram](https://www.instagram.com/citreasurehunt/) | Visual highlights, festival posts, collaborations with organizers. |
 | [Newsletter](/newsletter) | A monthly digest. Handpicked events across several continents. |
 
-Inside the Telegram group, new events are sorted by length and region, so you can look into what interests you. Events of four days or more go to the festivals topic. Everything shorter goes to
-a regional topic: Europe, Middle East and Africa; the Americas; or Asia and the Pacific.
+Inside the Telegram group, new events are sorted by length and region, so you can look into what interests you. Events of four days or more go to the festivals topic. Two and three day events go to
+a regional topic: Europe, Middle East and Africa; the Americas; or Asia and the Pacific. One-day
+workshops are not posted in the group, they appear in the Telegram channel and on the site.
 
 The Facebook groups work differently from the Telegram ones. Nobody announces events into them on
 the site's behalf. Organizers post their own events there, and those posts are one of the ways
@@ -71,10 +72,10 @@ Yes. Free to browse, free to submit an event, free to claim your profile. There 
 on the site.
 
 **Why is my weekly jam not listed?**
-The calendar carries events of two days and up. Single jams, one-day workshops and weekly classes
-are not in it, deliberately: a recurring local jam changes venue, skips holidays and switches to a
-summer schedule, and a directory kept from the outside is always weeks behind the truth on it.
-Local groups do that job better. What we list instead is the group itself, in
+The calendar lists one-off events, from a one-day workshop up to a festival. Recurring formats,
+weekly jams and ongoing classes, are not in it yet: a weekly jam changes venue, skips holidays and
+switches to a summer schedule, and a listing only stays accurate if the people running it can keep
+it up to date themselves. We are building that. Until then, what we list is the group itself, in
 [Communities](/communities), so you can find your jam by finding the people who run it. If your
 community is missing there, send it to [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com) and we will add it.
 
@@ -152,15 +153,14 @@ we will enter it by hand (at least for the beginning and as long as capacity all
 completely fine, although over time it would be nice if organizers add their own events.
 
 **What kinds of events do you list?**
-Events where people come together to dance Contact Improvisation, and where the whole thing runs as
-one continuous stretch of days. Festivals, intensives, retreats, weekend workshops. The shortest
-format listed is two days.
+Events where people come together to dance Contact Improvisation, as a one-off: a single day, or one
+continuous stretch of days. Festivals, intensives, retreats, weekend workshops and one-day workshops.
 
 Two things sit outside that. The first is the shape of the schedule. A course that meets for a few
 hours a week across several months is a different animal from an event people arrive at and stay
 inside from beginning to end, even when the total hours are high, and even when it is aimed at
-people coming from elsewhere. Weekly classes and ongoing jam series are listed through their local
-[community](/communities) instead, which is where people looking for them actually look.
+people coming from elsewhere. For now, weekly classes and ongoing jam series are listed through their
+local [community](/communities) instead, which is where people looking for them actually look.
 
 The second is what is on offer. The dancing has to be the thing itself. Plenty of good CI work
 touches on somatics, emotional material and personal process, and that belongs here. Where the
@@ -183,8 +183,8 @@ so an image is the single highest-value thing to include.
 
 **Where will my event be announced?**
 Publishing an event triggers announcements automatically. It goes to the Telegram channel with its
-photo, and into the Telegram group: the festivals topic if it runs four days or more, otherwise
-your region's workshop topic. Our Facebook groups are not part of that, they are places where you
+photo, and, if it runs two days or more, into the Telegram group: the festivals topic for four days
+or more, otherwise your region's workshop topic. One-day workshops go to the channel only. Our Facebook groups are not part of that, they are places where you
 post your own event yourself, and you are very welcome to.
 
 **Can I tag CI Treasure Hunt as an Instagram collaborator?**
