@@ -148,7 +148,7 @@ needed either way.
 **How do I get my event listed?**
 Two ways. Submit it yourself at [citreasurehunt.com/events/new](/events/new) after signing in, or
 just email the details and links to [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com) and
-we will enter it by hand (at least for the beginning and as long as capactiy allows). Both cost nothing. Plenty of organizers use the second option and that is
+we will enter it by hand (at least for the beginning and as long as capacity allows). Both cost nothing. Plenty of organizers use the second option and that is
 completely fine, although over time it would be nice if organizers add their own events.
 
 **What kinds of events do you list?**
