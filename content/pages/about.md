@@ -43,13 +43,13 @@ So on the winter solstice, 21 December 2025, I started a Telegram group and bega
 
 The whole idea at that point was Telegram groups. Just a list of them, one per city, so that the
 next person arriving somewhere would have the door I had not had. Then WhatsApp groups, because
-that is what half the world's jams actually use. Then Signal, websites, mailing lists, Facebook
+that is what half the world's jams use. Then Signal, websites, mailing lists, Facebook
 groups, whatever a given community had chosen as its home.
 
 ## Where the name comes from
 
-Honestly, from what the work felt like. Where is the Berlin group. Is there one in Lisbon. Someone
-mentioned a jam in Taipei, where do you even ask. Every link took a conversation, a friend of a
+Honestly, from what the work felt like. Where is the Berlin group? Is there one in Lisbon? Someone
+mentioned a jam in Taipei, but where do you even ask? Every link took a conversation, a friend of a
 friend, a lucky search. It felt like a treasure hunt, so that is what I called it, half as a joke.
 
 The other half is not a joke. A weekly jam that has quietly run for years, in a borrowed room, held
@@ -62,19 +62,19 @@ I wanted an event calendar fairly early on. I did not start with one, and that w
 list of festivals is useful mostly to people already inside the scene, and the problem I had walked
 into was the one before that: no way in at all. So the groups came first.
 
-The nudge to actually build it came from inside the Telegram group. In February 2026, someone asked
-whether they could share their festival there. Somebody wanting to post something is a better
-reason to build it than my own plan for it was, so that is when I started listing worldwide CI festivals and intensives.
+The nudge to build it came from inside the Telegram group. In February 2026, someone asked whether
+they could share their festival there. A real person wanting to share something felt like a better
+reason to build it than my own plans, so that is when I started listing CI festivals and intensives
+worldwide.
 
-It began with international festivals of four days and more, which are the events people plan trips
-around and the hardest to hear about in time. Weekend workshops of two and three days were added
-recently.
+It began with international festivals of 4+ days, the events people plan trips around and the
+hardest to hear about in time. Weekend workshops of 2-3 days followed later.
 
 The website launched in an early version on 25 June 2026.
 
-The goal is not to replace anyone's group chat. It is to give the closed door a public street
-address: a place where you can find a city's community, an event's dates, and the people who run
-it, and then go join whatever chat they actually use.
+The goal is to give the closed door a public street address: a place where you can find a city's
+community, an event's dates, and the people who run it, and then go join whatever chat they use. The
+site points to your group chat instead of replacing it.
 
 ## What is on it today
 
@@ -84,7 +84,7 @@ paragraph reads correctly during review.]
 
 Right now the site lists {publishedEvents} upcoming and past events across {eventCountries}
 countries, {venueCount} venues, {profileCount} teacher and organizer profiles, and
-{communityCount} local communities in {communityCountries} countries. Past (and canceled) events stay online instead of being deleted, so the calendar doubles as a record of what the scene has actually been doing.
+{communityCount} local communities in {communityCountries} countries. Past (and canceled) events stay online instead of being deleted, so the calendar doubles as a record of what the scene has been doing.
 
 ## What gets listed, and what does not
 
@@ -92,19 +92,19 @@ The calendar takes one-off events, from one-day workshops to festivals, intensiv
 trainings and weekend workshops.
 
 Weekly jams and ongoing classes are not listed yet. A weekly jam changes venue, skips a holiday,
-moves to a summer schedule, and a directory maintained from the outside will always be a few weeks
-behind the truth on it. A way for organizers to keep their own recurring events up to date is being
+moves to a summer schedule, and a directory maintained from the outside will always lag a few weeks
+behind. A way for organizers to keep their own recurring events up to date is being
 built. Until then, local Telegram, WhatsApp, Signal, Line and Facebook groups do that job better, and
 what the site does instead is list the group itself, so you can find your local jam by finding the people who run it. That is what the [communities directory](/communities) is for.
 
-There is a second boundary worth naming. The site is built around contact improvisation, but CI
+There is a second boundary. The site is built around contact improvisation, but CI
 does not happen in isolation: the same festivals often program dance improvisation, Body-Mind
 Centering and authentic movement, frequently with the same teachers. Where those appear alongside
 CI, they are listed and tagged as what they are.
 
 ## Where the listings come from
 
-Two ways, and both are visible on the page.
+Listings come from two places.
 
 Most events are researched and entered by hand from the organizer's own public announcement: their
 website, their festival page, their public Facebook or Telegram post. I go through them one at a
@@ -139,12 +139,11 @@ other ways to cover the costs, and I will write about it on this page. Browsing 
 
 ## Who is behind it
 
-Dancing contact improvisation since 2014, with workshops, courses and trainings alongside Sabine
-Parzer, Ivan Baucia, Elske Seidel, Angela-Mara Florant, Jörg Hassmann, Nita Little, Adrian Russi,
-Barbara Berti, Eszter Gál, Peter Pleyer, Kira Kirsch, Mirva Mäkinen, Anjelica Doniy and Andrew
-Wass, among others. I have also facilitated labs and jams myself now and then, more as a
-facilitator than a teacher. I dance mostly in Germany, with time in Greece, Argentina, Denmark and
-Bali too.
+I have been dancing contact improvisation since 2014 and have taken workshops, courses and trainings
+with Sabine Parzer, Ivan Baucia, Elske Seidel, Angela-Mara Florant, Jörg Hassmann, Nita Little,
+Adrian Russi, Barbara Berti, Eszter Gál, Peter Pleyer, Kira Kirsch, Mirva Mäkinen, Anjelica Doniy
+and Andrew Wass, among others. Now and then I also hold labs and jams myself, more as a facilitator
+than a teacher. I dance mostly in Germany, with time in Greece, Argentina, Denmark and Bali too.
 
 I am also the person who answers [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com), so
 when you write, you are not writing to a support queue.
@@ -152,15 +151,16 @@ when you write, you are not writing to a support queue.
 ## Getting in touch
 
 - Email: [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com)
-- Telegram group, for conversation: [t.me/citreasurehunt](https://t.me/citreasurehunt)
-- Telegram channel, every event from the site: [t.me/citreasurelist](https://t.me/citreasurelist)
+- Telegram group, our community hub: [t.me/citreasurehunt](https://t.me/citreasurehunt)
+- Telegram channel, every new event: [t.me/citreasurelist](https://t.me/citreasurelist)
 - Facebook page: [facebook.com/citreasurehunt](https://www.facebook.com/citreasurehunt/)
-- Facebook group, international festivals (four days and up): [facebook.com/groups/citreasurehunt](https://www.facebook.com/groups/citreasurehunt)
-- Facebook group, Europe / Middle East / Africa (weekend workshops and up): [facebook.com/groups/citreasurehuntemea](https://www.facebook.com/groups/citreasurehuntemea)
-- Facebook group, Water Dance & Aquatic Movement worldwide (2+ days, not limited to CI): [facebook.com/groups/citreasurehuntaqua](https://www.facebook.com/groups/citreasurehuntaqua)
+- Facebook group, worldwide festivals & retreats (4+ days): [facebook.com/groups/citreasurehunt](https://www.facebook.com/groups/citreasurehunt)
+- Facebook group, Europe, Middle East & Africa (2+ days): [facebook.com/groups/citreasurehuntemea](https://www.facebook.com/groups/citreasurehuntemea)
+- Facebook group, Americas (2+ days): [facebook.com/groups/citreasurehuntamericas](https://www.facebook.com/groups/citreasurehuntamericas)
+- Facebook group, Water Dance & Aquatic Movement worldwide (2+ days, open beyond CI): [facebook.com/groups/citreasurehuntaqua](https://www.facebook.com/groups/citreasurehuntaqua)
 - Instagram: [@citreasurehunt](https://www.instagram.com/citreasurehunt/)
 - Newsletter, monthly: [citreasurehunt.com/newsletter](/newsletter)
-- Something wrong on a page, or a listing to add: [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com)
+- Spotted a mistake, or have an event to add: [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com)
 
 Corrections, missing events, and people telling me I have their festival's dates wrong are all
 welcome. The data is only as good as the people who bother to point at the broken parts.

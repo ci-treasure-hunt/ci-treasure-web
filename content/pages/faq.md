@@ -20,7 +20,7 @@ organizer. Past events stay online with an "ended" marker instead of disappearin
 
 **[Communities](/communities).** A world map of local CI groups: jam series, weekly classes,
 collectives, teacher networks. This is where to look for the thing the calendar deliberately does
-not carry, your local Tuesday jam. Each entry links to whatever the group actually uses, usually a
+not carry, your local Tuesday jam. Each entry links to whatever the group uses, usually a
 Telegram, WhatsApp or Facebook group.
 
 **[Venues](/venues).** The studios, halls and retreat centers events happen in, with photos,
@@ -32,29 +32,30 @@ they are part of. Teachers can claim their own profile and edit it.
 
 ## Where new events get announced
 
-You do not have to come back to the site to find out what is new. Pick whichever of these fits how
-you already use your phone.
+No need to keep checking the site. Follow along wherever you already spend your time.
 
 | Channel | What you get |
 |---|---|
-| [Telegram channel](https://t.me/citreasurelist) | Every new event, with photo and details. No chat, no discussion. |
-| [Telegram group](https://t.me/citreasurehunt) | The community. New events are posted into topics, and people actually talk. |
-| [Facebook group](https://www.facebook.com/groups/citreasurehunt) | Organizers post their own events, four days and up. |
-| [Facebook group, Europe / Middle East / Africa](https://www.facebook.com/groups/citreasurehuntemea) | Same, for shorter formats from two days up, including weekend workshops. |
-| [Facebook group, Water Dance & Aquatic Movement](https://www.facebook.com/groups/citreasurehuntaqua) | A separate group for water-based movement events worldwide (2+ days) — Watsu, WaterDance, Aguahara, aquatic CI and related work, not limited to Contact Improvisation. |
-| [Instagram](https://www.instagram.com/citreasurehunt/) | Visual highlights, festival posts, collaborations with organizers. |
-| [Newsletter](/newsletter) | A monthly digest. Handpicked events across several continents. |
+| [Telegram channel](https://t.me/citreasurelist) | Every new event as soon as it is published, with photo and details. Announcements only, no chat. |
+| [Telegram group](https://t.me/citreasurehunt) | Our community hub. New events land in topics by length and region, and people share tips and travel questions. |
+| [Facebook group: worldwide festivals & retreats (4+ days)](https://www.facebook.com/groups/citreasurehunt) | Festivals, intensives and retreats around the world, posted by the organizers themselves. |
+| [Facebook group: Europe, Middle East & Africa (2+ days)](https://www.facebook.com/groups/citreasurehuntemea) | Weekend workshops, intensives, festivals and other CI events of 2 days or longer across the region. |
+| [Facebook group: Americas (2+ days)](https://www.facebook.com/groups/citreasurehuntamericas) | Weekend workshops, intensives, festivals and other CI events of 2 days or longer across North, Central & South America and the Caribbean. |
+| [Facebook group: Water Dance & Aquatic Movement (2+ days)](https://www.facebook.com/groups/citreasurehuntaqua) | Multi-day events in the water worldwide: aquatic CI, Watsu, WaterDance, Aguahara and related work. Open beyond contact improvisation. |
+| [Instagram](https://www.instagram.com/citreasurehunt/) | Visual highlights, festival posts and collaborations with organizers. |
+| [Newsletter](/newsletter) | A monthly roundup of handpicked events and project news. |
 
-Inside the Telegram group, new events are sorted by length and region, so you can look into what interests you. Events of four days or more go to the festivals topic. Two and three day events go to
-a regional topic: Europe, Middle East and Africa; the Americas; or Asia and the Pacific. One-day
-workshops are not posted in the group, they appear in the Telegram channel and on the site.
+Inside the Telegram group, new events are sorted by length and region, so you can follow just what
+interests you. Events of 4+ days go to the festivals topic. Events of 2-3 days go to a regional
+topic: Europe, Middle East & Africa; the Americas; or Asia & the Pacific. One-day workshops are not
+posted in the group; you will find them in the Telegram channel and on the site.
 
-The Facebook groups work differently from the Telegram ones. Nobody announces events into them on
-the site's behalf. Organizers post their own events there, and those posts are one of the ways
-events find their way onto this site in the first place. They split by event length for the same
-reason the Telegram topics do: the international group is for long formats of four days and up, and
-the regional group is where two and three day weekend workshops as well as all longer events in that region belong, so that a weekend workshop
-in one city is not filling the feed of someone on another continent.
+The Facebook groups work a little differently. We do not announce events there. Organizers post
+their own, and those posts are one of the ways new events find their way onto this site. The groups
+are split by event length, just like the Telegram topics: the international group is for festivals,
+intensives and retreats of 4+ days, while the regional groups welcome everything from 2 days up,
+weekend workshops included. That way a weekend workshop in one city does not fill the feed of
+someone on another continent.
 
 ---
 
@@ -72,8 +73,8 @@ Yes. Free to browse, free to submit an event, free to claim your profile. There 
 on the site.
 
 **Why is my weekly jam not listed?**
-The calendar lists one-off events, from a one-day workshop up to a festival. Recurring formats,
-weekly jams and ongoing classes, are not in it yet: a weekly jam changes venue, skips holidays and
+The calendar lists one-off events, from a one-day workshop up to a festival. Recurring formats
+such as weekly jams and ongoing classes are not in it yet: a weekly jam changes venue, skips holidays and
 switches to a summer schedule, and a listing only stays accurate if the people running it can keep
 it up to date themselves. We are building that. Until then, what we list is the group itself, in
 [Communities](/communities), so you can find your jam by finding the people who run it. If your
@@ -108,7 +109,7 @@ search and find nothing, create a new profile. Both options are on your dashboar
 you sign in.
 
 **How long does a claim take to be approved?**
-Reviewing is done by hand by one person, so it depends on the week. Usually it is quick, and it can
+Reviewing is done by hand by one person, so it depends on the week. Usually it is quick, but it can
 take a few days. You get an email when it is approved. New profiles work the same way: you can use
 your dashboard right away, but the profile does not appear in the public directory until it has
 been reviewed. If something is time-sensitive, say so in an email and it gets moved up.
@@ -121,8 +122,9 @@ name is genuinely wrong, misspelled, changed, or the wrong person entirely,
 [email us](mailto:hello@citreasurehunt.com) and we will change it.
 
 **What can I edit on my profile?**
-Your bio, your city and country, your website, your social links, and your photo. Text changes are
-live the moment you save them. Photos are the one exception: every uploaded photo is reviewed
+Your bio, your practices, your city and country, your website, your social links, and your photo.
+For practices, please choose only the ones you actively teach. Text changes are live the moment you
+save them. Photos are the one exception: every uploaded photo is reviewed
 before it appears publicly, including replacements for a photo that was already approved. Until
 then your profile shows your previous photo, or none.
 
@@ -149,18 +151,18 @@ needed either way.
 **How do I get my event listed?**
 Two ways. Submit it yourself at [citreasurehunt.com/events/new](/events/new) after signing in, or
 just email the details and links to [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com) and
-we will enter it by hand (at least for the beginning and as long as capacity allows). Both cost nothing. Plenty of organizers use the second option and that is
-completely fine, although over time it would be nice if organizers add their own events.
+we will enter it by hand (for now, as long as capacity allows). Both cost nothing. Plenty of organizers use the second option, and that is
+completely fine. Over time, we would love more organizers to add their own events.
 
 **What kinds of events do you list?**
-Events where people come together to dance Contact Improvisation, as a one-off: a single day, or one
+Events where people come together to dance contact improvisation, as a one-off: a single day, or one
 continuous stretch of days. Festivals, intensives, retreats, weekend workshops and one-day workshops.
 
 Two things sit outside that. The first is the shape of the schedule. A course that meets for a few
 hours a week across several months is a different animal from an event people arrive at and stay
 inside from beginning to end, even when the total hours are high, and even when it is aimed at
 people coming from elsewhere. For now, weekly classes and ongoing jam series are listed through their
-local [community](/communities) instead, which is where people looking for them actually look.
+local [community](/communities) instead, which is where people look for them.
 
 The second is what is on offer. The dancing has to be the thing itself. Plenty of good CI work
 touches on somatics, emotional material and personal process, and that belongs here. Where the
@@ -182,13 +184,13 @@ to your registration page. Events without an image are not posted to the Telegra
 so an image is the single highest-value thing to include.
 
 **Where will my event be announced?**
-Publishing an event triggers announcements automatically. It goes to the Telegram channel with its
-photo, and, if it runs two days or more, into the Telegram group: the festivals topic for four days
-or more, otherwise your region's workshop topic. One-day workshops go to the channel only. Our Facebook groups are not part of that, they are places where you
-post your own event yourself, and you are very welcome to.
+As soon as your event is published, it is announced automatically. It goes to the Telegram channel
+with its photo and, if it runs 2+ days, into the Telegram group as well: the festivals topic for
+4+ days, otherwise your region's workshop topic. One-day workshops go to the channel only. Our
+Facebook groups work differently: there you post your event yourself, and you are very welcome to.
 
 **Can I tag CI Treasure Hunt as an Instagram collaborator?**
-Yes, if your event runs four days or more. You make the post on your own account as usual and add
+Yes, if your event runs 4+ days. You make the post on your own account as usual and add
 [@citreasurehunt](https://www.instagram.com/citreasurehunt/) as a collaborator. Once it is
 accepted, the same post appears on both accounts and reaches both audiences. Your followers see
 your festival, our followers see your festival, and nobody has to make a second post.
@@ -199,7 +201,8 @@ itself: the announcement, the program, the teacher lineup. A post about one deta
 teacher, or a last-minute schedule change is better kept on your own account, where the people
 already following your event are.
 
-We usually do not work with Instagram stories, the timing is too critical and the outcome of a few hours visibility not worth the short-notice effort.
+We usually do not work with Instagram stories. The timing is too tight, and a few hours' visibility
+is not worth the short-notice effort.
 
 **Can I edit my event after it is published?**
 Yes, and your edits go live right away without waiting for anyone. Once your profile is linked to
@@ -241,28 +244,38 @@ No. See the [privacy policy](/privacy) for the full detail on what is collected 
 ---
 
 <!--
-BUILD NOTES (not page content)
+BUILD NOTES (not page content, for whoever edits this page next)
 
 1. FAQPage JSON-LD, following the pattern I-133 already established for city pages. Only the
    Q&A blocks below the "Frequently asked questions" heading go into the schema; the "How It
    Works" intro is not a Q&A and must not be forced into one.
 
-2. Internal links used above that must exist at publish time: /, /communities, /venues,
-   /teachers, /events/new, /auth, /newsletter, /feedback, /privacy, /about. All live today
-   except /about, which ships in the same issue. No links to /guides anywhere yet, on purpose:
-   the guides section is not built and the style guide forbids publishing a link to a page that
-   does not exist.
+2. Internal links used on this page: /, /communities, /venues, /teachers, /events/new, /auth,
+   /newsletter, /privacy, /about. All live. No links to /guides yet, on purpose: the guides
+   section is not built, and we never link to a page that does not exist.
 
-3. EMEA Facebook group confirmed live by Jan 2026-08-12 (launched 2026-08-01,
-   facebook.com/groups/citreasurehuntemea). I-145's channel inventory said no regional group
-   existed; that line was wrong and has been corrected in i-145-backlink-outreach.md. Americas
-   and APAC are not launched, so the table lists EMEA only. Add rows as they launch.
+3. Facebook groups, as of 2026-10-02: international (4+ days, facebook.com/groups/citreasurehunt),
+   EMEA (2+ days, launched 2026-08-01, .../citreasurehuntemea), Americas (2+ days, launched
+   2026-10-01, .../citreasurehuntamericas), Water Dance & Aquatic Movement (2+ days, I-162,
+   .../citreasurehuntaqua). Same list on about.md's "Getting in touch". Naming uses "2+ days" /
+   "4+ days" to match the groups' own Facebook descriptions; keep both pages in sync with them.
+   APAC is not launched and gets no "coming soon" mention (Jan, 2026-10-02): add the row on both
+   pages the day it launches.
 
-4. Review turnaround is deliberately vague here ("usually quick, can take a few days") per Jan
-   2026-08-12, since it is one person reviewing by hand and a stated SLA would be a promise
-   nobody can keep in a busy week. Note this diverges from app/dashboard/page.tsx, which still
-   says "a day or two" in two places. Worth loosening there too, in the same pass, so a claimant
-   is not told one thing in the product and another on this page.
+4. Review turnaround is deliberately vague here ("usually quick, can take a few days"). The
+   dashboard (app/dashboard/page.tsx) says "a day or two"; Jan confirmed 2026-10-02 that this
+   difference is fine, no change needed. Likewise, the trusted-submitter auto-publish is explained
+   here but not repeated on about.md, also fine per Jan.
 
 5. Footer link only, no top nav, per I-156.
+
+6. Style for this page and about.md: no contractions on purpose ("do not", "it is"; manual tone,
+   easier for non-native readers and browser translation), no em-dashes. Modernize by tightening
+   sentences, not by adding contractions.
+
+7. Lines that will need updating when other issues ship:
+   - I-171 (recurring jams and classes): FAQ "Why is my weekly jam not listed?" ("We are building
+     that") and "What kinds of events do you list?", plus about.md "What gets listed".
+   - I-173 (revenue model): "no advertising" (FAQ "Is it free?", about.md intro and costs section)
+     and about.md's "Browsing and (basic) listings stay free".
 -->
