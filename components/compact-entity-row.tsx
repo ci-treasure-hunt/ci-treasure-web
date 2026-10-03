@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, MapPin } from "lucide-react";
+import { BadgeCheck, ExternalLink, MapPin } from "lucide-react";
 
 import { getPrimaryJoinUrl, type Community } from "@/lib/communities";
 import { getMediumUrl, toCdnUrl } from "@/lib/image-url";
@@ -67,10 +67,33 @@ const ROLE_STYLES: Record<string, string> = {
   musician: "bg-emerald-50 text-emerald-700",
 };
 
+function RolePills({ roles }: { roles: string[] }) {
+  return (
+    <>
+      {roles.map((role) => (
+        // Every held role gets its own pill, teacher included: a silent default for the
+        // majority case read ambiguous ("is this person just not tagged?") next to musician/
+        // organizer always showing theirs.
+        <span
+          key={role}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${ROLE_STYLES[role] ?? "bg-slate-100 text-slate-500"}`}
+        >
+          {role}
+        </span>
+      ))}
+    </>
+  );
+}
+
+// Mobile layout fix (2026-10-03): with the claimed pill plus 2-3 role pills on the name line, a
+// phone-width row left the name (the only shrinkable item) a few pixels, so names truncated to
+// their first letter. Below sm the role pills now move to line 2 next to the city, and "claimed"
+// is a check icon after the name on every screen size instead of a pill.
 export function CompactTeacherRow({ teacher }: { teacher: { name: string; slug: string; city: string | null; bio: string | null; imageUrl?: string | null; linkUrl?: string | null; roles?: string[]; isClaimed?: boolean } }) {
   const imageUrl = teacher.imageUrl?.trim() ?? "";
+  const roles = teacher.roles ?? [];
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto_28px] items-center gap-3 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_28px]">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_28px] items-center gap-x-3 gap-y-1.5 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_28px] sm:gap-y-3">
       <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -81,26 +104,19 @@ export function CompactTeacherRow({ teacher }: { teacher: { name: string; slug: 
         </Link>
         {teacher.isClaimed && (
           // Claim incentive (2026-08-28): a quiet visual reward for the person who claimed their
-          // profile, distinct from the role pills below (which describe what they do, not whether
-          // they own the listing).
-          <span
-            className="shrink-0 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-violet-700 uppercase"
-            title="This profile has been claimed by its owner"
-          >
-            Claimed
+          // profile, distinct from the role pills (which describe what they do, not whether they
+          // own the listing). Same BadgeCheck icon as the "Claimed profiles ... are shown first"
+          // caption on /teachers, so the two read as one signal.
+          <span className="shrink-0 text-violet-600" title="This profile has been claimed by its owner">
+            <BadgeCheck className="size-4" aria-hidden="true" />
+            <span className="sr-only">Claimed profile</span>
           </span>
         )}
-        {teacher.roles?.map((role) => (
-          // Every held role gets its own pill, teacher included: a silent default for the
-          // majority case read ambiguous ("is this person just not tagged?") next to musician/
-          // organizer always showing theirs.
-          <span
-            key={role}
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${ROLE_STYLES[role] ?? "bg-slate-100 text-slate-500"}`}
-          >
-            {role}
+        {roles.length > 0 && (
+          <span className="hidden shrink-0 items-center gap-2 sm:flex">
+            <RolePills roles={roles} />
           </span>
-        ))}
+        )}
       </div>
       {teacher.bio && (
         // Middle column, desktop only: fills the dead space a short name/location row otherwise
@@ -111,8 +127,15 @@ export function CompactTeacherRow({ teacher }: { teacher: { name: string; slug: 
           {teacher.bio}
         </p>
       )}
+      {(teacher.city || roles.length > 0) && (
+        // Line 2 on mobile: city plus the role pills, so the name line keeps (nearly) full width.
+        <div className="col-start-1 row-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:hidden">
+          {teacher.city && <p className="text-xs text-slate-500">{teacher.city}</p>}
+          <RolePills roles={roles} />
+        </div>
+      )}
       {teacher.city && (
-        <p className="col-start-1 row-start-2 text-xs text-slate-500 sm:col-start-3 sm:row-start-1 sm:text-sm">
+        <p className="hidden text-sm text-slate-500 sm:col-start-3 sm:row-start-1 sm:block">
           {teacher.city}
         </p>
       )}
