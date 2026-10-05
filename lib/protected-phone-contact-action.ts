@@ -3,20 +3,43 @@
 import { createHash } from "crypto";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { EmailEntityType } from "@/lib/entity-email";
-import { parentIsPublic } from "@/lib/entity-visibility";
+import { parentIsPublic, type ContactEntityType } from "@/lib/entity-visibility";
 
-type EntityType = EmailEntityType;
+export type PhoneContactChannel = "whatsapp" | "telegram" | "signal" | "phone";
 
-// Same ip_hash rate-limit pattern as its siblings (invite-links-action.ts / I-099,
-// report-action.ts / I-012) — defense-in-depth alongside Turnstile, not a replacement.
+export type RevealedPhoneContact = {
+  channel: PhoneContactChannel;
+  label: string | null;
+  // "+<number>", for display.
+  display: string;
+  href: string;
+};
+
+// Shares email_reveal_log and its 20/day budget with getProtectedEmail on purpose: a scraper should
+// not get 20 addresses plus 20 numbers per network per day, and a real visitor never needs that many.
 const RATE_LIMIT_PER_DAY = 20;
 
-export async function getProtectedEmail(
-  entityType: EntityType,
+// Built here, never stored: the table holds only digits, so the format of each deep link lives in
+// one place. t.me/+<number> and signal.me/#p/+<number> are the by-number forms; username links are
+// public and stay in the ordinary `links`/social columns.
+function contactHref(channel: PhoneContactChannel, number: string): string {
+  switch (channel) {
+    case "whatsapp":
+      return `https://wa.me/${number}`;
+    case "telegram":
+      return `https://t.me/+${number}`;
+    case "signal":
+      return `https://signal.me/#p/+${number}`;
+    case "phone":
+      return `tel:+${number}`;
+  }
+}
+
+export async function getProtectedPhoneContacts(
+  entityType: ContactEntityType,
   entityId: string,
-  token: string
-): Promise<{ email: string } | { error: string }> {
+  token: string,
+): Promise<{ contacts: RevealedPhoneContact[] } | { error: string }> {
   if (!token || !entityId) {
     return { error: "invalid" };
   }
@@ -62,17 +85,15 @@ export async function getProtectedEmail(
     return { error: "not_found" };
   }
 
-  // I-165 F3: addresses live in entity_emails, which denies anon and authenticated entirely, rather
-  // than in a column on the public table. Before that, the Turnstile gate here was decorative:
-  // GET /rest/v1/events?select=contact_email with the public anon key returned the lot.
   const { data, error } = await supabase
-    .from("entity_emails")
-    .select("email")
+    .from("entity_phone_contacts")
+    .select("channel, number, label")
     .eq("entity_type", entityType)
     .eq("entity_id", entityId)
-    .maybeSingle();
+    .order("sort_order")
+    .order("created_at");
 
-  if (error || !data?.email) {
+  if (error || !data?.length) {
     return { error: "not_found" };
   }
 
@@ -80,5 +101,16 @@ export async function getProtectedEmail(
     .from("email_reveal_log")
     .insert({ ip_hash: ipHash, entity_type: entityType, entity_id: entityId });
 
-  return { email: data.email as string };
+  return {
+    contacts: data.map((row) => {
+      const channel = row.channel as PhoneContactChannel;
+      const number = row.number as string;
+      return {
+        channel,
+        label: (row.label as string | null) ?? null,
+        display: `+${number}`,
+        href: contactHref(channel, number),
+      };
+    }),
+  };
 }

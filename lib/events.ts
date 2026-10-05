@@ -37,6 +37,7 @@ export type SupabaseEventRow = {
   lat: number | null;
   lng: number | null;
   has_email?: boolean | null;
+  has_phone_contacts?: boolean | null;
   series_id?: string | null;
   series_order?: number | null;
   event_series?: { title: string } | null;
@@ -101,6 +102,9 @@ export type EventDetail = EventListItem & {
   // I-165 F3: whether an address exists, for the reveal button. The address itself lives in
   // entity_emails and is never fetched into a public render.
   hasEmail: boolean;
+  // Whether entity_phone_contacts has rows, for the gated phone/WhatsApp reveal. Same pattern as
+  // hasEmail: the numbers themselves are never fetched into a render.
+  hasPhoneContacts: boolean;
   // Populated only on the admin preview path (getEventDetailForAdmin), which is allowed to
   // show it as plain text. Always null in public renders.
   contactEmail: string | null;
@@ -465,7 +469,7 @@ function getTimezoneOffset(timezone: string, date: Date) {
 }
 
 const EVENT_DETAIL_COLUMNS =
-  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, image_credit, links, price, segments, venue_id, address, has_email, series_id, series_order, status, level, language, discipline, event_series(title)";
+  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, image_credit, links, price, segments, venue_id, address, has_email, has_phone_contacts, series_id, series_order, status, level, language, discipline, event_series(title)";
 
 // Shared by the public event page (RLS-gated client, RPC-scoped credits) and the admin
 // pending-event preview (service-role client, direct table reads) — same output shape either
@@ -569,6 +573,7 @@ async function buildEventDetail(
     venueAddress: venueData?.address ?? null,
     venueSlug: venueData?.visibility === "public" ? (venueData.slug ?? null) : null,
     hasEmail: Boolean(row.has_email),
+    hasPhoneContacts: Boolean(row.has_phone_contacts),
     contactEmail: null,
     level: row.level ?? null,
     language: row.language ?? [],

@@ -15,6 +15,7 @@ import { EntityBreadcrumb } from "@/components/entity-breadcrumb";
 import VenueMap from "@/components/venue-map";
 import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
+import { RevealPhoneContacts } from "@/components/reveal-phone-contacts";
 import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
 import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
@@ -290,9 +291,10 @@ export default async function VenuePage({ params }: VenuePageProps) {
                     ? venueLinks.map((row, i) => (
                         <SocialLink key={i} href={row.href} icon={row.icon} label={row.label} />
                       ))
-                    : !venue.has_email && <p className="text-sm text-slate-500 italic">No links available.</p>
+                    : !venue.has_email && !venue.has_phone_contacts && <p className="text-sm text-slate-500 italic">No links available.</p>
                   }
                   {venue.has_email && <RevealEmail entityType="venue" entityId={venue.id} />}
+                  {venue.has_phone_contacts && <RevealPhoneContacts entityType="venue" entityId={venue.id} />}
                 </div>
               </section>
             </aside>

@@ -83,6 +83,8 @@ export type Venue = {
   imageCredit: string | null;
   // I-165 F3: existence flag only; the address lives in entity_emails.
   has_email: boolean;
+  // Existence flag only; the numbers live in entity_phone_contacts behind the same gate.
+  has_phone_contacts: boolean;
   newsletter: string | null;
   instagram: string | null;
   facebook: string | null;
@@ -114,7 +116,7 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
   // behaviour.
   const { data, error } = await supabase
     .from("venues")
-    .select("id, name, slug, city, country, region, address, lat, lng, description, website, image_url, image_credit, has_email, newsletter, instagram, facebook, youtube, links")
+    .select("id, name, slug, city, country, region, address, lat, lng, description, website, image_url, image_credit, has_email, has_phone_contacts, newsletter, instagram, facebook, youtube, links")
     .eq("slug", slug)
     .eq("visibility", "public")
     .single();
@@ -136,6 +138,7 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
     imageUrl: data.image_url,
     imageCredit: data.image_credit ?? null,
     has_email: Boolean(data.has_email),
+    has_phone_contacts: Boolean(data.has_phone_contacts),
     newsletter: data.newsletter,
     instagram: data.instagram,
     facebook: data.facebook,

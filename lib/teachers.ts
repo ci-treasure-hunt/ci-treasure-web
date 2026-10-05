@@ -61,6 +61,8 @@ export type TeacherProfile = {
   website: string | null;
   // I-165 F3: existence flag only; the address lives in entity_emails.
   has_email: boolean;
+  // Existence flag only; the numbers live in entity_phone_contacts behind the same gate.
+  has_phone_contacts: boolean;
   instagram: string | null;
   facebook: string | null;
   youtube: string | null;

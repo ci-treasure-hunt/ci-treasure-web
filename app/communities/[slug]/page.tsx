@@ -56,6 +56,7 @@ import { CommunityPhotoButton } from "@/components/community-photo-button";
 import { EntityImage } from "@/components/entity-image";
 import { InviteButtons } from "@/components/invite-buttons";
 import { RevealEmail } from "@/components/reveal-email";
+import { RevealPhoneContacts } from "@/components/reveal-phone-contacts";
 import { RingSection } from "@/components/also-browse";
 import { getContinent } from "@/lib/entity-continents";
 import { ringSectionHeading } from "@/lib/entity-ring";
@@ -343,7 +344,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
                     ? communityLinks.map((row, i) => (
                         <SocialLink key={i} href={row.href} icon={row.icon} label={row.label} />
                       ))
-                    : !community.has_email && <p className="text-sm text-slate-500 italic">No links available.</p>
+                    : !community.has_email && !community.has_phone_contacts && <p className="text-sm text-slate-500 italic">No links available.</p>
                   }
                   {/* I-165 F3: communities get the same Turnstile-gated reveal as venues, teachers
                       and events. Until this shipped they had no email field at all, so addresses
@@ -351,6 +352,9 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
                       as plain crawlable mailto: links (seven found and cleared 2026-09-01). */}
                   {community.has_email && (
                     <RevealEmail entityType="community" entityId={community.id} />
+                  )}
+                  {community.has_phone_contacts && (
+                    <RevealPhoneContacts entityType="community" entityId={community.id} />
                   )}
                 </div>
               </section>

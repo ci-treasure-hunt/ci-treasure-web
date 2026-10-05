@@ -27,6 +27,7 @@ import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
 import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
+import { RevealPhoneContacts } from "@/components/reveal-phone-contacts";
 import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
@@ -340,7 +341,7 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                   links got no "Show email" button at all and no way to be contacted. The old
                   public_email check sat inside the same wrapper, so this predates F3. The venues
                   page already handles the equivalent case correctly. */}
-              {(teacherLinks.length > 0 || teacher.has_email) && (
+              {(teacherLinks.length > 0 || teacher.has_email || teacher.has_phone_contacts) && (
                 <section className="rounded-[1.75rem] border border-(--color-sand-strong) bg-(--color-mist) p-6">
                   <h2 className="font-serif text-2xl text-slate-950">Links</h2>
                   <div className="mt-4 flex flex-col gap-3">
@@ -349,6 +350,9 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                     ))}
                     {teacher.has_email && (
                       <RevealEmail entityType="profile" entityId={teacher.id} />
+                    )}
+                    {teacher.has_phone_contacts && (
+                      <RevealPhoneContacts entityType="profile" entityId={teacher.id} />
                     )}
                   </div>
                 </section>

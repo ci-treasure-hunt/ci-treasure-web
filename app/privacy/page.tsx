@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-5 py-14 sm:px-8">
       <h1 className="font-serif text-4xl text-slate-950">Privacy Policy</h1>
       <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-        <p className="text-sm text-slate-500">Last updated: September 2026</p>
+        <p className="text-sm text-slate-500">Last updated: October 2026</p>
         <section>
           <h2 className="font-semibold text-slate-950">1. Controller</h2>
           <p>
@@ -104,7 +104,8 @@ export default function PrivacyPage() {
             biography, which in most cases is a summary we have written rather than text you wrote yourself, and
             which you can replace with your own words once you claim your profile; and
             links you publish yourself, such as your website, newsletter, or public social media profiles. We store
-            an email address only where you have published one yourself for professional contact. We never source a
+            an email address, or a phone number for calls or for WhatsApp, Telegram or Signal, only where you have
+            published one yourself for professional contact, such as for registering for your event. We never source a
             photograph of a person: a profile has a photo only if you uploaded one yourself after claiming it.
           </p>
           <p className="mt-2">
@@ -357,11 +358,12 @@ export default function PrivacyPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">14. Group links and contact addresses behind a check</h2>
+          <h2 className="font-semibold text-slate-950">14. Group links and contact details behind a check</h2>
           <p>
             Some community pages hide their private Telegram/WhatsApp/Signal/LINE group link behind a
-            &quot;Request access&quot; button, and contact email addresses on community, venue, profile and event
-            pages sit behind a &quot;Show email&quot; button, to keep them from being scraped. Before revealing either, we run a
+            &quot;Request access&quot; button. Contact email addresses on community, venue, profile and event pages sit
+            behind a &quot;Show email&quot; button, and phone numbers (for calls, WhatsApp, Telegram or Signal) behind a
+            &quot;Show phone / WhatsApp&quot; button, to keep them from being scraped. Before revealing any of these, we run a
             Cloudflare Turnstile check: Turnstile collects technical data (such as browser and device signals,
             including your IP address) and sends it to Cloudflare, Inc. (US) to verify you&apos;re not a bot. We
             also store a daily-rotating hash of your IP address ourselves to rate-limit repeated requests; like the

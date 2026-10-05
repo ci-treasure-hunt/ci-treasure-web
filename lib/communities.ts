@@ -133,6 +133,8 @@ export type CommunityDetail = {
   other_resource: string | null;
   // I-165 F3: existence flag only; the address lives in entity_emails behind the Turnstile gate.
   has_email: boolean;
+  // Existence flag only; the numbers live in entity_phone_contacts behind the same gate.
+  has_phone_contacts: boolean;
   has_invites: boolean;
   has_telegram_invite: boolean;
   has_whatsapp_invite: boolean;
@@ -351,7 +353,7 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
       facebook_page, telegram_group, telegram_channel, whatsapp_channel,
       youtube, calendar, newsletter, other_resource,
       has_invites, has_telegram_invite, has_whatsapp_invite, has_signal_invite, has_line_invite,
-      has_email, image_url, image_credit,
+      has_email, has_phone_contacts, image_url, image_credit,
       community_venues ( venue:venue_id ( slug, name, city, description, image_url ) ),
       community_profiles ( profile:profile_id ( slug, name, city, bio, image_url, website, instagram, facebook ) )
     `)
