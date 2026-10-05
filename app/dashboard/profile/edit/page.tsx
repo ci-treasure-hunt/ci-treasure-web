@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileEditForm } from "./profile-edit-form";
 
 import { getEntityEmail } from "@/lib/entity-email";
+import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 export default async function ProfileEditPage() {
   const supabase = await createClient();
   const {
@@ -27,7 +28,10 @@ export default async function ProfileEditPage() {
   // I-165 F3: the address lives in entity_emails now, so select("*") no longer carries it. Safe to
   // read here without a further check: the query above is scoped by .eq("user_id", user.id), so
   // this is by construction the signed-in user's own profile and their own address.
-  const publicEmail = await getEntityEmail("profile", profile.id);
+  const [publicEmail, phoneContacts] = await Promise.all([
+    getEntityEmail("profile", profile.id),
+    getEntityPhoneContacts("profile", profile.id),
+  ]);
 
   // Roles backed by real event links are locked on (can't be unchecked here) so the checkbox
   // never contradicts the junction-table data — see event_organizers/event_teachers below.
@@ -55,7 +59,7 @@ export default async function ProfileEditPage() {
         </div>
         <div className="mt-8">
           <ProfileEditForm
-            profile={{ ...profile, public_email: publicEmail }}
+            profile={{ ...profile, public_email: publicEmail, phone_contacts: phoneContacts }}
             lockedRoles={{ organizer: lockedOrganizer, teacher: lockedTeacher, musician: lockedMusician }}
             isDeactivated={profile.visibility === "deactivated"}
             deletionRequested={Boolean(profile.deletion_requested_at)}

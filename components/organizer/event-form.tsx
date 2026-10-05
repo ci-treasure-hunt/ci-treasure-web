@@ -10,6 +10,8 @@ import { CountryPicker } from "@/components/shared/country-picker";
 import { CurrencyPicker } from "@/components/shared/currency-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
 import { PersonPicker } from "@/components/organizer/person-picker";
+import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
+import { PHONE_CONTACTS_HINT } from "@/lib/phone-contacts";
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import {
   EVENT_TYPE_OPTIONS,
@@ -357,7 +359,7 @@ export function OrganizerEventForm({
           <Field label="Description (Markdown supported)">
             <textarea value={form.description} onChange={(e) => set("description", e.target.value)} className={`${inputClassName} min-h-40`} />
           </Field>
-          <Field label="Contact email (shown publicly on the event page)">
+          <Field label="Contact email (shown on the event page after a quick bot check)">
             <input
               type="email"
               value={form.contactEmail}
@@ -483,6 +485,20 @@ export function OrganizerEventForm({
           </div>
         )}
       />
+
+      <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+        <h3 className="font-serif text-2xl text-slate-950">Phone & WhatsApp contact</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          {PHONE_CONTACTS_HINT} A WhatsApp or phone link added under Links is moved here when you save.
+        </p>
+        <div className="mt-4">
+          <PhoneContactsEditor
+            value={form.phoneContacts}
+            onChange={(phoneContacts) => set("phoneContacts", phoneContacts)}
+            inputClassName={inputClassName}
+          />
+        </div>
+      </section>
 
       {mode === "create" ? (
         <>

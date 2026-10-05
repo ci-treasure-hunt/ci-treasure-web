@@ -5,22 +5,15 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { MessageCircle, Phone } from "lucide-react";
 import {
   getProtectedPhoneContacts,
-  type PhoneContactChannel,
   type RevealedPhoneContact,
 } from "@/lib/protected-phone-contact-action";
 import type { ContactEntityType } from "@/lib/entity-visibility";
+import { PHONE_CONTACT_CHANNEL_LABELS } from "@/lib/phone-contacts";
 
 const ERROR_MESSAGES: Record<string, string> = {
   rate_limited: "Too many requests from this network — try again tomorrow.",
   challenge_failed: "Verification failed. Please try again.",
   not_found: "No contact available.",
-};
-
-const CHANNEL_NAMES: Record<PhoneContactChannel, string> = {
-  whatsapp: "WhatsApp",
-  telegram: "Telegram",
-  signal: "Signal",
-  phone: "Phone",
 };
 
 type RevealPhoneContactsProps = {
@@ -87,7 +80,7 @@ export function RevealPhoneContacts({ entityType, entityId, className }: RevealP
                 {c.channel === "phone" ? <Phone className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
               </span>
               <span>
-                {CHANNEL_NAMES[c.channel]}
+                {PHONE_CONTACT_CHANNEL_LABELS[c.channel]}
                 {c.label ? ` · ${c.label}` : ""}
                 <span className="ml-2 text-slate-500">{c.display}</span>
               </span>

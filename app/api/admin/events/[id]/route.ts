@@ -8,6 +8,8 @@ import { removeImageIfUnused } from "@/lib/upload-action";
 import { resolveVenueLocation } from "@/lib/geocode";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { isPhoneContactUrl, phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 function normalizeJsonItems<T>(items: T[]) {
   return items.length ? { items } : null;
 }
@@ -31,7 +33,10 @@ function parseLinkItems(items: Array<{ type: string; url: string }>) {
       type: item.type.trim() || "website",
       url: item.url.trim(),
     }))
-    .filter((item) => item.url);
+    .filter((item) => item.url)
+    // A phone-number link never goes in public `links`; resolvePhoneContacts moves it into the gated
+    // entity_phone_contacts below (same rule as the organizer form, lib/organizer-events.ts).
+    .filter((item) => !isPhoneContactUrl(item.url));
 }
 
 export async function PUT(
@@ -43,6 +48,14 @@ export async function PUT(
     const { id } = await params;
     const payload = await request.json();
     const supabase = createAdminClient();
+
+    const phoneContacts = resolvePhoneContacts(
+      payload.phoneContacts,
+      (payload.linkItems ?? []).map((i: { url?: string }) => i.url ?? ""),
+    );
+    if (phoneContacts.invalid.length) {
+      return NextResponse.json({ error: phoneContactsErrorMessage(phoneContacts.invalid) }, { status: 400 });
+    }
 
     // A pasted image URL must go through the same rehost pipeline as the organizer form
     // and the file-upload widget above — otherwise it's saved raw and (a) rots when the
@@ -110,6 +123,7 @@ export async function PUT(
     // I-165 F3: see the POST route. Passing null/empty deletes the row, so clearing the
     // field in the admin form clears the stored address.
     await setEntityEmail("event", id, payload.contactEmail ?? null);
+    await setEntityPhoneContacts("event", id, phoneContacts.contacts, "admin");
 
     const { error: deleteTeachersError } = await supabase.from("event_teachers").delete().eq("event_id", id);
     if (deleteTeachersError) {

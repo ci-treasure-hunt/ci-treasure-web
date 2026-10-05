@@ -8,6 +8,8 @@ import { getCountryLabel, disciplineLabel } from "@/lib/event-display";
 import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
+import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
+import { PHONE_CONTACTS_HINT, type PhoneContactInput } from "@/lib/phone-contacts";
 
 const inputClassName =
   "w-full rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm text-slate-950 outline-none ring-0 transition focus:border-(--color-pine)";
@@ -26,6 +28,7 @@ type ProfileRow = {
   telegram: string | null;
   newsletter: string | null;
   public_email: string | null;
+  phone_contacts: PhoneContactInput[];
   image_url: string | null;
   image_credit: string | null;
   image_status: string;
@@ -70,6 +73,7 @@ export function ProfileEditForm({
     telegram: profile.telegram || "",
     newsletter: profile.newsletter || "",
     public_email: profile.public_email || "",
+    phone_contacts: profile.phone_contacts ?? [],
     is_organizer: profile.is_organizer || lockedRoles.organizer,
     is_teacher: profile.is_teacher || lockedRoles.teacher,
     is_musician: profile.is_musician || lockedRoles.musician,
@@ -402,6 +406,22 @@ export function ProfileEditForm({
               placeholder="https://..."
             />
           </Field>
+        </div>
+        <div className="mt-6">
+          <p className="text-sm font-medium text-slate-700">Phone & WhatsApp</p>
+          <p className="mt-1 text-sm text-slate-500">{PHONE_CONTACTS_HINT}</p>
+          <div className="mt-3">
+            <PhoneContactsEditor
+              value={form.phone_contacts}
+              onChange={(phone_contacts) => {
+                setForm((prev) => ({ ...prev, phone_contacts }));
+                setSuccess(false);
+                setError(null);
+              }}
+              inputClassName={inputClassName}
+              labelPlaceholder="Label (optional)"
+            />
+          </div>
         </div>
       </section>
 

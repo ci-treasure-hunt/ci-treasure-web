@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getEntityEmail } from "@/lib/entity-email";
+import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 type SegmentDisplay = { title?: string; teachers?: Array<string | { name?: string }> };
 
 export default async function EditEventPage({
@@ -67,14 +68,21 @@ export default async function EditEventPage({
 
   // I-165 F3: read the address only after the authorization block above has passed, and fold it
   // back under its old key so eventRowToFormData keeps working unchanged.
-  const contactEmail = await getEntityEmail("event", event.id);
+  const [contactEmail, phoneContacts] = await Promise.all([
+    getEntityEmail("event", event.id),
+    // Same rule as the address: only after the authorization block above.
+    getEntityPhoneContacts("event", event.id),
+  ]);
 
-  const initial = eventRowToFormData({
-    ...event,
-    contact_email: contactEmail,
-    address: typeof event.address === "object" ? (event.address as { venue_name?: string } | null) : null,
-    venues: Array.isArray(event.venues) ? event.venues[0] ?? null : event.venues,
-  });
+  const initial = {
+    ...eventRowToFormData({
+      ...event,
+      contact_email: contactEmail,
+      address: typeof event.address === "object" ? (event.address as { venue_name?: string } | null) : null,
+      venues: Array.isArray(event.venues) ? event.venues[0] ?? null : event.venues,
+    }),
+    phoneContacts,
+  };
   const availablePractices = await getKnownDisciplines();
 
   // Admin client: PostgREST applies RLS to embedded resources too, so with the caller's client

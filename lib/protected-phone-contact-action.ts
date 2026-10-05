@@ -4,8 +4,7 @@ import { createHash } from "crypto";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parentIsPublic, type ContactEntityType } from "@/lib/entity-visibility";
-
-export type PhoneContactChannel = "whatsapp" | "telegram" | "signal" | "phone";
+import type { PhoneContactChannel } from "@/lib/phone-contacts";
 
 export type RevealedPhoneContact = {
   channel: PhoneContactChannel;

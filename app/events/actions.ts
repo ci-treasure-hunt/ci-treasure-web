@@ -22,6 +22,8 @@ import { createClient } from "@/lib/supabase/server";
 import tzlookup from "tz-lookup";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { uniqueProfileSlug } from "@/lib/profile-slug";
 type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string };
 
@@ -44,6 +46,16 @@ type ActionResult = { success: boolean; error?: string; slug?: string; warning?:
 function resolveContactEmail(data: OrganizerEventFormData): string | null {
   const bareEmailInLinks = (data.linkItems ?? []).find((i) => BARE_EMAIL.test(i.url.trim()))?.url.trim();
   return data.contactEmail.trim() || bareEmailInLinks || null;
+}
+
+// Gated phone/WhatsApp contacts: the form's own rows plus any phone link the organizer pasted into
+// Links instead (parseLinkItems keeps those out of the public `links`; this is where they land).
+// Resolved before any write so an unusable number is reported without leaving a half-saved event.
+function resolveEventPhoneContacts(data: OrganizerEventFormData) {
+  return resolvePhoneContacts(
+    data.phoneContacts,
+    (data.linkItems ?? []).map((i) => i.url),
+  );
 }
 
 function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, timezone: string) {
@@ -94,6 +106,10 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   const validationError = validateOrganizerEvent(data, { enforceMinDuration: true });
   if (validationError) {
     return { success: false, error: validationError };
+  }
+  const phoneContacts = resolveEventPhoneContacts(data);
+  if (phoneContacts.invalid.length) {
+    return { success: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
   }
 
   const supabase = await createClient();
@@ -153,6 +169,7 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   // I-165 F3. Ownership is already established: this row was just inserted under this user's
   // session and RLS.
   await setEntityEmail("event", inserted.id, resolveContactEmail(data));
+  await setEntityPhoneContacts("event", inserted.id, phoneContacts.contacts);
 
   // Link the organizer's profile as lead (roles are always 'lead').
   const { error: linkError } = await supabase.from("event_organizers").insert({
@@ -222,6 +239,10 @@ export async function updateEvent(
   if (validationError) {
     return { success: false, error: validationError };
   }
+  const phoneContacts = resolveEventPhoneContacts(data);
+  if (phoneContacts.invalid.length) {
+    return { success: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
+  }
 
   const supabase = await createClient();
   const {
@@ -284,6 +305,7 @@ export async function updateEvent(
   // I-165 F3. Only reached when the RLS-guarded update above actually matched a row, so the
   // caller's permission to edit this event is already proven.
   await setEntityEmail("event", updated.id, resolveContactEmail(data));
+  await setEntityPhoneContacts("event", updated.id, phoneContacts.contacts);
 
   revalidatePath("/dashboard");
   // Cached ISR pages (homepage list, this event's own detail page) won't

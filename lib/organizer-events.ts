@@ -8,6 +8,7 @@
 import type { AdminLinkItem, AdminPriceItem } from "./admin-events";
 import { COUNTRIES } from "./countries";
 import { safeExternalUrl } from "./url-safety";
+import { isPhoneContactUrl, type PhoneContactInput } from "./phone-contacts";
 
 export { EVENT_TYPE_OPTIONS, LINK_TYPE_OPTIONS, TEACHER_ROLE_OPTIONS } from "./admin-events";
 export type { AdminLinkItem, AdminPriceItem };
@@ -136,6 +137,9 @@ export type OrganizerEventFormData = {
   cancelledText: string;
   priceItems: AdminPriceItem[];
   linkItems: AdminLinkItem[];
+  // Gated phone/WhatsApp contacts (entity_phone_contacts). Not on the events row, so eventRowToFormData
+  // leaves this empty and the edit page fills it via getEntityPhoneContacts, like the contact email.
+  phoneContacts: PhoneContactInput[];
   // Create mode only — edit mode manages this live via TeacherManager, which needs a real
   // event id that doesn't exist yet at this point. Always empty when hydrated from an
   // existing event (see eventRowToFormData); createEvent is the only consumer.
@@ -175,6 +179,7 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     cancelledText: "",
     priceItems: [],
     linkItems: [],
+    phoneContacts: [],
   };
 }
 
@@ -221,6 +226,10 @@ export function parseLinkItems(items: AdminLinkItem[]) {
   return items
     .map((item) => ({ type: item.type.trim() || "website", url: item.url.trim() }))
     .filter((item) => item.url && !BARE_EMAIL.test(item.url))
+    // Same reasoning as BARE_EMAIL: a wa.me / t.me/+<digits> / signal.me / tel: link carries a phone
+    // number, and `links` is public. resolvePhoneContacts() in the save action moves it into the gated
+    // entity_phone_contacts instead; here it is only kept out of `links`.
+    .filter((item) => !isPhoneContactUrl(item.url))
     // I-165: scheme allowlist, http/https only. Runs after the BARE_EMAIL filter above so a bare
     // address is still routed to contact_email by extractBareEmailFromLinks rather than being
     // dropped here as an unparseable link.
@@ -324,6 +333,7 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     // on OrganizerEventFormData.
     teachers: [],
     organizers: [],
+    phoneContacts: [],
   };
 }
 

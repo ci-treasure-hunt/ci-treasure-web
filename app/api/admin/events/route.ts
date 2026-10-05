@@ -6,6 +6,8 @@ import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { resolveVenueLocation } from "@/lib/geocode";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { isPhoneContactUrl, phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 function normalizeJsonItems<T>(items: T[]) {
   return items.length ? { items } : null;
 }
@@ -29,7 +31,10 @@ function parseLinkItems(items: Array<{ type: string; url: string }>) {
       type: item.type.trim() || "website",
       url: item.url.trim(),
     }))
-    .filter((item) => item.url);
+    .filter((item) => item.url)
+    // A phone-number link never goes in public `links`; resolvePhoneContacts moves it into the gated
+    // entity_phone_contacts below (same rule as the organizer form, lib/organizer-events.ts).
+    .filter((item) => !isPhoneContactUrl(item.url));
 }
 
 export async function POST(request: NextRequest) {
@@ -37,6 +42,14 @@ export async function POST(request: NextRequest) {
     const user = await requireAdminRequestUser(request);
     const payload = await request.json();
     const supabase = createAdminClient();
+
+    const phoneContacts = resolvePhoneContacts(
+      payload.phoneContacts,
+      (payload.linkItems ?? []).map((i: { url?: string }) => i.url ?? ""),
+    );
+    if (phoneContacts.invalid.length) {
+      return NextResponse.json({ error: phoneContactsErrorMessage(phoneContacts.invalid) }, { status: 400 });
+    }
 
     let imageUrl: string | null = payload.imageUrl || null;
     if (imageUrl) {
@@ -90,6 +103,7 @@ export async function POST(request: NextRequest) {
     // a column on the public events table. Admin auth for this route is already established
     // above; setEntityEmail does no authorization of its own.
     await setEntityEmail("event", data.id, payload.contactEmail ?? null);
+    await setEntityPhoneContacts("event", data.id, phoneContacts.contacts, "admin");
 
     // Found live 2026-07-22: the create form already shows a Teachers/Organizers picker and
     // keeps selections in local state, but this route never persisted them — an admin who

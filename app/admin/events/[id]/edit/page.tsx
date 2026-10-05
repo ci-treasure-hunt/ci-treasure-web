@@ -7,6 +7,7 @@ import { requireAdminUser } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getEntityEmail } from "@/lib/entity-email";
+import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 export default async function AdminEditEventPage({
   params,
 }: {
@@ -96,6 +97,7 @@ export default async function AdminEditEventPage({
     hide: event.hide,
     priceItems,
     linkItems,
+    phoneContacts: await getEntityPhoneContacts("event", event.id),
     teachers: teacherRows.map((item) => ({
       profileId: item.teacher_id,
       name: Array.isArray(item.profiles) ? item.profiles[0]?.name ?? "Unknown" : item.profiles?.name ?? "Unknown",

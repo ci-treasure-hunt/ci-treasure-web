@@ -7,6 +7,7 @@ import { Upload, X } from "lucide-react";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { CurrencyPicker } from "@/components/shared/currency-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
+import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import {
   EVENT_STATUS_OPTIONS,
@@ -199,7 +200,7 @@ export function EventForm({
                   there&apos;s no venue name.
                 </p>
               </div>
-              <Field label="Contact email (shown publicly on the event page)">
+              <Field label="Contact email (shown on the event page after a bot check)">
                 <input
                   type="email"
                   value={form.contactEmail}
@@ -378,6 +379,21 @@ export function EventForm({
           </div>
         )}
       />
+
+      <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+        <h3 className="font-serif text-2xl text-slate-950">Phone & WhatsApp contact</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Gated behind Turnstile on the event page (entity_phone_contacts). Only numbers the organizer
+          published for registration or contact. A phone link under Links is moved here on save.
+        </p>
+        <div className="mt-4">
+          <PhoneContactsEditor
+            value={form.phoneContacts}
+            onChange={(phoneContacts) => setForm({ ...form, phoneContacts })}
+            inputClassName={inputClassName}
+          />
+        </div>
+      </section>
 
       <PeoplePicker
         title="Teachers"

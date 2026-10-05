@@ -6,6 +6,13 @@ import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
 import { safeExternalUrl } from "@/lib/url-safety";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import {
+  isPhoneContactUrl,
+  phoneContactsErrorMessage,
+  resolvePhoneContacts,
+  type PhoneContactInput,
+} from "@/lib/phone-contacts";
 export type ProfileUpdateData = {
   bio: string;
   city: string;
@@ -18,6 +25,8 @@ export type ProfileUpdateData = {
   telegram: string;
   newsletter: string;
   public_email: string;
+  // Gated (entity_phone_contacts), not a profiles column. See lib/phone-contacts.ts.
+  phone_contacts: PhoneContactInput[];
   is_organizer: boolean;
   is_teacher: boolean;
   is_musician: boolean;
@@ -45,6 +54,19 @@ export async function updateProfile(data: ProfileUpdateData) {
   if (!user) {
     return { success: false, error: "Not authenticated" };
   }
+
+  // A number typed into the contact rows, or a wa.me / t.me/+<digits> link pasted into one of the
+  // social fields, goes to the gated entity_phone_contacts; the social field itself is then cleared
+  // below so the number is never stored in a public column. Checked before any write.
+  // Telegram is normalized first: a bare "+4915112345678" typed there becomes t.me/+4915112345678,
+  // which is a phone number and must be caught as one, not published as a handle.
+  const telegramUrl = normalizeTelegram(data.telegram.trim());
+  const socialFields = [data.website, data.facebook, data.instagram, data.youtube, telegramUrl, data.newsletter];
+  const phoneContacts = resolvePhoneContacts(data.phone_contacts, socialFields);
+  if (phoneContacts.invalid.length) {
+    return { success: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
+  }
+  const notPhoneLink = (v: string) => (isPhoneContactUrl(v) ? "" : v);
 
   const { data: ownProfile } = await supabase
     .from("profiles")
@@ -92,12 +114,12 @@ export async function updateProfile(data: ProfileUpdateData) {
     city:         data.is_nomadic ? null : nullIfEmpty(data.city),
     country:      data.is_nomadic ? null : nullIfEmpty(data.country),
     is_nomadic:   data.is_nomadic,
-    website:      safeExternalUrl(data.website) ?? null,
-    facebook:     safeExternalUrl(data.facebook) ?? null,
-    instagram:    safeExternalUrl(normalizeInstagram(data.instagram)) ?? null,
-    youtube:      safeExternalUrl(data.youtube) ?? null,
-    telegram:     safeExternalUrl(normalizeTelegram(data.telegram)) ?? null,
-    newsletter:   safeExternalUrl(data.newsletter) ?? null,
+    website:      safeExternalUrl(notPhoneLink(data.website)) ?? null,
+    facebook:     safeExternalUrl(notPhoneLink(data.facebook)) ?? null,
+    instagram:    safeExternalUrl(normalizeInstagram(notPhoneLink(data.instagram))) ?? null,
+    youtube:      safeExternalUrl(notPhoneLink(data.youtube)) ?? null,
+    telegram:     safeExternalUrl(notPhoneLink(telegramUrl)) ?? null,
+    newsletter:   safeExternalUrl(notPhoneLink(data.newsletter)) ?? null,
     is_organizer: data.is_organizer || lockedOrganizer,
     is_teacher:   data.is_teacher || lockedTeacher,
     is_musician:  data.is_musician || lockedMusician,
@@ -120,6 +142,8 @@ export async function updateProfile(data: ProfileUpdateData) {
   // I-165 F3: the address lives in entity_emails, not profiles.public_email. The update above
   // is scoped by .eq("user_id", user.id), so this only ever touches the caller's own profile.
   await setEntityEmail("profile", updated.id, data.public_email);
+  // Same scoping as the address above: the update matched only the caller's own profile.
+  await setEntityPhoneContacts("profile", updated.id, phoneContacts.contacts);
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile/edit");

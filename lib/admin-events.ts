@@ -1,3 +1,5 @@
+import type { PhoneContactInput } from "./phone-contacts";
+
 export const EVENT_TYPE_OPTIONS = [
   "jam",
   "class",
@@ -80,6 +82,8 @@ export type AdminEventFormData = {
   hide: boolean;
   priceItems: AdminPriceItem[];
   linkItems: AdminLinkItem[];
+  // Gated phone/WhatsApp contacts (entity_phone_contacts), not a column on events.
+  phoneContacts: PhoneContactInput[];
   teachers: AdminPersonItem[];
   organizers: AdminPersonItem[];
 };
@@ -108,6 +112,7 @@ export function createEmptyEventFormData(): AdminEventFormData {
     hide: false,
     priceItems: [],
     linkItems: [],
+    phoneContacts: [],
     teachers: [],
     organizers: [],
   };
