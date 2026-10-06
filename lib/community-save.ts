@@ -19,6 +19,8 @@ import {
 import { classifyCommunityLinks, inviteFlags, type InvitePlatform } from "@/lib/community-links";
 import { deriveCommunityLocation } from "@/lib/community-regions";
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { geocodeAddress } from "@/lib/geocode";
 import { slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -117,6 +119,9 @@ export async function saveCommunity(
   for (const [classifierField, message] of Object.entries(links.errors)) {
     fieldErrors[CLASSIFIER_TO_FORM[classifierField] ?? classifierField] = message;
   }
+  // Phone links typed into any link box join the rows from the phone editor (gated, never a column).
+  const phoneContacts = resolvePhoneContacts(payload.phoneContacts, links.phoneUrls);
+  if (phoneContacts.invalid.length) fieldErrors.phoneContacts = phoneContactsErrorMessage(phoneContacts.invalid);
 
   if (Object.keys(fieldErrors).length > 0) {
     throw new CommunitySaveError("Please fix the highlighted fields.", fieldErrors);
@@ -251,8 +256,10 @@ export async function saveCommunity(
 
   const emailResult = await setEntityEmail("community", saved.id, str(payload.email));
   if (emailResult.error) throw new Error(emailResult.error);
+  const phoneResult = await setEntityPhoneContacts("community", saved.id, phoneContacts.contacts, "admin");
+  if (phoneResult.error) throw new Error(phoneResult.error);
 
-  // The row write already fires on_communities_write_revalidate; invite/email changes don't touch
+  // The row write already fires on_communities_write_revalidate; invite/email/phone changes don't touch
   // the row when nothing else changed, so revalidate explicitly as well.
   revalidatePath("/communities");
   revalidatePath(`/communities/${saved.slug}`);

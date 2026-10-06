@@ -4,6 +4,8 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { safeExternalUrl } from "@/lib/url-safety";
 import { getEntityEmail } from "@/lib/entity-email";
+import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import type { PhoneContactInput } from "@/lib/phone-contacts";
 import {
   type EventListItem,
   type SegmentItem,
@@ -108,6 +110,8 @@ export type EventDetail = EventListItem & {
   // Populated only on the admin preview path (getEventDetailForAdmin), which is allowed to
   // show it as plain text. Always null in public renders.
   contactEmail: string | null;
+  // Same rule as contactEmail: filled only by getEventDetailForAdmin, always empty in public renders.
+  contactPhones: PhoneContactInput[];
   level: string | null;
   language: string[];
   seriesName: string | null;
@@ -575,6 +579,7 @@ async function buildEventDetail(
     hasEmail: Boolean(row.has_email),
     hasPhoneContacts: Boolean(row.has_phone_contacts),
     contactEmail: null,
+    contactPhones: [],
     level: row.level ?? null,
     language: row.language ?? [],
     primaryRegistrationUrl:
@@ -685,8 +690,12 @@ export async function getEventDetailForAdmin(eventId: string): Promise<EventDeta
   // I-165 F3: the I-147 admin preview is the one screen allowed to render the address as
   // plain text, so it is the one caller that reads it back out of entity_emails.
   // buildEventDetail hands every other path contactEmail: null, and those go through the
-  // Turnstile-gated reveal instead.
-  return { ...detail, contactEmail: await getEntityEmail("event", eventId) };
+  // Turnstile-gated reveal instead. The phone numbers follow the same rule.
+  const [contactEmail, contactPhones] = await Promise.all([
+    getEntityEmail("event", eventId),
+    getEntityPhoneContacts("event", eventId),
+  ]);
+  return { ...detail, contactEmail, contactPhones };
 }
 
 export function parseEventSlug(value: string) {

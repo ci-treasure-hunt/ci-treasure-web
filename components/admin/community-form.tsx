@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { CountryPicker } from "@/components/shared/country-picker";
+import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import {
   ACTIVITY_LEVELS,
   COMMUNITY_STATUSES,
@@ -353,6 +354,19 @@ export function CommunityForm({
               <Field label="Submitted by (internal, from the public form)">
                 <input value={form.submitterContact} onChange={(e) => set("submitterContact", e.target.value)} className={inputClassName} />
               </Field>
+            </div>
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-slate-700">Phone &amp; WhatsApp (shown only behind the reveal check)</p>
+              <p className="text-xs text-slate-500">
+                A person&apos;s number, not a group. Only numbers the organizer published for contact. A wa.me or
+                t.me/+number link typed into a link box above is moved here on save.
+              </p>
+              <PhoneContactsEditor
+                value={form.phoneContacts}
+                onChange={(phoneContacts) => set("phoneContacts", phoneContacts)}
+                inputClassName={inputClassName}
+              />
+              {err("phoneContacts")}
             </div>
           </Section>
 

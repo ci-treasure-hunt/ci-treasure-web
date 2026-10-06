@@ -14,6 +14,7 @@
 //
 // Pure function, no I/O: checked by tests/unit/community-links.check.ts.
 
+import { isPhoneContactUrl } from "@/lib/phone-contacts";
 import { safeExternalUrl } from "@/lib/url-safety";
 
 export const INVITE_PLATFORMS = ["telegram", "whatsapp", "signal", "line"] as const;
@@ -63,7 +64,12 @@ export type CommunityLinkResult = {
   invites: Partial<Record<InvitePlatform, string>>;
   /** Field-level problems, keyed by the input field. Empty when the input is usable. */
   errors: Partial<Record<CommunityLinkField, string>>;
-  /** Public columns filled + distinct invites. The Add form requires at least one. */
+  /**
+   * Links that carry a phone number (wa.me, t.me/+<digits>, signal.me/#p, tel:), from any field.
+   * Never a column: callers pass them to resolvePhoneContacts for entity_phone_contacts.
+   */
+  phoneUrls: string[];
+  /** Public columns filled + distinct invites + phone links. The Add form requires at least one. */
   linkCount: number;
 };
 
@@ -103,8 +109,12 @@ export function invitePlatformOf(raw: string): InvitePlatform | null {
   const host = hostOf(url);
   const path = url.pathname;
   // t.me/+abc and t.me/joinchat/abc are private-group invites; t.me/name is a public username.
-  // URL parsing keeps "+" as-is in the path, so a leading "/+" is reliable here.
-  if ((host === "t.me" || host === "telegram.me") && (path.startsWith("/+") || /^\/joinchat\//i.test(path))) {
+  // URL parsing keeps "+" as-is in the path, so a leading "/+" is reliable here. An all-digit
+  // tail (t.me/+4915112345678) is a person's phone number, not an invite: see phoneContactFromUrl.
+  if (
+    (host === "t.me" || host === "telegram.me") &&
+    ((path.startsWith("/+") && !/^\/\+[0-9]+\/?$/.test(path)) || /^\/joinchat\//i.test(path))
+  ) {
     return "telegram";
   }
   if (host === "chat.whatsapp.com") return "whatsapp";
@@ -156,14 +166,21 @@ export function classifyCommunityLinks(input: CommunityLinkInput): CommunityLink
   };
   const invites: Partial<Record<InvitePlatform, string>> = {};
   const errors: Partial<Record<CommunityLinkField, string>> = {};
+  const phoneUrls: string[] = [];
 
   // Normalise + validate one field. Returns the parsed URL (and its normalised string), or null
-  // after recording an error / when the field is empty.
+  // after recording an error / when the field is empty / when it was a phone link (set aside).
   const read = (field: CommunityLinkField): { href: string; url: URL } | null => {
     const raw = input[field]?.trim();
     if (!raw) return null;
     if (looksLikeEmail(raw)) {
       errors[field] = "This looks like an email address. Please put it in the contact email field.";
+      return null;
+    }
+    // Before the invite check and before safeExternalUrl (which rejects tel:): a personal number
+    // in any box goes to the gated phone contacts, never a column.
+    if (isPhoneContactUrl(raw)) {
+      phoneUrls.push(raw);
       return null;
     }
     const href = safeExternalUrl(raw);
@@ -247,7 +264,7 @@ export function classifyCommunityLinks(input: CommunityLinkInput): CommunityLink
   }
 
   const linkCount =
-    Object.values(columns).filter((v) => v !== null).length + Object.keys(invites).length;
+    Object.values(columns).filter((v) => v !== null).length + Object.keys(invites).length + phoneUrls.length;
 
-  return { columns, invites, errors, linkCount };
+  return { columns, invites, errors, phoneUrls, linkCount };
 }

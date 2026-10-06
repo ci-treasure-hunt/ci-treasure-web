@@ -116,6 +116,7 @@ check("empty + whitespace ignored", classifyCommunityLinks({ website: "  ", inst
   },
   invites: {},
   errors: {},
+  phoneUrls: [],
   linkCount: 0,
 });
 {
@@ -136,6 +137,33 @@ check("empty + whitespace ignored", classifyCommunityLinks({ website: "  ", inst
 {
   const r = classifyCommunityLinks({ telegram_group: "https://t.me/+ONLYINVITE" });
   check("a single Telegram group invite is enough (linkCount 1)", r.linkCount, 1);
+}
+
+console.log("--- phone links (I-180) ---");
+check("t.me/+<digits> is a phone number, not an invite", invitePlatformOf("https://t.me/+4915112345678"), null);
+check("t.me/+<letters+digits> is still an invite", invitePlatformOf("https://t.me/+AbC123"), "telegram");
+{
+  const r = classifyCommunityLinks({
+    website: "https://wa.me/4915112345678",
+    other: "tel:+54 9 3548 41-4151",
+    telegram_group: "https://t.me/+351964568343",
+    instagram: "https://instagram.com/somejam",
+  });
+  check("wa.me in Website: no public column", r.columns.website, null);
+  check("tel: in Other: no public column", r.columns.other_resource, null);
+  check("t.me/+<digits> in Telegram group: no column", r.columns.telegram_group, null);
+  check("t.me/+<digits>: no invite", r.invites, {});
+  check("phone links set aside, in field order", r.phoneUrls, [
+    "https://t.me/+351964568343",
+    "https://wa.me/4915112345678",
+    "tel:+54 9 3548 41-4151",
+  ]);
+  check("phone links: no errors", r.errors, {});
+  check("phone links count toward linkCount", r.linkCount, 4);
+}
+{
+  const r = classifyCommunityLinks({ whatsapp_group: "https://api.whatsapp.com/send?phone=4915112345678" });
+  check("personal WhatsApp in the group box: phone, not an error", [r.phoneUrls.length, r.errors], [1, {}]);
 }
 
 console.log("--- inviteFlags ---");

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { CountryPicker } from "@/components/shared/country-picker";
+import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import {
   VENUE_VISIBILITY_OPTIONS,
   createEmptyVenueFormData,
@@ -212,6 +213,19 @@ export function VenueForm({
               <Field label="YouTube">
                 <input value={form.youtube} onChange={(event) => setForm({ ...form, youtube: event.target.value })} className={inputClassName} placeholder="https://youtube.com/..." />
               </Field>
+            </div>
+            <div className="space-y-3">
+              <span className="text-sm font-medium text-slate-700">Phone &amp; WhatsApp</span>
+              <p className="text-xs text-slate-500">
+                Gated behind Turnstile on the venue page (entity_phone_contacts). Only numbers the venue publishes
+                for contact. A phone link in a field above is moved here on save.
+              </p>
+              <PhoneContactsEditor
+                value={form.phoneContacts}
+                onChange={(phoneContacts) => setForm({ ...form, phoneContacts })}
+                inputClassName={inputClassName}
+                labelPlaceholder="Name (optional), e.g. Reception"
+              />
             </div>
           </div>
 

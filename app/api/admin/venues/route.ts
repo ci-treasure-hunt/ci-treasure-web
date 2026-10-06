@@ -6,6 +6,8 @@ import { slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { phoneContactsErrorMessage, resolvePhoneContacts, stripPhoneLinks } from "@/lib/phone-contacts";
 async function createUniqueSlug(baseSlug: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase.from("venues").select("slug").ilike("slug", `${baseSlug}%`);
@@ -38,6 +40,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name, city, and country are required." }, { status: 400 });
     }
 
+    // A phone-number link never goes in a public column; it moves into the gated
+    // entity_phone_contacts below (rule: ci-treasure-hunt/docs/web/link-types.md). The quick-add
+    // caller sends none of these fields, so for it this is a no-op.
+    const { fields: socials, phoneUrls } = stripPhoneLinks({
+      website: String(payload.website ?? "").trim(),
+      newsletter: String(payload.newsletter ?? "").trim(),
+      facebook: String(payload.facebook ?? "").trim(),
+      instagram: String(payload.instagram ?? "").trim(),
+      youtube: String(payload.youtube ?? "").trim(),
+    });
+    const phoneContacts = resolvePhoneContacts(payload.phoneContacts, phoneUrls);
+    if (phoneContacts.invalid.length) {
+      return NextResponse.json({ error: phoneContactsErrorMessage(phoneContacts.invalid) }, { status: 400 });
+    }
+
     const manualLat = Number.parseFloat(String(payload.lat ?? ""));
     const manualLng = Number.parseFloat(String(payload.lng ?? ""));
     const hasManualCoords = Number.isFinite(manualLat) && Number.isFinite(manualLng);
@@ -59,11 +76,11 @@ export async function POST(request: NextRequest) {
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         description: String(payload.description ?? "").trim() || null,
-        website: String(payload.website ?? "").trim() || null,
-        newsletter: String(payload.newsletter ?? "").trim() || null,
-        facebook: String(payload.facebook ?? "").trim() || null,
-        instagram: String(payload.instagram ?? "").trim() || null,
-        youtube: String(payload.youtube ?? "").trim() || null,
+        website: socials.website || null,
+        newsletter: socials.newsletter || null,
+        facebook: socials.facebook || null,
+        instagram: socials.instagram || null,
+        youtube: socials.youtube || null,
         image_url: String(payload.imageUrl ?? "").trim() || null,
         image_credit: String(payload.imageCredit ?? "").trim() || null,
         admin_notes: String(payload.adminNotes ?? "").trim() || null,
@@ -78,6 +95,10 @@ export async function POST(request: NextRequest) {
 
     // I-165 F3: address goes to entity_emails, not venues.email.
     await setEntityEmail("venue", data.id, String(payload.email ?? ""));
+    if (phoneContacts.contacts.length) {
+      const phoneResult = await setEntityPhoneContacts("venue", data.id, phoneContacts.contacts, "admin");
+      if (phoneResult.error) throw new Error(phoneResult.error);
+    }
 
     return NextResponse.json({ venue: data });
   } catch (error) {

@@ -3,6 +3,7 @@ import { createEmptyCommunityFormData, type AdminCommunityFormData } from "@/lib
 import { requireAdminUser } from "@/lib/admin-auth";
 import { deriveCommunityLocation } from "@/lib/community-regions";
 import { getEntityEmail } from "@/lib/entity-email";
+import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function AdminEditCommunityPage({
@@ -61,6 +62,7 @@ export default async function AdminEditCommunityPage({
     calendar: c.calendar ?? "",
     other: c.other_resource ?? "",
     invites: (invites ?? []).map((inv) => ({ ...inv, remove: false })),
+    phoneContacts: await getEntityPhoneContacts("community", c.id),
     email: (await getEntityEmail("community", c.id)) ?? "",
     contactPerson: c.contact_person ?? "",
     submitterContact: c.submitter_contact ?? "",

@@ -2,6 +2,8 @@
 // form). Option lists come from the live data on 2026-09-22; see the I-111 spec's "Build spec,
 // Stage 1" for which values the public form offers and which are admin-only.
 
+import type { PhoneContactInput } from "./phone-contacts";
+
 export const COMMUNITY_TYPES = [
   "General CI Community",
   "Jam Series",
@@ -92,6 +94,8 @@ export type AdminCommunityFormData = {
   calendar: string;
   other: string;
   invites: AdminCommunityInvite[];
+  // Gated phone/WhatsApp contacts (entity_phone_contacts), not a column on communities.
+  phoneContacts: PhoneContactInput[];
 
   email: string;
   contactPerson: string;
@@ -138,6 +142,7 @@ export function createEmptyCommunityFormData(): AdminCommunityFormData {
     calendar: "",
     other: "",
     invites: [],
+    phoneContacts: [],
     email: "",
     contactPerson: "",
     submitterContact: "",

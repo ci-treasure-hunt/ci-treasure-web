@@ -1,3 +1,5 @@
+import type { PhoneContactInput } from "./phone-contacts";
+
 export const VENUE_VISIBILITY_OPTIONS = ["public", "hidden"] as const;
 
 export type AdminVenueFormData = {
@@ -17,6 +19,8 @@ export type AdminVenueFormData = {
   facebook: string;
   instagram: string;
   youtube: string;
+  // Gated phone/WhatsApp contacts (entity_phone_contacts), not a column on venues.
+  phoneContacts: PhoneContactInput[];
   imageUrl: string;
   imageCredit: string;
   visibility: string;
@@ -44,6 +48,7 @@ export function createEmptyVenueFormData(): AdminVenueFormData {
     facebook: "",
     instagram: "",
     youtube: "",
+    phoneContacts: [],
     imageUrl: "",
     imageCredit: "",
     visibility: "hidden",

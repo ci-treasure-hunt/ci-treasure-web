@@ -6,6 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { geocodeAddress } from "@/lib/geocode";
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { phoneContactsErrorMessage, resolvePhoneContacts, stripPhoneLinks } from "@/lib/phone-contacts";
 import { removeImageIfUnused } from "@/lib/upload-action";
 export async function PUT(
   request: NextRequest,
@@ -23,6 +25,20 @@ export async function PUT(
     const address = String(payload.address ?? "").trim();
     if (!name || !city || !country) {
       return NextResponse.json({ error: "Name, city, and country are required." }, { status: 400 });
+    }
+
+    // A phone-number link never goes in a public column; it moves into the gated
+    // entity_phone_contacts below (rule: ci-treasure-hunt/docs/web/link-types.md).
+    const { fields: socials, phoneUrls } = stripPhoneLinks({
+      website: String(payload.website ?? "").trim(),
+      newsletter: String(payload.newsletter ?? "").trim(),
+      facebook: String(payload.facebook ?? "").trim(),
+      instagram: String(payload.instagram ?? "").trim(),
+      youtube: String(payload.youtube ?? "").trim(),
+    });
+    const phoneContacts = resolvePhoneContacts(payload.phoneContacts, phoneUrls);
+    if (phoneContacts.invalid.length) {
+      return NextResponse.json({ error: phoneContactsErrorMessage(phoneContacts.invalid) }, { status: 400 });
     }
 
     // Manual lat/lng always wins if provided (an admin correcting a bad geocode). Otherwise
@@ -72,11 +88,11 @@ export async function PUT(
         lat,
         lng,
         description: String(payload.description ?? "").trim() || null,
-        website: String(payload.website ?? "").trim() || null,
-        newsletter: String(payload.newsletter ?? "").trim() || null,
-        facebook: String(payload.facebook ?? "").trim() || null,
-        instagram: String(payload.instagram ?? "").trim() || null,
-        youtube: String(payload.youtube ?? "").trim() || null,
+        website: socials.website || null,
+        newsletter: socials.newsletter || null,
+        facebook: socials.facebook || null,
+        instagram: socials.instagram || null,
+        youtube: socials.youtube || null,
         image_url: newImageUrl,
         image_credit: String(payload.imageCredit ?? "").trim() || null,
         admin_notes: String(payload.adminNotes ?? "").trim() || null,
@@ -95,6 +111,8 @@ export async function PUT(
 
     // I-165 F3: address goes to entity_emails, not venues.email.
     await setEntityEmail("venue", id, String(payload.email ?? ""));
+    const phoneResult = await setEntityPhoneContacts("venue", id, phoneContacts.contacts, "admin");
+    if (phoneResult.error) throw new Error(phoneResult.error);
 
     // Cached ISR pages (the /venues directory, this venue's own detail page, and any event
     // page linking to it) won't otherwise pick up an admin edit for up to an hour.

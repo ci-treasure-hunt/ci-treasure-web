@@ -22,6 +22,8 @@ import { deriveCommunityLocation } from "@/lib/community-regions";
 import { normalizePlaceCase } from "@/lib/place-case";
 import { createPhotoTicket } from "@/lib/community-photo-ticket";
 import { createUniqueSlug } from "@/lib/community-save";
+import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { resolvePhoneContacts } from "@/lib/phone-contacts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -148,6 +150,11 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
   if (inviteRows.length > 0) await supabase.from("community_invites").insert(inviteRows);
   // source defaults to 'manual'; the address is only ever revealed behind Turnstile.
   if (email) await supabase.from("entity_emails").insert({ entity_type: "community", entity_id: row.id, email });
+  // A wa.me / t.me/+<digits> link typed into a link box: gated contact, never a column. Not
+  // revealable while pending (parentIsPublic requires status = 'published'), so approval covers it
+  // like the invites.
+  const phoneContacts = resolvePhoneContacts([], links.phoneUrls).contacts;
+  if (phoneContacts.length > 0) await setEntityPhoneContacts("community", row.id, phoneContacts);
 
   await notifyTelegram({ name, city, country: worldwide ? "worldwide" : country, type });
 

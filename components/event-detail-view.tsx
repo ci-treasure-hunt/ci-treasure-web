@@ -6,6 +6,7 @@ import { ReportButton } from "@/components/report-button";
 import { SegmentsSection } from "@/components/segments-section";
 import { RevealEmail } from "@/components/reveal-email";
 import { RevealPhoneContacts } from "@/components/reveal-phone-contacts";
+import { PHONE_CONTACT_CHANNEL_LABELS } from "@/lib/phone-contacts";
 import BackButton from "@/components/back-button";
 import { EntityBreadcrumb } from "@/components/entity-breadcrumb";
 import { PracticeBadge, practicesToDisplay } from "@/components/shared/practice-badge";
@@ -377,15 +378,25 @@ export function EventDetailView({
                       />
                     )
                   ) : null}
-                  {/* No preview branch: the admin preview never fetches the numbers, and the
-                      reveal fails closed on an unpublished event anyway. */}
-                  {event.hasPhoneContacts && !preview ? (
-                    <RevealPhoneContacts
-                      entityType="event"
-                      entityId={event.id}
-                      className="inline-flex items-center justify-between rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-(--color-pine) hover:text-(--color-pine)"
-                    />
-                  ) : null}
+                  {/* The preview shows the numbers as plain text, like the email above: the reveal
+                      fails closed on an unpublished event, so a reviewer could not see them otherwise. */}
+                  {preview
+                    ? event.contactPhones.map((c) => (
+                        <div
+                          key={`${c.channel}-${c.number}`}
+                          className="inline-flex items-center justify-between rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900"
+                        >
+                          {PHONE_CONTACT_CHANNEL_LABELS[c.channel]}
+                          {c.label ? ` · ${c.label}` : ""} {c.number}
+                        </div>
+                      ))
+                    : event.hasPhoneContacts ? (
+                        <RevealPhoneContacts
+                          entityType="event"
+                          entityId={event.id}
+                          className="inline-flex items-center justify-between rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+                        />
+                      ) : null}
                 </div>
               </section>
 

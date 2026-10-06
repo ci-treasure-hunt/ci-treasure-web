@@ -110,7 +110,23 @@ export function isPhoneContactUrl(raw: string): boolean {
   return phoneContactFromUrl(raw) !== null;
 }
 
-export type CleanPhoneContact = { channel: PhoneContactChannel; number: string; label: string | null };
+// For forms with plain link columns (venue website/socials): blanks any field holding a phone link
+// and hands those links back, so the caller can pass them to resolvePhoneContacts as extraUrls.
+export function stripPhoneLinks<K extends string>(
+  fields: Record<K, string>,
+): { fields: Record<K, string>; phoneUrls: string[] } {
+  const phoneUrls: string[] = [];
+  const clean = { ...fields };
+  for (const key of Object.keys(clean) as K[]) {
+    if (isPhoneContactUrl(clean[key])) {
+      phoneUrls.push(clean[key]);
+      clean[key] = "";
+    }
+  }
+  return { fields: clean, phoneUrls };
+}
+
+export type CleanPhoneContact ={ channel: PhoneContactChannel; number: string; label: string | null };
 
 // Turns form rows plus any phone links an organizer pasted elsewhere (Links, a social field) into
 // the set to store. Blank rows are ignored; a row with something typed that is not a usable

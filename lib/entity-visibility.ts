@@ -52,6 +52,9 @@ export async function parentIsPublic(
         .from("communities")
         .select("id")
         .eq("id", entityId)
+        // Same as communities_public_read (20260923090000): pending and rejected submissions are
+        // admin-only, so their email and numbers are too.
+        .eq("status", "published")
         .is("deleted_at", null)
         .maybeSingle();
       return Boolean(data);
