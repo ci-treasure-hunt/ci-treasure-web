@@ -23,6 +23,11 @@ export type VenueResult = {
  * search+select only; an admin formalizes their free-text address into a real venue later
  * if it's worth reusing.
  */
+// These pickers usually sit inside a form's <label> wrapper. Safari/WebKit (every iPhone browser)
+// then forwards a click on one of their buttons to the label's first control, which after the
+// re-render is the "Change" button, so a pick was undone the moment it was made (reproduced
+// 2026-10-07: Denmark could not be selected). preventDefault cancels the label's forwarding; it does
+// nothing else on a type="button".
 export function VenuePicker({
   venueId,
   venueLabel,
@@ -115,7 +120,10 @@ export function VenuePicker({
         </span>
         <button
           type="button"
-          onClick={() => onSelect(null)}
+          onClick={(e) => {
+            e.preventDefault();
+            onSelect(null);
+          }}
           className="ml-auto text-sm font-semibold text-(--color-pine) hover:underline"
         >
           Change
@@ -145,7 +153,10 @@ export function VenuePicker({
             <button
               key={venue.id}
               type="button"
-              onClick={() => selectVenue(venue)}
+              onClick={(e) => {
+                e.preventDefault();
+                selectVenue(venue);
+              }}
               className="rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-2 text-left text-sm font-medium text-slate-900 hover:border-(--color-pine)"
             >
               {venue.name} <span className="text-slate-500">— {venue.city}, {venue.country}</span>
@@ -156,7 +167,10 @@ export function VenuePicker({
       {allowCreate && query.trim().length >= 2 && !results.some((r) => r.name.toLowerCase() === query.trim().toLowerCase()) ? (
         <button
           type="button"
-          onClick={() => startCreateTransition(() => void createVenue())}
+          onClick={(e) => {
+            e.preventDefault();
+            startCreateTransition(() => void createVenue());
+          }}
           className="text-sm font-semibold text-(--color-pine) hover:underline"
         >
           {isCreating ? "Creating…" : `+ Create venue "${query.trim()}"`}

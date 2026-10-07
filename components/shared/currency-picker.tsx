@@ -8,6 +8,11 @@ import { CURRENCIES } from "@/lib/currencies";
  * Search-and-select a currency, mirroring CountryPicker/VenuePicker's interaction. Matches on
  * both name and code ("eur" and "euro" both find EUR) since organizers reach for either.
  */
+// These pickers usually sit inside a form's <label> wrapper. Safari/WebKit (every iPhone browser)
+// then forwards a click on one of their buttons to the label's first control, which after the
+// re-render is the "Change" button, so a pick was undone the moment it was made (reproduced
+// 2026-10-07: Denmark could not be selected). preventDefault cancels the label's forwarding; it does
+// nothing else on a type="button".
 export function CurrencyPicker({
   value,
   onChange,
@@ -31,7 +36,10 @@ export function CurrencyPicker({
         </span>
         <button
           type="button"
-          onClick={() => onChange("")}
+          onClick={(e) => {
+            e.preventDefault();
+            onChange("");
+          }}
           className="ml-auto text-sm font-semibold text-(--color-pine) hover:underline"
         >
           Change
@@ -58,7 +66,8 @@ export function CurrencyPicker({
             <button
               key={c.code}
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 onChange(c.code);
                 setQuery("");
               }}

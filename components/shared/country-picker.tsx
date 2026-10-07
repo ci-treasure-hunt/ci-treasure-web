@@ -11,6 +11,11 @@ import { COUNTRIES } from "@/lib/countries";
  * enough to always contain a match, and that constraint is the point: it's what makes a typo
  * like "UK" (not a real ISO code — "GB" is) impossible to enter (found live 2026-07-22).
  */
+// These pickers usually sit inside a form's <label> wrapper. Safari/WebKit (every iPhone browser)
+// then forwards a click on one of their buttons to the label's first control, which after the
+// re-render is the "Change" button, so a pick was undone the moment it was made (reproduced
+// 2026-10-07: Denmark could not be selected). preventDefault cancels the label's forwarding; it does
+// nothing else on a type="button".
 export function CountryPicker({
   value,
   onChange,
@@ -32,7 +37,10 @@ export function CountryPicker({
         <span className="text-sm font-medium text-slate-900">{selected.name}</span>
         <button
           type="button"
-          onClick={() => onChange("")}
+          onClick={(e) => {
+            e.preventDefault();
+            onChange("");
+          }}
           className="ml-auto text-sm font-semibold text-(--color-pine) hover:underline"
         >
           Change
@@ -70,7 +78,8 @@ export function CountryPicker({
             <button
               key={c.code}
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 onChange(c.code);
                 setQuery("");
               }}
