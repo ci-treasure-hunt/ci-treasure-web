@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp from "@/lib/sharp";
 
 import { createAdminClient, toStorageBody } from "@/lib/supabase/admin";
 import { getMediumUrl, getSmallUrl } from "@/lib/image-url";

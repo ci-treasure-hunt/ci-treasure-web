@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import sharp from "sharp";
+import sharp from "@/lib/sharp";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, toStorageBody } from "@/lib/supabase/admin";
