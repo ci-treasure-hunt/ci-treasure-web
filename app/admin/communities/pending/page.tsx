@@ -70,6 +70,9 @@ export default async function AdminPendingCommunitiesPage() {
                     </li>
                   ))}
                   {c.hasEmail ? <li className="text-slate-500">✉ Community email given (see editor)</li> : null}
+                  {c.hasPhoneContacts ? (
+                    <li className="text-slate-500">☎ Contact number given, revealable behind the check once approved (see editor)</li>
+                  ) : null}
                 </ul>
 
                 {c.pendingPhotoUrl ? (

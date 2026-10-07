@@ -23,7 +23,7 @@ import { normalizePlaceCase } from "@/lib/place-case";
 import { createPhotoTicket } from "@/lib/community-photo-ticket";
 import { createUniqueSlug } from "@/lib/community-save";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
-import { resolvePhoneContacts } from "@/lib/phone-contacts";
+import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -42,8 +42,10 @@ export type CommunitySubmitInput = {
   description: string;
   links: CommunityLinkInput;
   email: string;
+  /** Gated contact numbers (entity_phone_contacts). Untrusted: validated by resolvePhoneContacts. */
+  phoneContacts: unknown;
   submitterContact: string;
-  /** "I'm an organizer, or I've checked it's fine to share these links here." Required. */
+  /** "I'm an organizer, or I've checked it's fine to share these links and numbers here." Required. */
   linksConsent: boolean;
   turnstileToken: string;
 };
@@ -94,12 +96,18 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
     fieldErrors.activityLevel = "Please pick one of the options.";
   }
   if (email && !EMAIL_RE.test(email)) fieldErrors.email = "This doesn't look like an email address.";
-  if (!input.linksConsent) fieldErrors.linksConsent = "Please confirm that these links may be shared here.";
+  if (!input.linksConsent) fieldErrors.linksConsent = "Please confirm that these links and numbers may be shared here.";
 
   const links = classifyCommunityLinks(input.links ?? {});
   for (const [field, message] of Object.entries(links.errors)) fieldErrors[`links.${field}`] = message;
-  if (links.linkCount === 0 && Object.keys(links.errors).length === 0) {
-    fieldErrors.links = "Please add at least one link, a group or chat link is enough.";
+  // Rows from the phone field, plus any wa.me / t.me/+<digits> link typed into a link box.
+  const phoneContacts = resolvePhoneContacts(input.phoneContacts, links.phoneUrls);
+  if (phoneContacts.invalid.length) fieldErrors.phoneContacts = phoneContactsErrorMessage(phoneContacts.invalid);
+  // A number is enough on its own. phoneContacts.contacts already includes the phone links from the
+  // boxes (deduplicated), so they are swapped out of linkCount rather than counted twice.
+  const contactCount = links.linkCount - links.phoneUrls.length + phoneContacts.contacts.length;
+  if (contactCount === 0 && Object.keys(links.errors).length === 0 && !phoneContacts.invalid.length) {
+    fieldErrors.links = "Please add at least one link or contact number. A group or chat link is enough.";
   }
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -150,11 +158,9 @@ export async function submitCommunity(input: CommunitySubmitInput): Promise<Comm
   if (inviteRows.length > 0) await supabase.from("community_invites").insert(inviteRows);
   // source defaults to 'manual'; the address is only ever revealed behind Turnstile.
   if (email) await supabase.from("entity_emails").insert({ entity_type: "community", entity_id: row.id, email });
-  // A wa.me / t.me/+<digits> link typed into a link box: gated contact, never a column. Not
-  // revealable while pending (parentIsPublic requires status = 'published'), so approval covers it
-  // like the invites.
-  const phoneContacts = resolvePhoneContacts([], links.phoneUrls).contacts;
-  if (phoneContacts.length > 0) await setEntityPhoneContacts("community", row.id, phoneContacts);
+  // Gated contact numbers, never a column. Not revealable while pending (parentIsPublic requires
+  // status = 'published'), so approval covers them like the invites.
+  if (phoneContacts.contacts.length > 0) await setEntityPhoneContacts("community", row.id, phoneContacts.contacts);
 
   await notifyTelegram({ name, city, country: worldwide ? "worldwide" : country, type });
 

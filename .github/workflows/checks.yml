@@ -54,8 +54,12 @@ jobs:
       # community-links.check.ts (I-111): classifyCommunityLinks keeps private group invites
       # (WhatsApp/Telegram/Signal/LINE) out of public `communities` columns. Privacy-critical, same
       # reason to enforce it.
+      #
+      # phone-contacts.check.ts (I-180): phone numbers stay out of public links/columns and go to
+      # the gated entity_phone_contacts. Same privacy reason.
       - name: Unit checks
         run: |
           npx --yes tsx tests/unit/url-safety.check.ts
           npx --yes tsx tests/unit/community-links.check.ts
+          npx --yes tsx tests/unit/phone-contacts.check.ts
           npx --yes tsx tests/unit/place-case.check.ts

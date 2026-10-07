@@ -50,6 +50,16 @@ export function normalizePhoneNumber(raw: string): string | null {
   return /^[1-9][0-9]{6,14}$/.test(digits) ? digits : null;
 }
 
+// decodeURIComponent throws on a stray "%" (".../100%zz"); this runs on every link people paste, so
+// an undecodable value is just "not a phone link" rather than a failed save.
+function safeDecode(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
 function isChannel(value: unknown): value is PhoneContactChannel {
   return typeof value === "string" && (PHONE_CONTACT_CHANNELS as readonly string[]).includes(value);
 }
@@ -66,7 +76,8 @@ export function phoneContactFromUrl(raw: string): { channel: PhoneContactChannel
 
   const scheme = value.match(/^(tel|sms):(.+)$/i);
   if (scheme) {
-    const number = normalizePhoneNumber(decodeURIComponent(scheme[2]).split(/[?;,]/)[0]);
+    const decoded = safeDecode(scheme[2]);
+    const number = decoded ? normalizePhoneNumber(decoded.split(/[?;,]/)[0]) : null;
     return number ? { channel: "phone", number } : null;
   }
 
@@ -83,7 +94,8 @@ export function phoneContactFromUrl(raw: string): { channel: PhoneContactChannel
     return null;
   }
   const host = url.hostname.toLowerCase().replace(/^www\./, "");
-  const path = decodeURIComponent(url.pathname);
+  const path = safeDecode(url.pathname);
+  if (path === null) return null;
 
   if (host === "wa.me") {
     const number = normalizePhoneNumber(path.replace(/^\//, "").split("/")[0]);
@@ -99,7 +111,7 @@ export function phoneContactFromUrl(raw: string): { channel: PhoneContactChannel
     return number ? { channel: "telegram", number } : null;
   }
   if (host === "signal.me") {
-    const tail = decodeURIComponent(url.hash).match(/^#p\/(\+?[0-9 ]+)$/);
+    const tail = (safeDecode(url.hash) ?? "").match(/^#p\/(\+?[0-9 ]+)$/);
     const number = tail ? normalizePhoneNumber(tail[1]) : null;
     return number ? { channel: "signal", number } : null;
   }

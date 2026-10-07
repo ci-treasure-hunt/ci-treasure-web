@@ -12,7 +12,7 @@ export default function TermsPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-5 py-14 sm:px-8">
       <h1 className="font-serif text-4xl text-slate-950">Terms of Service</h1>
       <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-        <p className="text-sm text-slate-500">Last updated: September 2026</p>
+        <p className="text-sm text-slate-500">Last updated: October 2026</p>
         <section>
           <h2 className="font-semibold text-slate-950">1. Scope</h2>
           <p>
@@ -121,6 +121,10 @@ export default function TermsPage() {
             you are an organizer of that group or that sharing the link here is fine for it. Once the listing is
             published, the link is shown behind a check that keeps automated scrapers out, and anyone who passes it can
             use the link to join.
+          </p>
+          <p className="mt-2">
+            If you add a phone number, you confirm that it is yours or that its owner agreed to it being shown for
+            this listing. It is shown behind the same check.
           </p>
         </section>
         <section>

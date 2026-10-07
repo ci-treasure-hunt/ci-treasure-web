@@ -81,7 +81,8 @@ export default function PrivacyPage() {
             Event listings are stored in a database provided by Supabase Inc. (US), hosted in the EU (Frankfurt,
             eu-central-1), and are publicly displayed on the site. They consist of event details compiled from organizers&apos; own public announcements. Where an
             event credits named teachers, organizers or musicians, the personal data in those credits is covered by
-            section 6 below. Data transfers to Supabase are governed by Standard Contractual Clauses (SCCs) under
+            section 6 below. Contact email addresses and phone numbers on a listing are stored separately and shown
+            only behind the check described in section 14. Data transfers to Supabase are governed by Standard Contractual Clauses (SCCs) under
             Art.&nbsp;46(2)(c) GDPR. See{" "}
             <a href="https://supabase.com/privacy" className="underline" target="_blank" rel="noopener noreferrer">
               Supabase&apos;s privacy policy
@@ -405,9 +406,9 @@ export default function PrivacyPage() {
           <p>
             Anyone can suggest a community through the &quot;Add a community&quot; form, without an account. We store
             what you enter about the community: its name, place, type, description and links, and optionally a
-            contact email address for the community. After we have reviewed the submission, these details are shown on
-            the community&apos;s page. Links to group chats and the contact email address are shown only behind the
-            check described in section 14.
+            contact email address or phone number for the community. After we have reviewed the submission, these
+            details are shown on the community&apos;s page. Links to group chats, the contact email address and phone
+            numbers are shown only behind the check described in section 14.
           </p>
           <p className="mt-2">
             You can also leave your own name or contact details. That field is optional, is only for us in case we have

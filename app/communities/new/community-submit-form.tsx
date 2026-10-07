@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 import { CountryPicker } from "@/components/shared/country-picker";
+import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import { PHOTO_ACCEPT, PHOTO_CONSENT_TEXT } from "@/lib/community-photo-options";
 import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/admin-communities";
 import type { CommunityLinkInput } from "@/lib/community-links";
 import { submitCommunity } from "@/lib/community-submit-action";
+import type { PhoneContactInput } from "@/lib/phone-contacts";
 
 const TOP_LANGUAGES = LANGUAGE_OPTIONS.slice(0, 8);
 const OTHER_LANGUAGES = LANGUAGE_OPTIONS.slice(8);
@@ -47,6 +49,7 @@ export function CommunitySubmitForm() {
   const [description, setDescription] = useState("");
   const [links, setLinks] = useState<CommunityLinkInput>({});
   const [email, setEmail] = useState("");
+  const [phoneContacts, setPhoneContacts] = useState<PhoneContactInput[]>([]);
   const [submitterContact, setSubmitterContact] = useState("");
   const [linksConsent, setLinksConsent] = useState(false);
   // I-111 3a: optional photo, uploaded after the submission succeeds (see uploadPhoto below).
@@ -114,6 +117,7 @@ export function CommunitySubmitForm() {
         description,
         links,
         email,
+        phoneContacts,
         submitterContact,
         linksConsent,
         turnstileToken: token,
@@ -330,6 +334,19 @@ export function CommunitySubmitForm() {
           <p className="text-xs text-slate-500">Shown only to visitors who pass a check, never as plain text.</p>
           {err("email")}
         </Field>
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-slate-700">Contact phone or WhatsApp (optional)</p>
+          <p className="text-xs text-slate-500">
+            A person&apos;s number for questions about the community, with country code. Shown only to visitors who pass
+            a check, never as plain text. For a group chat, use the group link above instead.
+          </p>
+          <PhoneContactsEditor
+            value={phoneContacts}
+            onChange={setPhoneContacts}
+            inputClassName={inputClassName}
+          />
+          {err("phoneContacts")}
+        </div>
         <Field label="Your name or contact (optional)">
           <input value={submitterContact} onChange={(e) => setSubmitterContact(e.target.value)} className={inputClassName} maxLength={300} />
           <p className="text-xs text-slate-500">Only for us, in case we have a question. Never shown on the site.</p>
@@ -340,7 +357,7 @@ export function CommunitySubmitForm() {
         <label className="flex items-start gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={linksConsent} onChange={(e) => setLinksConsent(e.target.checked)} className="mt-1" />
           <span>
-            I&apos;m an organizer of this community, or I&apos;ve checked that it&apos;s fine to share these links here.
+            I&apos;m an organizer of this community, or I&apos;ve checked that it&apos;s fine to share these links and numbers here.
             <span className="text-rose-700"> *</span>
           </span>
         </label>

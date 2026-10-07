@@ -24,6 +24,7 @@ export type PendingCommunity = {
   links: Array<{ label: string; url: string }>;
   invitePlatforms: string[];
   hasEmail: boolean;
+  hasPhoneContacts: boolean;
   linksConsent: boolean;
   pendingPhotoUrl: string | null;
   submitterContact: string | null;
@@ -52,7 +53,7 @@ export async function getPendingCommunities(): Promise<PendingCommunity[]> {
   const { data, error } = await admin
     .from("communities")
     .select(
-      "id, name, slug, type, city, country, activity_level, focus, languages, description, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, has_email, links_consent, submitter_contact, created_at, community_invites(platform), community_photo_submissions(image_url, status)",
+      "id, name, slug, type, city, country, activity_level, focus, languages, description, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, has_email, has_phone_contacts, links_consent, submitter_contact, created_at, community_invites(platform), community_photo_submissions(image_url, status)",
     )
     .eq("status", "pending")
     .is("deleted_at", null)
@@ -81,6 +82,7 @@ export async function getPendingCommunities(): Promise<PendingCommunity[]> {
         links: LINK_LABELS.filter(([col]) => row[col]).map(([col, label]) => ({ label, url: row[col] as string })),
         invitePlatforms: ((c.community_invites ?? []) as Array<{ platform: string }>).map((i) => i.platform),
         hasEmail: c.has_email,
+        hasPhoneContacts: c.has_phone_contacts,
         linksConsent: c.links_consent,
         pendingPhotoUrl:
           ((c.community_photo_submissions ?? []) as Array<{ image_url: string; status: string }>).find((p) => p.status === "pending")
