@@ -32,6 +32,9 @@ const NATIONAL_COMMUNITY_SLUGS: Record<string, string[]> = {
   // The national Facebook group (~8,100 members), the only country-wide one; the 13 city and
   // regional groups (Milan, Rome, Naples, Tuscany, ...) are listed separately.
   IT: ["contact-improvisation-italy"],
+  // The UK-wide Facebook group. No website on file: the old national site,
+  // contactimprovisation.co.uk, stopped resolving in 2026.
+  GB: ["contact-improvisation-in-the-uk-ciuk"],
 };
 
 export type CountrySummary = {
