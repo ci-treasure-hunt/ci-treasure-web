@@ -70,13 +70,14 @@ export async function PUT(
 
     const { data: current } = await supabase
       .from("events")
-      .select("lat, lng, venue_id, image_url")
+      .select("lat, lng, venue_id, image_url, address")
       .eq("id", id)
       .maybeSingle();
     const { venue_id, address, lat, lng } = await resolveVenueLocation(
       supabase,
       payload.venueId ?? null,
       payload.venueName ?? "",
+      payload.venueAddress ?? "",
       payload.city ?? "",
       payload.country ?? "",
       current,

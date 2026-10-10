@@ -181,6 +181,8 @@ export function EventForm({
                     venueId={form.venueId}
                     venueLabel={form.venueLabel}
                     freeText={form.venueName}
+                    addressText={form.venueAddress}
+                    onAddressChange={(value) => setForm({ ...form, venueAddress: value })}
                     onSelect={(venue) =>
                       setForm({
                         ...form,
@@ -196,8 +198,8 @@ export function EventForm({
                   />
                 </Field>
                 <p className="mt-1 text-xs text-slate-500">
-                  Pick an existing venue, create a new one inline, or type a plain address if
-                  there&apos;s no venue name.
+                  Pick an existing venue, create a new one inline (the street address box goes
+                  with it), or type a name and street address without a venue record.
                 </p>
               </div>
               <Field label="Contact email (shown on the event page after a bot check)">

@@ -120,7 +120,10 @@ export type OrganizerEventFormData = {
   country: string;
   venueId: string | null;
   venueLabel: string;
+  // Free text when no listed venue is picked: the place's name and its street address, kept
+  // apart so the address alone can be geocoded (I-181). Stored as address.venue_name/.full.
   venueName: string;
+  venueAddress: string;
   contactEmail: string;
   description: string;
   imageUrl: string;
@@ -165,6 +168,7 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     venueId: null,
     venueLabel: "",
     venueName: "",
+    venueAddress: "",
     contactEmail: "",
     description: "",
     imageUrl: "",
@@ -276,7 +280,7 @@ type EventRowForForm = {
   timezone: string | null;
   city: string | null;
   country: string | null;
-  address: { venue_name?: string } | null;
+  address: { venue_name?: string; full?: string } | null;
   contact_email: string | null;
   venue_id: string | null;
   venues: { id: string; name: string; city: string; country: string } | null;
@@ -307,6 +311,7 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     venueId: row.venue_id ?? null,
     venueLabel: row.venues ? `${row.venues.name} — ${row.venues.city}, ${row.venues.country}` : "",
     venueName: row.address?.venue_name ?? "",
+    venueAddress: row.address?.full ?? "",
     contactEmail: row.contact_email ?? "",
     description: row.description ?? "",
     imageUrl: row.image_url ?? "",

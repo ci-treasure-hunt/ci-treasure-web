@@ -135,6 +135,7 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     supabase,
     data.venueId,
     data.venueName,
+    data.venueAddress,
     data.city,
     data.country,
   );
@@ -256,13 +257,14 @@ export async function updateEvent(
 
   const { data: current } = await supabase
     .from("events")
-    .select("lat, lng, venue_id, image_url")
+    .select("lat, lng, venue_id, image_url, address")
     .eq("id", eventId)
     .maybeSingle();
   const { venue_id, address, lat, lng } = await resolveVenueLocation(
     supabase,
     data.venueId,
     data.venueName,
+    data.venueAddress,
     data.city,
     data.country,
     current,

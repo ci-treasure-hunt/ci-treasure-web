@@ -44,7 +44,11 @@ export default async function AdminEditEventPage({
     throw new Error(organizerError.message);
   }
 
-  const address = typeof event.address === "object" && event.address ? (event.address as { venue_name?: string }) : null;
+  // `text` is the shape a few early /addevent rows used for the same thing as `full`.
+  const address =
+    typeof event.address === "object" && event.address
+      ? (event.address as { venue_name?: string; full?: string; text?: string })
+      : null;
   const venue = Array.isArray(event.venues) ? event.venues[0] ?? null : (event.venues as { id: string; name: string; city: string; country: string } | null);
   const teacherRows = (teachers ?? []) as Array<{
     teacher_id: string;
@@ -89,6 +93,7 @@ export default async function AdminEditEventPage({
     venueId: event.venue_id ?? null,
     venueLabel: venue ? `${venue.name} — ${venue.city}, ${venue.country}` : "",
     venueName: address?.venue_name ?? "",
+    venueAddress: address?.full ?? address?.text ?? "",
     contactEmail: (await getEntityEmail("event", event.id)) ?? "",
     description: event.description ?? "",
     imageUrl: event.image_url ?? "",

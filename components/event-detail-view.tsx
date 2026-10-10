@@ -58,6 +58,11 @@ export function EventDetailView({
   // schedule (e.g. a 3-day workshop) can show it too, not just literal single-day events.
   const timeRange = event.startTime || event.endTime ? formatTimeRange(event) : "";
 
+  // I-181: the street address under the place's name. Skipped when the name already contains it,
+  // as on older self-submitted events where name and address were typed into one box.
+  const streetAddress =
+    event.venueAddress && !(event.venueName ?? "").includes(event.venueAddress) ? event.venueAddress : null;
+
   // Registration links are tied to one instance of the event and routinely go dead once it's
   // over (organizers take the signup page down post-event) — and even when they don't, nobody
   // needs to register for a past event. Hiding them on archived events removes both the dead-link
@@ -231,11 +236,15 @@ export function EventDetailView({
                         >
                           {event.venueName}
                         </Link>
+                        {streetAddress ? <span className="text-sm text-slate-600">{streetAddress}</span> : null}
                         <span className="text-sm text-slate-600">{getEventLocation(event)}</span>
                       </div>
-                    ) : event.venueName ? (
+                    ) : event.venueName || streetAddress ? (
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-slate-900">{event.venueName}</span>
+                        {event.venueName ? (
+                          <span className="font-semibold text-slate-900">{event.venueName}</span>
+                        ) : null}
+                        {streetAddress ? <span className="text-sm text-slate-600">{streetAddress}</span> : null}
                         <span className="text-sm text-slate-600">{getEventLocation(event)}</span>
                       </div>
                     ) : (

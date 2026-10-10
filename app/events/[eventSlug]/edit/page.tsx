@@ -78,7 +78,7 @@ export default async function EditEventPage({
     ...eventRowToFormData({
       ...event,
       contact_email: contactEmail,
-      address: typeof event.address === "object" ? (event.address as { venue_name?: string } | null) : null,
+      address: typeof event.address === "object" ? (event.address as { venue_name?: string; full?: string } | null) : null,
       venues: Array.isArray(event.venues) ? event.venues[0] ?? null : event.venues,
     }),
     phoneContacts,

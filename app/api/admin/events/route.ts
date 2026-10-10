@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       supabase,
       payload.venueId ?? null,
       payload.venueName ?? "",
+      payload.venueAddress ?? "",
       payload.city ?? "",
       payload.country ?? "",
     );

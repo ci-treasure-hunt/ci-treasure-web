@@ -73,7 +73,10 @@ export type AdminEventFormData = {
   country: string;
   venueId: string | null;
   venueLabel: string;
+  // Same split as the organizer form (I-181): place name and street address, stored as
+  // address.venue_name/.full, and only the address is geocoded first.
   venueName: string;
+  venueAddress: string;
   contactEmail: string;
   description: string;
   imageUrl: string;
@@ -104,6 +107,7 @@ export function createEmptyEventFormData(): AdminEventFormData {
     venueId: null,
     venueLabel: "",
     venueName: "",
+    venueAddress: "",
     contactEmail: "",
     description: "",
     imageUrl: "",

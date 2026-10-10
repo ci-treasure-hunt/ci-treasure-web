@@ -32,25 +32,37 @@ export async function geocodeAddress(query: string): Promise<{ lat: number; lng:
 }
 
 /**
- * Geocode an event's location, trying the full address first and falling back to a
- * city-level approximation (same fallback the addvenue skill uses manually) — never
- * blocks the caller, just returns null on total failure.
+ * Geocode an event's location: the street address first, then the venue name, then a
+ * city-level approximation (same fallback the addvenue skill uses manually). Never blocks the
+ * caller, just returns null on total failure.
+ *
+ * The address and the name are tried separately on purpose (I-181). Nominatim finds
+ * "Bispebjerg Torv 1, 2400 København" but not "Dansekapellet. Bispebjerg Torv 1, 2400 Kbh NV,
+ * Copenhagen, DK": a studio name in front of the street makes the whole query miss, and the event
+ * silently landed on the city centre, a few kilometres off.
  */
 export async function geocodeEventLocation(
   venueName: string,
+  venueAddress: string,
   city: string,
   country: string,
 ): Promise<{ lat: number; lng: number } | null> {
-  const parts = [venueName.trim(), city.trim(), country.trim()].filter(Boolean);
-  if (parts.length < 2) return null; // need at least city + country to mean anything
+  const place = [city.trim(), country.trim()].filter(Boolean);
+  if (place.length < 2) return null; // need at least city + country to mean anything
 
-  const full = await geocodeAddress(parts.join(", "));
-  if (full) return full;
-
-  if (venueName.trim() && city.trim() && country.trim()) {
-    return geocodeAddress(`${city.trim()}, ${country.trim()}`);
+  for (const first of [venueAddress.trim(), venueName.trim()]) {
+    if (!first) continue;
+    const hit = await geocodeAddress([first, ...place].join(", "));
+    if (hit) return hit;
   }
-  return null;
+  return geocodeAddress(place.join(", "));
+}
+
+export type EventAddress = { venue_name?: string; full?: string };
+
+/** The text a geocode is based on, to tell whether a saved location actually changed. */
+function locationText(address: EventAddress | null | undefined): string {
+  return [address?.venue_name ?? "", address?.full ?? ""].join("|").trim();
 }
 
 /**
@@ -60,7 +72,8 @@ export async function geocodeEventLocation(
  * display name instead, see lib/events.ts). With no venue link, falls back to geocoding
  * the free text — but only when there isn't already a real venue link or coordinates to
  * protect (`isUpdate` + `current`), so editing an unrelated field on an /addevent-sourced
- * event never clobbers its accurate coordinates.
+ * event never clobbers its accurate coordinates. Changing the name or address text does
+ * re-geocode (I-181): otherwise a corrected address kept the old, wrong pin.
  */
 export async function resolveVenueLocation(
   // Accepts either the browser/server Supabase client or the admin client — both differ in
@@ -70,10 +83,11 @@ export async function resolveVenueLocation(
   supabase: any,
   venueId: string | null,
   venueName: string,
+  venueAddress: string,
   city: string,
   country: string,
-  current?: { lat: number | null; lng: number | null; venue_id: string | null } | null,
-): Promise<{ venue_id: string | null; address: { venue_name: string } | null; lat?: number; lng?: number }> {
+  current?: { lat: number | null; lng: number | null; venue_id: string | null; address?: unknown } | null,
+): Promise<{ venue_id: string | null; address: EventAddress | null; lat?: number; lng?: number }> {
   if (venueId) {
     const { data: venue } = await supabase
       .from("venues")
@@ -88,11 +102,23 @@ export async function resolveVenueLocation(
     };
   }
 
-  const address = venueName.trim() ? { venue_name: venueName.trim() } : null;
-  // No current row (create path) → always geocode. With a current row (update path):
-  // only geocode if a venue link is being removed, or there was never any coordinate.
-  const shouldGeocode = !current || current.venue_id != null || (current.lat == null && current.lng == null);
-  const coords = shouldGeocode ? await geocodeEventLocation(venueName, city, country) : null;
+  // `?? ""`: a form loaded before this field existed posts no venueAddress at all.
+  const name = (venueName ?? "").trim();
+  const street = (venueAddress ?? "").trim();
+  // Keys only when set, so an event with just a name stores { venue_name } exactly as before.
+  const address: EventAddress | null =
+    name || street ? { ...(name ? { venue_name: name } : {}), ...(street ? { full: street } : {}) } : null;
+  // No current row (create path) → always geocode. With a current row (update path): only
+  // geocode if a venue link is being removed, there was never any coordinate, or the location
+  // text changed.
+  const currentAddress =
+    current?.address && typeof current.address === "object" ? (current.address as EventAddress) : null;
+  const shouldGeocode =
+    !current ||
+    current.venue_id != null ||
+    (current.lat == null && current.lng == null) ||
+    locationText(currentAddress) !== locationText(address);
+  const coords = shouldGeocode ? await geocodeEventLocation(name, street, city, country) : null;
 
   return { venue_id: null, address, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}) };
 }

@@ -28,12 +28,18 @@ export type VenueResult = {
 // re-render is the "Change" button, so a pick was undone the moment it was made (reproduced
 // 2026-10-07: Denmark could not be selected). preventDefault cancels the label's forwarding; it does
 // nothing else on a type="button".
+//
+// With no venue picked, the search box doubles as the place's name and a second box takes the
+// street address (I-181). One shared box made people type "Studio X. Street 1, 1234 City", which
+// the geocoder can't resolve, so events landed on the city centre.
 export function VenuePicker({
   venueId,
   venueLabel,
   freeText,
+  addressText,
   onSelect,
   onFreeTextChange,
+  onAddressChange,
   city,
   country,
   allowCreate = false,
@@ -42,14 +48,17 @@ export function VenuePicker({
   venueId: string | null;
   venueLabel: string;
   freeText: string;
+  addressText: string;
   onSelect: (venue: VenueResult | null) => void;
   onFreeTextChange: (value: string) => void;
+  onAddressChange: (value: string) => void;
   city: string;
   country: string;
   allowCreate?: boolean;
   inputClassName: string;
 }) {
-  const [query, setQuery] = useState("");
+  // Seeded from the stored name, so editing an event shows what it already has.
+  const [query, setQuery] = useState(freeText);
   const [results, setResults] = useState<VenueResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -102,7 +111,7 @@ export function VenuePicker({
     const response = await fetch("/api/admin/venues", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, city, country, address: freeText }),
+      body: JSON.stringify({ name, city, country, address: addressText }),
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -141,7 +150,7 @@ export function VenuePicker({
         value={query}
         onChange={(e) => void handleQueryChange(e.target.value)}
         className={inputClassName}
-        placeholder="Search existing venues, or type a name/address"
+        placeholder="Search listed venues, or type the place's name"
         autoComplete="off"
         name="ci-th-venue-filter"
       />
@@ -176,6 +185,16 @@ export function VenuePicker({
           {isCreating ? "Creating…" : `+ Create venue "${query.trim()}"`}
         </button>
       ) : null}
+      {/* Below the matches, so the list opens right under the box being typed in. */}
+      <input
+        value={addressText}
+        onChange={(e) => onAddressChange(e.target.value)}
+        className={inputClassName}
+        placeholder="Street address, e.g. Sedanstraße 22, 79098 Freiburg"
+        aria-label="Street address"
+        autoComplete="off"
+        name="ci-th-venue-street"
+      />
     </div>
   );
 }

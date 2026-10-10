@@ -332,6 +332,8 @@ export function OrganizerEventForm({
                 venueId={form.venueId}
                 venueLabel={form.venueLabel}
                 freeText={form.venueName}
+                addressText={form.venueAddress}
+                onAddressChange={(value) => set("venueAddress", value)}
                 onSelect={(venue) =>
                   setForm((prev) => ({
                     ...prev,
@@ -346,8 +348,9 @@ export function OrganizerEventForm({
               />
             </Field>
             <p className="mt-1 text-xs text-slate-500">
-              Pick an existing venue if it&apos;s already listed, or type a name/address: used to
-              place the event on the map.
+              Pick the venue if it&apos;s already listed. If not, type the place&apos;s name and its
+              street address in the two boxes: the address puts the event on the map and shows on
+              the event page.
             </p>
           </div>
         </div>

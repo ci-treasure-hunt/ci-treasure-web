@@ -35,7 +35,8 @@ export type SupabaseEventRow = {
   price: unknown;
   segments: unknown;
   venue_id: string | null;
-  address: { venue_name?: string } | null;
+  // `full` is the street address; `text` is the same thing on a few early /addevent rows.
+  address: { venue_name?: string; full?: string; text?: string } | null;
   lat: number | null;
   lng: number | null;
   has_email?: boolean | null;
@@ -574,7 +575,9 @@ async function buildEventDetail(
       creditedPeople.some((p) => p.kind === "organizer" && !p.is_claimed),
     hasNoOrganizer: creditedPeople.filter((p) => p.kind === "organizer").length === 0,
     venueName: venueData?.name ?? row.address?.venue_name ?? null,
-    venueAddress: venueData?.address ?? null,
+    // Without a linked venue the event's own street address is the only one there is; it was
+    // stored but never shown until I-181.
+    venueAddress: venueData?.address ?? row.address?.full ?? row.address?.text ?? null,
     venueSlug: venueData?.visibility === "public" ? (venueData.slug ?? null) : null,
     hasEmail: Boolean(row.has_email),
     hasPhoneContacts: Boolean(row.has_phone_contacts),
