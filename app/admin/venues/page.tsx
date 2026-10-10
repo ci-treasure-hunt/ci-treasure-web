@@ -16,6 +16,8 @@ type AdminVenueRow = {
   show_in_announce: boolean;
   image_url: string | null;
   website: string | null;
+  instagram: string | null;
+  facebook: string | null;
   source: string | null;
   created_at: string;
 };
@@ -67,7 +69,7 @@ export default async function AdminVenuesPage({
   const supabase = createAdminClient();
   let dbQuery = supabase
     .from("venues")
-    .select("id, name, slug, city, country, visibility, show_in_list, show_in_announce, image_url, website, source, created_at")
+    .select("id, name, slug, city, country, visibility, show_in_list, show_in_announce, image_url, website, instagram, facebook, source, created_at")
     .in("visibility", selectedVisibilities);
   dbQuery = showNew
     ? dbQuery.in("source", ["event_form", "venue_form"]).order("created_at", { ascending: false })
@@ -177,9 +179,10 @@ export default async function AdminVenuesPage({
                     <button type="submit" className="text-xs font-semibold text-(--color-pine) hover:underline">
                       Set
                     </button>
-                    {venue.visibility === "public" && !venue.website ? (
+                    {/* A page needs a website or social link (Jan, 2026-10-10: small studios often only have Instagram). */}
+                    {venue.visibility === "public" && !venue.website && !venue.instagram && !venue.facebook ? (
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
-                        no website
+                        no website or socials
                       </span>
                     ) : null}
                   </form>
