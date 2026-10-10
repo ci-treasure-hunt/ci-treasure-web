@@ -45,7 +45,8 @@ export const COUNTRY_NAME: Record<string, string> = {
   CN: 'China', HU: 'Hungary', FI: 'Finland', AR: 'Argentina', EC: 'Ecuador', BR: 'Brazil',
   BE: 'Belgium', IE: 'Ireland', RO: 'Romania', BG: 'Bulgaria', SI: 'Slovenia', EE: 'Estonia',
   LV: 'Latvia', IS: 'Iceland', JP: 'Japan', IL: 'Israel', ZA: 'SouthAfrica', NZ: 'NewZealand',
-  CO: 'Colombia', CL: 'Chile', UY: 'Uruguay', CR: 'CostaRica',
+  CO: 'Colombia', CL: 'Chile', UY: 'Uruguay', CR: 'CostaRica', EG: 'Egypt', MY: 'Malaysia',
+  TW: 'Taiwan', VN: 'Vietnam', RS: 'Serbia',
 }
 
 // Primary teaching roles for the headline teacher line — excludes musician/guest/assistant,

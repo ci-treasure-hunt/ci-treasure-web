@@ -16,6 +16,8 @@ const WORKSHOP_THREAD_IDS: Record<string, number> = {
 // topic. Decided 2026-09-14.
 const FESTIVAL_CARD_THREAD_ID = Number(Deno.env.get('TELEGRAM_FESTIVAL_CARD_THREAD_ID')!)
 
+const GROUP_DISCIPLINES = new Set(['contact_improvisation', 'dance_improvisation'])
+
 // Same three business regions as lib/continents.ts's CONTINENT_COUNTRIES — duplicated here
 // because edge functions run standalone in Deno and can't import from lib/. Keep in sync if
 // that list changes.
@@ -95,6 +97,16 @@ Deno.serve(async (req) => {
   const days = daySpan(event.start_date, event.end_date)
   if (days === 1) {
     return new Response('skip: 1-day event (group excluded)', { status: 200 })
+  }
+
+  // The group is a CI community, so only CI and its closest sibling, dance improvisation, reach
+  // it. Other practices (water dance, conscious dance, ...) still get the public channel post and
+  // the website listing. Untagged events count as CI. Decided 2026-10-10 after a water-only
+  // retreat landed in the CI festival topics; supersedes I-073's "announce with a [discipline]
+  // marker" rule for the group.
+  const disciplines: string[] = event.discipline ?? []
+  if (disciplines.length && !disciplines.some(d => GROUP_DISCIPLINES.has(d))) {
+    return new Response('skip: no CI discipline (group excluded)', { status: 200 })
   }
 
   const supabase = createClient(
@@ -260,7 +272,6 @@ Deno.serve(async (req) => {
   if (isFestival) {
     const title = escapeMarkdown(event.title)
     const url   = `https://citreasurehunt.com/events/${event.short_id}-${slugify(event.title)}`
-    const disciplines: string[] = event.discipline ?? []
     const isCi = disciplines.includes('contact_improvisation')
     const disciplineTag = !isCi && disciplines.length ? `[${disciplines.join(', ')}] ` : ''
     const text = `New: ${disciplineTag}${toFlag(event.country)} ${formatDates(event.start_date, event.end_date)} — [${title}](${url}), ${escapeMarkdown(location)}`
