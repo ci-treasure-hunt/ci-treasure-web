@@ -437,7 +437,21 @@ export default function PrivacyPage() {
           </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">17. Changes to this policy</h2>
+          <h2 className="font-semibold text-slate-950">17. Venue submissions</h2>
+          <p>
+            Signed-in users can add a venue through the &quot;Add a venue&quot; form, and a place entered with its
+            street address in the event form is saved as a venue as well, so that others can select it. We store what
+            you enter about the venue: its name, address, links, description, an optional contact email address
+            (shown only behind the check described in section 14) and an optional photo with the photographer credit
+            you give, on the same terms as community photos in section 16. We also record which account added the
+            venue. That link is never shown on the site; we use it to ask about a submission and to limit how many
+            venues one account can add per day. A venue gets its own public page only after we have reviewed it.
+            Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in running a directory of places that people can
+            add to, and in being able to ask about a submission.
+          </p>
+        </section>
+        <section>
+          <h2 className="font-semibold text-slate-950">18. Changes to this policy</h2>
           <p>
             This policy will be updated when new features affecting data processing are added. The date at the top of
             this page reflects the most recent revision.

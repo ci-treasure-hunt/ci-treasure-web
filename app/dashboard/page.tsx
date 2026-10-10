@@ -243,6 +243,9 @@ export default async function DashboardPage() {
                   >
                     Submit a new event
                   </Link>
+                  <Link href="/venues/new" className="text-sm font-medium text-(--color-pine) hover:underline">
+                    Add a venue
+                  </Link>
                 </div>
               </div>
 

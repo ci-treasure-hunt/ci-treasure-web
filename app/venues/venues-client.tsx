@@ -235,16 +235,16 @@ export function VenuesClient({
         <section className="mt-12 rounded-2xl bg-(--color-pine) p-8 text-center text-white">
           <h2 className="mb-2 font-serif text-2xl">Is your venue missing?</h2>
           <p className="mx-auto mb-6 max-w-2xl text-sm leading-6 text-white/75">
-            Let us know and we&apos;ll take a look — this is a curated list, added and maintained
-            by hand.
+            Add it, and organizers can pick it for their events right away. This list stays curated: we look at
+            every venue by hand before it gets its own page here.
           </p>
-          <a
-            href="mailto:hello@citreasurehunt.com"
+          <Link
+            href="/venues/new"
             className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-(--color-pine) transition hover:bg-slate-100"
           >
-            <ExternalLink className="size-4" />
-            hello@citreasurehunt.com
-          </a>
+            <MapPin className="size-4" />
+            Add a venue
+          </Link>
         </section>
     </>
   );

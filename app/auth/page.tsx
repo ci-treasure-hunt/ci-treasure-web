@@ -23,6 +23,11 @@ const DESTINATION_META: Record<string, { title: string; description: string }> =
     description:
       "Add a Contact Improvisation workshop, lab, jam gathering or festival to CI Treasure Hunt. One-day and multi-day events both welcome.",
   },
+  "/venues/new": {
+    title: "Add a venue",
+    description:
+      "Add a studio, retreat centre or dance house where Contact Improvisation happens to CI Treasure Hunt, so organizers can pick it for their events.",
+  },
 };
 
 const DEFAULT_META = {

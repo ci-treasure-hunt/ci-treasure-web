@@ -1,3 +1,5 @@
+import { createPinVenue, findMatchingVenue, notifyNewVenue, type VenueSource } from "@/lib/venue-records";
+
 // Server-side geocoding for event/venue addresses typed into admin/organizer forms —
 // same source (OpenStreetMap Nominatim, free, no key) as the addvenue skill's manual
 // lookup. Never called from the client: Nominatim's usage policy wants a descriptive
@@ -46,16 +48,21 @@ export async function geocodeEventLocation(
   venueAddress: string,
   city: string,
   country: string,
-): Promise<{ lat: number; lng: number } | null> {
+): Promise<{ lat: number; lng: number; precision: "address" | "name" | "city" } | null> {
   const place = [city.trim(), country.trim()].filter(Boolean);
   if (place.length < 2) return null; // need at least city + country to mean anything
 
-  for (const first of [venueAddress.trim(), venueName.trim()]) {
+  const tries: Array<["address" | "name", string]> = [
+    ["address", venueAddress.trim()],
+    ["name", venueName.trim()],
+  ];
+  for (const [precision, first] of tries) {
     if (!first) continue;
     const hit = await geocodeAddress([first, ...place].join(", "));
-    if (hit) return hit;
+    if (hit) return { ...hit, precision };
   }
-  return geocodeAddress(place.join(", "));
+  const cityHit = await geocodeAddress(place.join(", "));
+  return cityHit ? { ...cityHit, precision: "city" } : null;
 }
 
 export type EventAddress = { venue_name?: string; full?: string };
@@ -74,6 +81,12 @@ function locationText(address: EventAddress | null | undefined): string {
  * protect (`isUpdate` + `current`), so editing an unrelated field on an /addevent-sourced
  * event never clobbers its accurate coordinates. Changing the name or address text does
  * re-geocode (I-181): otherwise a corrected address kept the old, wrong pin.
+ *
+ * With `autoVenue` (I-181), a place name plus a street address that geocodes to the street
+ * becomes a venue: the matching existing one if there is one (findMatchingVenue), otherwise a new
+ * no-page Pin. Only when the text is new or changed, so re-saving an older event doesn't
+ * suddenly create one. A name alone, a vague place ("Sierras de Córdoba") or an address that
+ * only resolves to the city stays free text on the event.
  */
 export async function resolveVenueLocation(
   // Accepts either the browser/server Supabase client or the admin client — both differ in
@@ -87,6 +100,7 @@ export async function resolveVenueLocation(
   city: string,
   country: string,
   current?: { lat: number | null; lng: number | null; venue_id: string | null; address?: unknown } | null,
+  autoVenue?: { source: VenueSource; createdBy: string | null },
 ): Promise<{ venue_id: string | null; address: EventAddress | null; lat?: number; lng?: number }> {
   if (venueId) {
     const { data: venue } = await supabase
@@ -119,6 +133,24 @@ export async function resolveVenueLocation(
     (current.lat == null && current.lng == null) ||
     locationText(currentAddress) !== locationText(address);
   const coords = shouldGeocode ? await geocodeEventLocation(name, street, city, country) : null;
+
+  if (autoVenue && name && street && coords?.precision === "address") {
+    try {
+      const place = { name, city: city.trim(), country: country.trim(), lat: coords.lat, lng: coords.lng };
+      const existing = await findMatchingVenue(place);
+      const venue =
+        existing ?? (await createPinVenue({ ...place, address: street }, autoVenue.source, autoVenue.createdBy));
+      if (!existing) await notifyNewVenue(place, autoVenue.source);
+      return {
+        venue_id: venue.id,
+        address: null,
+        lat: venue.lat ?? coords.lat,
+        lng: venue.lng ?? coords.lng,
+      };
+    } catch {
+      // A failed match or insert must not fail saving the event; it keeps the free text.
+    }
+  }
 
   return { venue_id: null, address, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}) };
 }

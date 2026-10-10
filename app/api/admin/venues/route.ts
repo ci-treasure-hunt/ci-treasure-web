@@ -4,22 +4,11 @@ import { requireAdminRequestUser } from "@/lib/admin-api";
 import { geocodeAddress } from "@/lib/geocode";
 import { slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createUniqueVenueSlug } from "@/lib/venue-records";
 
 import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts, stripPhoneLinks } from "@/lib/phone-contacts";
-async function createUniqueSlug(baseSlug: string) {
-  const supabase = createAdminClient();
-  const { data, error } = await supabase.from("venues").select("slug").ilike("slug", `${baseSlug}%`);
-  if (error) throw error;
-
-  const existing = new Set((data ?? []).map((row) => String(row.slug).toLowerCase()));
-  if (!existing.has(baseSlug)) return baseSlug;
-
-  let suffix = 2;
-  while (existing.has(`${baseSlug}-${suffix}`)) suffix += 1;
-  return `${baseSlug}-${suffix}`;
-}
 
 // Two callers share this route: (1) the inline quick-add from the event form, which sends
 // only name/city/country/address and deliberately always lands as 'hidden' (see below —
@@ -29,7 +18,7 @@ async function createUniqueSlug(baseSlug: string) {
 // original behavior when omitted, so caller (1) is unaffected by this extension.
 export async function POST(request: NextRequest) {
   try {
-    await requireAdminRequestUser(request);
+    const user = await requireAdminRequestUser(request);
     const payload = await request.json();
     const name = String(payload.name ?? "").trim();
     const city = String(payload.city ?? "").trim();
@@ -63,7 +52,7 @@ export async function POST(request: NextRequest) {
       : await geocodeAddress([address || name, city, country].filter(Boolean).join(", "));
 
     const supabase = createAdminClient();
-    const slug = await createUniqueSlug(slugify(String(payload.slug ?? "").trim() || name) || "venue");
+    const slug = await createUniqueVenueSlug(slugify(String(payload.slug ?? "").trim() || name) || "venue");
     const { data, error } = await supabase
       .from("venues")
       .insert({
@@ -88,6 +77,8 @@ export async function POST(request: NextRequest) {
         show_in_list: Boolean(payload.showInList),
         show_in_announce: Boolean(payload.showInAnnounce),
         announce_name: String(payload.announceName ?? "").trim() || null,
+        source: "admin",
+        created_by: user.id,
       })
       .select("id, name, city, country, lat, lng")
       .single();

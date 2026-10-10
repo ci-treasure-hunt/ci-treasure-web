@@ -57,9 +57,13 @@ jobs:
       #
       # phone-contacts.check.ts (I-180): phone numbers stay out of public links/columns and go to
       # the gated entity_phone_contacts. Same privacy reason.
+      #
+      # venue-records.check.ts (I-181): the name matching that decides whether an event links to an
+      # existing venue or creates a new one, and the Pin/Page/Listed mapping.
       - name: Unit checks
         run: |
           npx --yes tsx tests/unit/url-safety.check.ts
           npx --yes tsx tests/unit/community-links.check.ts
           npx --yes tsx tests/unit/phone-contacts.check.ts
           npx --yes tsx tests/unit/place-case.check.ts
+          npx --yes tsx tests/unit/venue-records.check.ts

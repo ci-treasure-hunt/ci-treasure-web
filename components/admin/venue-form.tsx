@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import {
-  VENUE_VISIBILITY_OPTIONS,
+  VENUE_LEVELS,
   createEmptyVenueFormData,
+  venueLevel,
+  venueLevelColumns,
   type AdminVenueFormData,
+  type VenueLevel,
 } from "@/lib/admin-venues";
 
 type DedupMatch = { id: string; name: string; city: string; country: string };
@@ -120,17 +123,24 @@ export function VenueForm({
                   </div>
                 ) : null}
               </Field>
-              <Field label="Visibility">
-                <select value={form.visibility} onChange={(event) => setForm({ ...form, visibility: event.target.value })} className={inputClassName}>
-                  {VENUE_VISIBILITY_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+              <Field label="Level">
+                <select
+                  value={venueLevel(form.visibility, form.showInList)}
+                  onChange={(event) => {
+                    const { visibility, showInList } = venueLevelColumns(event.target.value as VenueLevel);
+                    setForm({ ...form, visibility, showInList });
+                  }}
+                  className={inputClassName}
+                >
+                  {VENUE_LEVELS.map((level) => (
+                    <option key={level.value} value={level.value}>
+                      {level.label}
                     </option>
                   ))}
                 </select>
                 {form.visibility === "public" && !form.website.trim() ? (
                   <p className="text-xs text-amber-700">
-                    No website set — the addvenue convention reserves &quot;public&quot; for venues with their own site. Still savable, just flagged.
+                    No website set — the addvenue convention reserves a page for venues with their own site. Still savable, just flagged.
                   </p>
                 ) : null}
               </Field>
@@ -266,10 +276,6 @@ export function VenueForm({
               <div className="h-px flex-1 bg-slate-100" />
             </div>
             <div className="flex flex-wrap gap-6">
-              <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <input type="checkbox" checked={form.showInList} onChange={(event) => setForm({ ...form, showInList: event.target.checked })} />
-                Show on /venues directory
-              </label>
               <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
                 <input type="checkbox" checked={form.showInAnnounce} onChange={(event) => setForm({ ...form, showInAnnounce: event.target.checked })} />
                 Show venue name in Telegram announcements

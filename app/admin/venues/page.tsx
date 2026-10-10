@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 
+import { VENUE_LEVELS, venueLevel, venueLevelColumns, type VenueLevel } from "@/lib/admin-venues";
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,38 +16,34 @@ type AdminVenueRow = {
   show_in_announce: boolean;
   image_url: string | null;
   website: string | null;
+  source: string | null;
+  created_at: string;
 };
 
 const VISIBILITY_OPTIONS = ["public", "hidden"] as const;
 const DEFAULT_VISIBILITIES = ["public", "hidden"] as const;
 
-async function toggleVisibility(formData: FormData) {
+// I-181: where a venue came from, as shown in the list. Admin-made rows aren't labelled.
+const SOURCE_LABELS: Record<string, string> = {
+  event_form: "from an event",
+  venue_form: "submitted",
+  addvenue: "addvenue",
+};
+
+async function setLevel(formData: FormData) {
   "use server";
 
   await requireAdminUser();
   const venueId = String(formData.get("venueId") ?? "");
-  const currentVisibility = String(formData.get("currentVisibility") ?? "");
-  if (!venueId) throw new Error("Missing venue id.");
+  const level = String(formData.get("level") ?? "") as VenueLevel;
+  if (!venueId || !VENUE_LEVELS.some((l) => l.value === level)) throw new Error("Missing venue or level.");
 
-  const nextVisibility = currentVisibility === "public" ? "hidden" : "public";
+  const { visibility, showInList } = venueLevelColumns(level);
   const supabase = createAdminClient();
-  const { error } = await supabase.from("venues").update({ visibility: nextVisibility }).eq("id", venueId);
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/admin/venues");
-  revalidatePath("/venues");
-}
-
-async function toggleShowInList(formData: FormData) {
-  "use server";
-
-  await requireAdminUser();
-  const venueId = String(formData.get("venueId") ?? "");
-  const currentShowInList = String(formData.get("currentShowInList") ?? "") === "true";
-  if (!venueId) throw new Error("Missing venue id.");
-
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("venues").update({ show_in_list: !currentShowInList }).eq("id", venueId);
+  const { error } = await supabase
+    .from("venues")
+    .update({ visibility, show_in_list: showInList, updated_at: new Date().toISOString() })
+    .eq("id", venueId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/venues");
@@ -56,22 +53,25 @@ async function toggleShowInList(formData: FormData) {
 export default async function AdminVenuesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ visibility?: string | string[]; q?: string }>;
+  searchParams: Promise<{ visibility?: string | string[]; q?: string; new?: string }>;
 }) {
   await requireAdminUser();
 
-  const { visibility, q } = await searchParams;
+  const { visibility, q, new: newOnly } = await searchParams;
   const requestedVisibilities = visibility === undefined ? [] : Array.isArray(visibility) ? visibility : [visibility];
   const selectedVisibilities = requestedVisibilities.length > 0 ? requestedVisibilities : [...DEFAULT_VISIBILITIES];
   const query = (q ?? "").trim();
+  // ?new=1, linked from the Telegram ping: venues that came from organizers, newest first.
+  const showNew = newOnly === "1";
 
   const supabase = createAdminClient();
   let dbQuery = supabase
     .from("venues")
-    .select("id, name, slug, city, country, visibility, show_in_list, show_in_announce, image_url, website")
-    .in("visibility", selectedVisibilities)
-    .order("country", { ascending: true })
-    .order("name", { ascending: true });
+    .select("id, name, slug, city, country, visibility, show_in_list, show_in_announce, image_url, website, source, created_at")
+    .in("visibility", selectedVisibilities);
+  dbQuery = showNew
+    ? dbQuery.in("source", ["event_form", "venue_form"]).order("created_at", { ascending: false })
+    : dbQuery.order("country", { ascending: true }).order("name", { ascending: true });
 
   if (query) {
     // PostgREST's .or() filter string uses `,` to separate conditions and `()` to group —
@@ -127,6 +127,10 @@ export default async function AdminVenuesPage({
           placeholder="Search name or city..."
           className="rounded-full border border-(--color-sand-strong) bg-white px-4 py-1.5 text-sm"
         />
+        <label className="flex items-center gap-1.5 text-sm text-slate-800">
+          <input type="checkbox" name="new" value="1" defaultChecked={showNew} />
+          from organizers, newest first
+        </label>
         <button
           type="submit"
           className="rounded-full bg-(--color-ink) px-4 py-1.5 text-xs font-semibold text-(--color-mist)"
@@ -137,12 +141,12 @@ export default async function AdminVenuesPage({
 
       <div className="mt-6 overflow-x-auto pb-2">
         <div className="space-y-3 lg:min-w-[1080px]">
-          <div className="hidden grid-cols-[minmax(220px,3fr)_140px_140px_90px_90px_200px] gap-3 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 lg:grid">
+          <div className="hidden grid-cols-[minmax(200px,3fr)_120px_70px_230px_150px_170px] gap-3 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 lg:grid">
             <div>name</div>
             <div>city</div>
             <div>country</div>
-            <div>visibility</div>
-            <div>on list</div>
+            <div>level</div>
+            <div>source</div>
             <div>actions</div>
           </div>
 
@@ -151,24 +155,43 @@ export default async function AdminVenuesPage({
               key={venue.id}
               className="rounded-2xl bg-(--color-mist) p-4 text-sm text-slate-900 shadow-[0_10px_30px_rgba(106,75,25,0.05)]"
             >
-              <div className="grid gap-4 lg:grid-cols-[minmax(220px,3fr)_140px_140px_90px_90px_200px] lg:items-center">
+              <div className="grid gap-4 lg:grid-cols-[minmax(200px,3fr)_120px_70px_230px_150px_170px] lg:items-center">
                 <DetailItem label="name" value={venue.name} strong truncate />
                 <DetailItem label="city" value={venue.city} />
                 <DetailItem label="country" value={venue.country} />
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 lg:hidden">visibility</p>
-                  <div className="mt-1 flex flex-wrap gap-2 lg:mt-0">
-                    <span className="rounded-full border border-(--color-sand-strong) px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
-                      {venue.visibility}
-                    </span>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 lg:hidden">level</p>
+                  <form action={setLevel} className="mt-1 flex flex-wrap items-center gap-2 lg:mt-0">
+                    <input type="hidden" name="venueId" value={venue.id} />
+                    <select
+                      name="level"
+                      defaultValue={venueLevel(venue.visibility, venue.show_in_list)}
+                      className="rounded-full border border-(--color-sand-strong) bg-white px-2 py-1 text-xs font-semibold"
+                    >
+                      {VENUE_LEVELS.map((level) => (
+                        <option key={level.value} value={level.value}>
+                          {level.value}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit" className="text-xs font-semibold text-(--color-pine) hover:underline">
+                      Set
+                    </button>
                     {venue.visibility === "public" && !venue.website ? (
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
                         no website
                       </span>
                     ) : null}
-                  </div>
+                  </form>
                 </div>
-                <DetailItem label="on list" value={venue.show_in_list ? "yes" : "no"} />
+                <DetailItem
+                  label="source"
+                  value={
+                    venue.source && SOURCE_LABELS[venue.source]
+                      ? `${SOURCE_LABELS[venue.source]} · ${venue.created_at.slice(0, 10)}`
+                      : "—"
+                  }
+                />
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 lg:hidden">actions</p>
                   <div className="mt-1 flex flex-wrap gap-2 lg:mt-0">
@@ -184,20 +207,6 @@ export default async function AdminVenuesPage({
                         View live
                       </Link>
                     ) : null}
-                    <form action={toggleVisibility}>
-                      <input type="hidden" name="venueId" value={venue.id} />
-                      <input type="hidden" name="currentVisibility" value={venue.visibility} />
-                      <button type="submit" className="rounded-full border border-(--color-sand-strong) px-3 py-2 text-xs font-semibold">
-                        {venue.visibility === "public" ? "Set hidden" : "Set public"}
-                      </button>
-                    </form>
-                    <form action={toggleShowInList}>
-                      <input type="hidden" name="venueId" value={venue.id} />
-                      <input type="hidden" name="currentShowInList" value={String(venue.show_in_list)} />
-                      <button type="submit" className="rounded-full border border-(--color-sand-strong) px-3 py-2 text-xs font-semibold">
-                        {venue.show_in_list ? "Remove from list" : "Add to list"}
-                      </button>
-                    </form>
                   </div>
                 </div>
               </div>

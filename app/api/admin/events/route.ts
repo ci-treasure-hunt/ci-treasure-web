@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       payload.venueAddress ?? "",
       payload.city ?? "",
       payload.country ?? "",
+      null,
+      { source: "admin", createdBy: user.id },
     );
 
     const { data, error } = await supabase

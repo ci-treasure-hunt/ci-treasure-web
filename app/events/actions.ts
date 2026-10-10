@@ -138,6 +138,8 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     data.venueAddress,
     data.city,
     data.country,
+    null,
+    { source: "event_form", createdBy: user.id },
   );
 
   const timezone = deriveTimezone(data.timezone, lat, lng);
@@ -268,6 +270,7 @@ export async function updateEvent(
     data.city,
     data.country,
     current,
+    { source: "event_form", createdBy: user.id },
   );
 
   const timezone = deriveTimezone(data.timezone, lat ?? undefined, lng ?? undefined);
