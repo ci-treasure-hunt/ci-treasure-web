@@ -36,6 +36,14 @@ https://citreasurehunt.com/api/mcp
 The menus move around as these apps change. If the steps above no longer match, look for
 "connectors", "MCP" or "custom tools" in your assistant's settings.
 
+## If your assistant answers from the web instead
+
+Some assistants still reach for a web search first, even with the connection installed. Web
+results for contact improvisation events are often a year old or mix in past editions. If the
+answer looks like that, name the source in your question, for example "Use CI Treasure Hunt: which
+CI festivals are there in Germany next summer?", and the assistant will query the directory
+directly.
+
 ## What it can do
 
 - Search upcoming events by country, city, dates, type and practice
