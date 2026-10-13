@@ -48,5 +48,5 @@ next-env.d.ts
 # is an 11-byte "@AGENTS.md" import. Next suggests committing them; we don't,
 # because this repo is public and they read as project documentation without
 # being any. Nothing needs them at build or run time.
-AGENTS.md
-CLAUDE.md
+/AGENTS.md
+/CLAUDE.md
