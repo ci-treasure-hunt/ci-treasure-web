@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: CommunityPageProps): Promise<
   const countryLabel = getCountryLabel(community.country ?? "");
   const description = community.description
     ? padShortDescription(community.description, "communities")
-    : `${community.name} is a Contact Improvisation community in ${community.city}, ${countryLabel}, part of the CI Treasure Hunt global directory of jams, classes, and gatherings.`.slice(0, 160);
+    : `${community.name} is a Contact Improvisation community in ${community.city ? `${community.city}, ` : ""}${countryLabel}, part of the CI Treasure Hunt global directory of jams, classes, and gatherings.`.slice(0, 160);
 
   return {
     title: buildEntityTitle(community.name, { city: community.city, country: countryLabel }),

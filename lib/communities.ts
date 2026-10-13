@@ -1,8 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
+import { countryName } from "./countries";
 import { mapEventRow, type SupabaseEventRow } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
+import { getCountryLabel } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
 
@@ -149,6 +151,24 @@ export type CommunityDetail = {
 
 const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
 
+// Country-wide communities ("Contact Improvisation Ecuador") store the country name in `city`,
+// since the column is required and there is no single city to name. Shown as-is that reads
+// "Ecuador, Ecuador", so the public pages drop a city that just repeats the country. Compared
+// against both name sources, since they can differ (Intl says "Türkiye", the stored city and
+// lib/countries.ts say "Turkey"). Their map pin sits at the capital (decided 2026-10-13).
+// A few rows say "Whole country" or "UK" instead, so those count too. City-states (Singapore,
+// Luxembourg) also match and just show once, which is what we want there anyway.
+const foldName = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").trim().toLowerCase();
+const COUNTRY_WIDE_CITY = new Set(["whole country", "nationwide", "uk", "usa"]);
+
+export function displayCommunityCity(city: string | null, countryIso: string | null): string | null {
+  if (!city) return null;
+  if (!countryIso) return city;
+  const folded = foldName(city);
+  if (COUNTRY_WIDE_CITY.has(folded)) return null;
+  return [getCountryLabel(countryIso), countryName(countryIso)].some((n) => foldName(n) === folded) ? null : city;
+}
+
 function countryLabel(row: CommunityRow): string {
   if (row.country) {
     try {
@@ -168,7 +188,7 @@ function toCommunity(row: CommunityRow): Community {
     name: row.name,
     slug: row.slug,
     type: row.type,
-    city: row.city ?? "",
+    city: displayCommunityCity(row.city, row.country) ?? "",
     country: countryLabel(row),
     countryIso: row.country,
     description: row.description,
@@ -383,6 +403,7 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
 
   return {
     ...rest,
+    city: displayCommunityCity(rest.city, rest.country),
     website: safeExternalUrl(rest.website),
     instagram: safeExternalUrl(rest.instagram),
     facebook_group: safeExternalUrl(rest.facebook_group),
