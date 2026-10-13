@@ -50,10 +50,18 @@ const BLOCKED_AI_AND_SEO_BOTS = [
   // if the traffic shows up, same as the Bytespider note above.
   "DeepSeekBot", // matching is case-insensitive, so this also covers "DeepseekBot"
   "xAI-Bot",
-  "xAI-Grok",
   "GrokBot",
-  // Grok-DeepSearch is deliberately NOT blocked: it is the user-triggered, citing side of xAI,
-  // which belongs with ChatGPT-User and Claude-User in the allowed list below.
+  // xAI-Grok was blocked here until 2026-10-14 and was moved out (I-141). Rechecked then: xAI
+  // publishes no crawler documentation at all (x.ai and grok.com robots.txt name no token), so
+  // every name in this block comes from third-party lists. Those lists agree on the split, though:
+  // GrokBot is training, while xAI-Grok is Grok Search and Grok-DeepSearch is deep search, both
+  // user-facing and citing. Blocking xAI-Grok contradicted this file's own rule, so it now falls
+  // through to "*" like ChatGPT-User and Claude-User. Grok-DeepSearch was never blocked, same
+  // reasoning.
+  //
+  // Not to be confused with "Grok Bot" (two words), xAI's always-on agent product, launched
+  // 2026-08-11. It drives a real browser in the cloud with ordinary browser user agents, so no
+  // rule here binds it either way; see I-141's browser-path section.
   // Scrapers and dataset resellers
   "Diffbot",
   "ImagesiftBot",
@@ -84,6 +92,10 @@ const BLOCKED_AI_AND_SEO_BOTS = [
 //   ChatGPT-User, OAI-SearchBot          (OpenAI: live fetch, and the ChatGPT search index)
 //   Claude-User, Claude-SearchBot        (Anthropic: same split)
 //   PerplexityBot, Perplexity-User       (Perplexity: index, and live fetch)
+//   xAI-Grok, Grok-DeepSearch            (xAI: Grok Search and deep search, per third-party lists)
+//   Meta-WebIndexer, Meta-ExternalFetcher (Meta: the index Meta AI cites from, and live fetch;
+//                                          per Meta's own crawler docs, rechecked 2026-10-14.
+//                                          Meta-ExternalAgent, blocked above, is the training one.)
 // They cost crawl volume, which is the thing we are trying to reduce, and that is a real
 // trade accepted knowingly: user-triggered fetches scale with actual interest rather than
 // sweeping the site, and the index crawlers behave more like Googlebot than like a scraper.
