@@ -68,6 +68,8 @@ export type TeacherProfile = {
   youtube: string | null;
   telegram: string | null;
   newsletter: string | null;
+  // Extra links, `{ items: [...] }`; read through lib/profile-links.ts, never rendered raw.
+  links: unknown;
   is_teacher: boolean;
   is_organizer: boolean;
   is_musician: boolean;

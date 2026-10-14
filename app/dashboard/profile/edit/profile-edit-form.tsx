@@ -9,7 +9,9 @@ import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
 import { compressImageForUpload } from "@/lib/client-image-compress";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
+import { ProfileLinksEditor } from "@/components/shared/profile-links-editor";
 import { PHONE_CONTACTS_HINT, type PhoneContactInput } from "@/lib/phone-contacts";
+import { readProfileLinks } from "@/lib/profile-links";
 
 const inputClassName =
   "w-full rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm text-slate-950 outline-none ring-0 transition focus:border-(--color-pine)";
@@ -27,6 +29,7 @@ type ProfileRow = {
   youtube: string | null;
   telegram: string | null;
   newsletter: string | null;
+  links: unknown;
   public_email: string | null;
   phone_contacts: PhoneContactInput[];
   image_url: string | null;
@@ -72,6 +75,7 @@ export function ProfileEditForm({
     youtube: profile.youtube || "",
     telegram: profile.telegram || "",
     newsletter: profile.newsletter || "",
+    links: readProfileLinks(profile.links).map((l) => ({ type: l.type, url: l.url, label: l.label ?? "" })),
     public_email: profile.public_email || "",
     phone_contacts: profile.phone_contacts ?? [],
     is_organizer: profile.is_organizer || lockedRoles.organizer,
@@ -406,6 +410,23 @@ export function ProfileEditForm({
               placeholder="https://..."
             />
           </Field>
+        </div>
+        <div className="mt-6">
+          <p className="text-sm font-medium text-slate-700">More links</p>
+          <p className="mt-1 text-sm text-slate-500">
+            A second account (for example a personal Instagram next to your dance one) or any other page you want on your profile.
+          </p>
+          <div className="mt-3">
+            <ProfileLinksEditor
+              value={form.links}
+              onChange={(links) => {
+                setForm((prev) => ({ ...prev, links }));
+                setSuccess(false);
+                setError(null);
+              }}
+              inputClassName={inputClassName}
+            />
+          </div>
         </div>
         <div className="mt-6">
           <p className="text-sm font-medium text-slate-700">Phone & WhatsApp</p>

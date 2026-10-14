@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { SELF_SELECTABLE_PRACTICES } from "@/lib/practices";
 import { safeExternalUrl } from "@/lib/url-safety";
+import { parseProfileLinks, type ProfileLinkInput } from "@/lib/profile-links";
 
 import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
@@ -24,6 +25,8 @@ export type ProfileUpdateData = {
   youtube: string;
   telegram: string;
   newsletter: string;
+  // profiles.links, see lib/profile-links.ts.
+  links: ProfileLinkInput[];
   public_email: string;
   // Gated (entity_phone_contacts), not a profiles column. See lib/phone-contacts.ts.
   phone_contacts: PhoneContactInput[];
@@ -61,7 +64,11 @@ export async function updateProfile(data: ProfileUpdateData) {
   // Telegram is normalized first: a bare "+4915112345678" typed there becomes t.me/+4915112345678,
   // which is a phone number and must be caught as one, not published as a handle.
   const telegramUrl = normalizeTelegram(data.telegram.trim());
-  const socialFields = [data.website, data.facebook, data.instagram, data.youtube, telegramUrl, data.newsletter];
+  const extraLinks = Array.isArray(data.links) ? data.links : [];
+  const socialFields = [
+    data.website, data.facebook, data.instagram, data.youtube, telegramUrl, data.newsletter,
+    ...extraLinks.map((l) => (typeof l?.url === "string" ? l.url.trim() : "")),
+  ];
   const phoneContacts = resolvePhoneContacts(data.phone_contacts, socialFields);
   if (phoneContacts.invalid.length) {
     return { success: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
@@ -120,6 +127,10 @@ export async function updateProfile(data: ProfileUpdateData) {
     youtube:      safeExternalUrl(notPhoneLink(data.youtube)) ?? null,
     telegram:     safeExternalUrl(notPhoneLink(telegramUrl)) ?? null,
     newsletter:   safeExternalUrl(notPhoneLink(data.newsletter)) ?? null,
+    // Drops phone links itself (they went to phoneContacts above), unsafe URLs and empty rows.
+    links:        parseProfileLinks(
+      extraLinks.map((l) => ({ type: String(l?.type ?? ""), url: String(l?.url ?? ""), label: String(l?.label ?? "") })),
+    ),
     is_organizer: data.is_organizer || lockedOrganizer,
     is_teacher:   data.is_teacher || lockedTeacher,
     is_musician:  data.is_musician || lockedMusician,

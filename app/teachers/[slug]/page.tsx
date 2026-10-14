@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
+  ExternalLink,
   Facebook,
   Globe,
   Instagram,
@@ -32,6 +33,7 @@ import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import { safeExternalUrl } from "@/lib/url-safety";
+import { profileLinkLabel, readProfileLinks } from "@/lib/profile-links";
 import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
 import { PracticeBadge, practicesToDisplay } from "@/components/shared/practice-badge";
 import { getCountryPageLink } from "@/lib/country-pages";
@@ -154,6 +156,17 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
   pushLink("youtube", teacher.youtube, getLinkLabel("youtube"), <Youtube className="h-4 w-4" />);
   pushLink("telegram", teacher.telegram && !teacher.telegram.startsWith("http") ? `https://t.me/${teacher.telegram.replace(/^@/, "")}` : teacher.telegram, getLinkLabel("telegram"), <Send className="h-4 w-4" />);
   pushLink("newsletter", teacher.newsletter, getLinkLabel("newsletter"), <MessageSquare className="h-4 w-4" />);
+  // Extra links (profiles.links): a second account of the same kind, or a link with no column.
+  const extraLinkIcons: Record<string, React.ReactNode> = {
+    instagram: <Instagram className="h-4 w-4" />,
+    facebook: <Facebook className="h-4 w-4" />,
+    youtube: <Youtube className="h-4 w-4" />,
+    telegram: <Send className="h-4 w-4" />,
+    website: <Globe className="h-4 w-4" />,
+  };
+  for (const item of readProfileLinks(teacher.links)) {
+    pushLink(item.type, item.url, profileLinkLabel(item), extraLinkIcons[item.type] ?? <ExternalLink className="h-4 w-4" />);
+  }
   teacherLinks.sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));
 
   const approvedImage = teacher.image_status === "approved" ? teacher.image_url : null;
