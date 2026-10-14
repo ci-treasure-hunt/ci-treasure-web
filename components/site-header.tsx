@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 
 import { InstallToHomeScreen } from "@/components/install-to-home-screen";
 import { createClient } from "@/lib/supabase/client";
+import { isCurrentUserAdmin } from "@/lib/admin-check-action";
 
 
 const NAV_LINKS = [
@@ -62,9 +63,33 @@ function useIsSignedIn(): boolean | null {
   return signedIn;
 }
 
+// Admins get a direct "Admin" link next to Dashboard (2026-10-15), instead of going through
+// /dashboard first. Only asked once someone is signed in, so anonymous visitors never call it.
+function useIsAdmin(signedIn: boolean | null): boolean {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!signedIn) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    isCurrentUserAdmin()
+      .then((result) => {
+        if (!cancelled) setIsAdmin(result);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+  return isAdmin;
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const signedIn = useIsSignedIn();
+  const isAdmin = useIsAdmin(signedIn);
 
   return (
     <header className="border-b border-(--color-sand-strong) bg-(--color-mist)/90 backdrop-blur">
@@ -133,12 +158,22 @@ export function SiteHeader() {
               className="inline-block h-7.5 w-23 animate-pulse rounded-full bg-(--color-sand-strong)/40"
             />
           ) : (
-            <Link
-              href={signedIn ? "/dashboard" : "/auth?next=/dashboard"}
-              className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
-            >
-              {signedIn ? "Dashboard" : "Sign in"}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={signedIn ? "/dashboard" : "/auth?next=/dashboard"}
+                className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+              >
+                {signedIn ? "Dashboard" : "Sign in"}
+              </Link>
+              {isAdmin ? (
+                <Link
+                  href="/admin"
+                  className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+                >
+                  Admin
+                </Link>
+              ) : null}
+            </div>
           )}
         </div>
 
@@ -199,6 +234,15 @@ export function SiteHeader() {
               {signedIn ? "Dashboard" : "Sign in"}
             </Link>
           )}
+          {isAdmin ? (
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 transition hover:text-(--color-pine)"
+              onClick={() => setOpen(false)}
+            >
+              Admin
+            </Link>
+          ) : null}
         </nav>
       )}
     </header>

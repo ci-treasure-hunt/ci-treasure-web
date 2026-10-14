@@ -27,6 +27,9 @@ export type PendingEvent = {
   city: string | null;
   country: string | null;
   organizer: PendingEventOrganizer | null;
+  // I-171: set when the date belongs to a series, so the queue can review all its pending
+  // dates as one card (approveSeries/rejectSeries) instead of one row per date.
+  series: { id: string; title: string } | null;
 };
 
 export async function getPendingEvents(): Promise<PendingEvent[]> {
@@ -36,7 +39,7 @@ export async function getPendingEvents(): Promise<PendingEvent[]> {
   const { data } = await admin
     .from("events")
     .select(
-      "id, title, start_date, city, country, event_organizers(role, profiles(id, name, is_trusted, user_id))",
+      "id, title, start_date, city, country, series_id, event_series(title), event_organizers(role, profiles(id, name, is_trusted, user_id))",
     )
     .eq("status", "pending")
     .order("start_date", { ascending: true });
@@ -59,6 +62,12 @@ export async function getPendingEvents(): Promise<PendingEvent[]> {
       country: (event.country as string) ?? null,
       organizer: profile
         ? { profileId: profile.id, name: profile.name, isTrusted: profile.is_trusted }
+        : null,
+      series: event.series_id
+        ? {
+            id: event.series_id as string,
+            title: ((event.event_series as unknown as { title?: string } | null)?.title ?? event.title) as string,
+          }
         : null,
     };
   });
@@ -158,5 +167,98 @@ export async function trustOrganizer(profileId: string): Promise<{ success: bool
     return { success: false, error: error.message };
   }
   revalidatePath("/admin/events/pending");
+  return { success: true };
+}
+
+// I-171: review a series' pending dates in one go. One UPDATE, so all dates flip together and
+// the announce series guard (_shared/series-guard.ts) posts only the earliest identical date.
+// One email for the whole series, not one per date.
+export async function approveSeries(seriesId: string): Promise<{ success: boolean; error?: string }> {
+  await requireAdminUser();
+  const admin = createAdminClient();
+
+  const { data: dates } = await admin
+    .from("events")
+    .select("title, short_id, user_id, start_date")
+    .eq("series_id", seriesId)
+    .eq("status", "pending")
+    .order("start_date");
+  if (!dates?.length) return { success: false, error: "No pending dates in this series." };
+
+  const { error } = await admin
+    .from("events")
+    .update({ status: "published" })
+    .eq("series_id", seriesId)
+    .eq("status", "pending");
+  if (error) return { success: false, error: error.message };
+
+  const first = dates[0];
+  const email = await submitterEmail(admin, first.user_id ?? null);
+  if (email) {
+    const url = `https://citreasurehunt.com/events/${buildEventSlug(first.short_id, first.title)}`;
+    const result = await sendEmail({
+      to: email,
+      subject: `Your event "${first.title}" is now live`,
+      text: [
+        `Good news — "${first.title}" has been approved and is now published on CI Treasure Hunt, with ${dates.length} ${dates.length === 1 ? "date" : "dates"}:`,
+        dates.map((d) => d.start_date).join(", "),
+        "",
+        url,
+        "",
+        "You can edit each date from your dashboard: https://citreasurehunt.com/dashboard",
+        "",
+        "— CI Treasure Hunt",
+      ].join("\n"),
+    });
+    if (!result.ok) console.error("approve series email failed:", result.error);
+  }
+
+  revalidatePath("/admin/events/pending");
+  revalidatePath(`/admin/series/${seriesId}`);
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function rejectSeries(seriesId: string, reason: string): Promise<{ success: boolean; error?: string }> {
+  await requireAdminUser();
+  const admin = createAdminClient();
+
+  const { data: dates } = await admin
+    .from("events")
+    .select("title, user_id")
+    .eq("series_id", seriesId)
+    .eq("status", "pending")
+    .order("start_date");
+  if (!dates?.length) return { success: false, error: "No pending dates in this series." };
+
+  const trimmedReason = reason.trim();
+  const { error } = await admin
+    .from("events")
+    .update({ status: "rejected", admin_notes: trimmedReason || null })
+    .eq("series_id", seriesId)
+    .eq("status", "pending");
+  if (error) return { success: false, error: error.message };
+
+  const email = await submitterEmail(admin, dates[0].user_id ?? null);
+  if (email) {
+    const result = await sendEmail({
+      to: email,
+      subject: `Your event "${dates[0].title}" needs changes`,
+      text: [
+        `Your event "${dates[0].title}" (${dates.length} ${dates.length === 1 ? "date" : "dates"}) wasn't published yet.`,
+        trimmedReason ? `\nReason: ${trimmedReason}` : "",
+        "",
+        "You can update and resubmit it from your dashboard: https://citreasurehunt.com/dashboard",
+        "",
+        "— CI Treasure Hunt",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    });
+    if (!result.ok) console.error("reject series email failed:", result.error);
+  }
+
+  revalidatePath("/admin/events/pending");
+  revalidatePath(`/admin/series/${seriesId}`);
   return { success: true };
 }

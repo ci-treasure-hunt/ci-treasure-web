@@ -10,7 +10,7 @@ export default async function AdminClaimsPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+      <section id="profile-claims" className="scroll-mt-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-serif text-3xl text-slate-950">Profile claims</h2>
@@ -48,7 +48,7 @@ export default async function AdminClaimsPage() {
         )}
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+      <section id="event-claims" className="scroll-mt-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-serif text-3xl text-slate-950">Event claims</h2>

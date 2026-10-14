@@ -3,15 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { approveEvent, rejectEvent, trustOrganizer } from "./actions";
+import { approveEvent, approveSeries, rejectEvent, rejectSeries, trustOrganizer } from "./actions";
 
+// One event, or (I-171) every pending date of a series at once when `series` is given.
 export function EventReviewActions({
   eventId,
   organizer,
+  series,
 }: {
   eventId: string;
   organizer: { profileId: string; name: string; isTrusted: boolean } | null;
+  series?: { id: string; count: number };
 }) {
+  const allLabel = series ? ` all ${series.count}` : "";
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [showReject, setShowReject] = useState(false);
@@ -36,10 +40,10 @@ export function EventReviewActions({
         <button
           type="button"
           disabled={pending}
-          onClick={() => act(() => approveEvent(eventId))}
+          onClick={() => act(() => (series ? approveSeries(series.id) : approveEvent(eventId)))}
           className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          Approve
+          Approve{allLabel}
         </button>
         <button
           type="button"
@@ -47,7 +51,7 @@ export function EventReviewActions({
           onClick={() => setShowReject((v) => !v)}
           className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50"
         >
-          Reject
+          Reject{allLabel}
         </button>
         {organizer && !organizer.isTrusted ? (
           <button
@@ -76,7 +80,7 @@ export function EventReviewActions({
           <button
             type="button"
             disabled={pending}
-            onClick={() => act(() => rejectEvent(eventId, reason))}
+            onClick={() => act(() => (series ? rejectSeries(series.id, reason) : rejectEvent(eventId, reason)))}
             className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             Confirm reject
