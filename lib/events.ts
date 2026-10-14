@@ -11,6 +11,7 @@ import {
   type SegmentItem,
   type SegmentsData,
   GENERIC_ACCENT_GRADIENT,
+  collapseRecurringSeries,
   disciplineLabel,
 } from "@/lib/event-display";
 
@@ -43,7 +44,7 @@ export type SupabaseEventRow = {
   has_phone_contacts?: boolean | null;
   series_id?: string | null;
   series_order?: number | null;
-  event_series?: { title: string } | null;
+  event_series?: { title?: string; series_type?: string } | null;
   discipline?: string[] | null;
   level?: string | null;
   language?: string[] | null;
@@ -193,8 +194,15 @@ export function mapEventRow(row: SupabaseEventRow): EventListItem {
     lng: row.lng,
     discipline: row.discipline ?? [],
     cancelled: row.cancelled,
+    // Only when the query embedded event_series(series_type), i.e. the list queries below.
+    recurringSeriesId: row.event_series?.series_type === "recurring" ? row.series_id ?? null : null,
   };
 }
+
+// Columns for the two upcoming-event list queries. event_series is embedded for its type: only
+// `recurring` series collapse in lists (I-171), sequential ones list part by part.
+const EVENT_LIST_COLUMNS =
+  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled, series_id, event_series(series_type)";
 
 export const LINK_CANONICAL_ORDER: Record<string, number> = {
   // Event link order (unchanged from original)
@@ -299,6 +307,8 @@ function normalizeSegments(payload: unknown): SegmentsData | null {
         title?: unknown;
         start_date?: unknown;
         end_date?: unknown;
+        start_time?: unknown;
+        end_time?: unknown;
         teachers?: unknown;
         description?: unknown;
       };
@@ -311,6 +321,8 @@ function normalizeSegments(payload: unknown): SegmentsData | null {
         title: typed.title,
         startDate: typeof typed.start_date === "string" ? typed.start_date : undefined,
         endDate: typeof typed.end_date === "string" ? typed.end_date : undefined,
+        startTime: typeof typed.start_time === "string" ? typed.start_time : undefined,
+        endTime: typeof typed.end_time === "string" ? typed.end_time : undefined,
         teachers: Array.isArray(typed.teachers)
           ? typed.teachers.filter((t): t is string => typeof t === "string")
           : undefined,
@@ -363,7 +375,7 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from("events")
-      .select("id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled")
+      .select(EVENT_LIST_COLUMNS)
       .eq("status", "published")
       .gte("end_date", today)
       .order("start_date", { ascending: true });
@@ -372,8 +384,11 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
       return { events: [], error: `Could not load public events: ${error.message}` };
     }
 
+    // Every instance of a recurring series is returned, not collapsed: the homepage filters by
+    // month on the client and collapses after that (collapseRecurringSeries), and the MCP tool
+    // and the crawlable index want every date.
     return {
-      events: ((data ?? []) as SupabaseEventRow[]).map(mapEventRow),
+      events: ((data ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow),
       error: null,
     };
   } catch (error) {
@@ -387,19 +402,12 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
   }
 }
 
-export type TypeListItem = EventListItem & {
-  // Set when this row represents a deduped recurring series (I-167) — the count of additional
-  // upcoming occurrences folded into this one row, so callers can render a "+N more dates" hint
-  // instead of listing the same series title repeatedly.
-  seriesExtraDates?: number;
-};
-
 // I-167: one row per type-listing page (/festivals, /workshops, /retreats, /intensives,
 // /long-jams). Deliberately its own query rather than a client-side filter of
 // getUpcomingEvents()'s payload — that's exactly the pattern the homepage's `?type=` filter is
 // excluded from search indexing for (filters live in client state, not in what got fetched), and
 // these pages exist specifically to be crawlable.
-export async function getEventsByType(type: string, today: string): Promise<{ events: TypeListItem[]; error: string | null }> {
+export async function getEventsByType(type: string, today: string): Promise<{ events: EventListItem[]; error: string | null }> {
   if (!hasSupabaseEnv()) {
     return {
       events: [],
@@ -411,7 +419,7 @@ export async function getEventsByType(type: string, today: string): Promise<{ ev
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from("events")
-      .select("id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled, series_id")
+      .select(EVENT_LIST_COLUMNS)
       .eq("status", "published")
       .eq("type", type)
       .contains("discipline", ["contact_improvisation"])
@@ -422,29 +430,10 @@ export async function getEventsByType(type: string, today: string): Promise<{ ev
       return { events: [], error: `Could not load ${type} events: ${error.message}` };
     }
 
-    const rows = (data ?? []) as (SupabaseEventRow & { series_id?: string | null })[];
-
-    // Dedupe recurring series (e.g. a monthly retreat with 8 upcoming occurrences) down to their
-    // next occurrence, so one series doesn't dominate a listing meant to show variety. Rows are
-    // already sorted by start_date, so the first row seen per series_id is the earliest — count
-    // how many total rows share that series_id first, then keep only that first one.
-    const seriesTotals = new Map<string, number>();
-    for (const row of rows) {
-      if (row.series_id) seriesTotals.set(row.series_id, (seriesTotals.get(row.series_id) ?? 0) + 1);
-    }
-
-    const seenSeries = new Set<string>();
-    const events: TypeListItem[] = [];
-    for (const row of rows) {
-      if (row.series_id) {
-        if (seenSeries.has(row.series_id)) continue;
-        seenSeries.add(row.series_id);
-      }
-      const event: TypeListItem = mapEventRow(row);
-      const total = row.series_id ? seriesTotals.get(row.series_id) ?? 1 : 1;
-      if (total > 1) event.seriesExtraDates = total - 1;
-      events.push(event);
-    }
+    // Recurring series (e.g. a bimonthly retreat with 7 upcoming dates) show once, at their next
+    // date, so one series doesn't dominate a listing meant to show variety. Until I-171 this
+    // collapsed every series, which hid the distinct weekends of sequential programmes.
+    const events = collapseRecurringSeries(((data ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow));
 
     return { events, error: null };
   } catch (error) {

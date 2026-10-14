@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, User } from "lucide-react";
-import { type SegmentsData, formatEventDateRange } from "@/lib/event-display";
+import { type SegmentsData, formatSegmentWhen } from "@/lib/event-display";
 import { slugify } from "@/lib/slug";
 
 interface SegmentsSectionProps {
@@ -40,20 +40,17 @@ export function SegmentsSection({ segments, teacherProfiles = [] }: SegmentsSect
       </div>
 
       <div className="grid gap-4">
-        {displayedItems.map((segment, index) => (
+        {displayedItems.map((segment, index) => {
+          const when = formatSegmentWhen(segment);
+          return (
           <div
             key={`${segment.title}-${index}`}
             className="rounded-[1.5rem] border border-(--color-sand-strong) bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
           >
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <h3 className="font-serif text-xl leading-tight text-slate-900">{segment.title}</h3>
-              {segment.startDate && segment.endDate && (
-                <span className="shrink-0 text-sm font-semibold text-(--color-pine)">
-                  {formatEventDateRange({
-                    startDate: segment.startDate,
-                    endDate: segment.endDate,
-                  })}
-                </span>
+              {when && (
+                <span className="shrink-0 text-sm font-semibold text-(--color-pine)">{when}</span>
               )}
             </div>
 
@@ -102,7 +99,8 @@ export function SegmentsSection({ segments, teacherProfiles = [] }: SegmentsSect
               </p>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {showCollapseToggle && !isExpanded && (

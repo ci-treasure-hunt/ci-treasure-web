@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEventSlug } from "@/lib/events";
+import { addSeriesDates, createSeriesFromEvent } from "@/lib/series";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { removeImageIfUnused } from "@/lib/upload-action";
 import { resolveVenueLocation } from "@/lib/geocode";
 import {
   BARE_EMAIL,
+  computeRepeatDates,
   normalizeCountry,
   normalizeJsonItems,
   parseCsvArray,
@@ -216,11 +218,45 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     }
   }
 
+  // I-171 Stage 4: a repeating jam/class (or anything else that repeats). The row above is the
+  // first date; it becomes a recurring series and the generator adds the rest from it, with the
+  // same teachers, organizers and contacts. Non-fatal like the links above: the first date
+  // exists either way, and the series can be completed from /admin/series.
+  const { dates: repeatDates } = computeRepeatDates(data);
+  const repeatIds: string[] = [];
+  let repeatWarning: string | undefined;
+  if (repeatDates.length) {
+    try {
+      const seriesId = await createSeriesFromEvent({
+        eventId: inserted.id,
+        title: data.title.trim(),
+        seriesType: "recurring",
+        createdBy: user.id,
+      });
+      const result = await addSeriesDates({
+        seriesId,
+        dates: repeatDates,
+        copyTeachers: true,
+        updatedBy: user.id,
+        source: "self_submitted",
+      });
+      repeatIds.push(...result.created.map((c) => c.id));
+      if (result.skipped.length) {
+        repeatWarning = `Event created, but these dates couldn't be added: ${result.skipped.map((s) => s.date).join(", ")}. Email hello@citreasurehunt.com and we'll add them.`;
+      }
+    } catch (error) {
+      console.error("repeat dates failed:", error instanceof Error ? error.message : error);
+      repeatWarning = "Event created, but the repeating dates couldn't be added. Email hello@citreasurehunt.com and we'll add them.";
+    }
+  }
+
   // Trusted organizers auto-publish. The announce Edge Function fires on the
-  // pending→published UPDATE (not on INSERT), so publish via a follow-up update.
+  // pending→published UPDATE (not on INSERT), so publish via a follow-up update. All dates of a
+  // repeating event publish together; the announce series guard posts only the earliest
+  // (_shared/series-guard.ts), so a weekly jam doesn't post once per week.
   if (profile.is_trusted) {
     const admin = createAdminClient();
-    await admin.from("events").update({ status: "published" }).eq("id", inserted.id);
+    await admin.from("events").update({ status: "published" }).in("id", [inserted.id, ...repeatIds]);
     revalidatePath("/");
   } else {
     notifyAdminNewEvent(inserted.title).catch(() => {});
@@ -230,7 +266,7 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   return {
     success: true,
     slug: buildEventSlug(inserted.short_id, inserted.title),
-    warning: teacherWarning ?? organizerWarning ?? warning,
+    warning: teacherWarning ?? organizerWarning ?? repeatWarning ?? warning,
   };
 }
 

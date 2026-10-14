@@ -83,15 +83,7 @@ export async function EventTypeListing({ config }: { config: EventTypePageConfig
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {events.map((event) => (
-            <div key={event.id} className="flex flex-col gap-1.5">
-              <EventCard event={event} />
-              {event.seriesExtraDates ? (
-                <p className="px-1 text-xs text-slate-500">
-                  Recurring: {event.seriesExtraDates} more upcoming{" "}
-                  {event.seriesExtraDates === 1 ? "date" : "dates"} on the event page
-                </p>
-              ) : null}
-            </div>
+            <EventCard key={event.id} event={event} />
           ))}
         </div>
       </div>

@@ -8,7 +8,7 @@ import { Search, Map, List, X, Filter } from "lucide-react";
 import { EventCard } from "./event-card";
 import { BackToTopButton } from "./back-to-top-button";
 import { Button } from "./ui/button";
-import { disciplineLabel, getCountryLabel, getTypeLabel, type EventListItem } from "@/lib/event-display";
+import { DURATION_BANDS, collapseRecurringSeries, disciplineLabel, matchesDurationBand, getCountryLabel, getTypeLabel, type EventListItem } from "@/lib/event-display";
 import { TELEGRAM_URL } from "@/lib/site";
 import { CONTINENT_COUNTRIES, CONTINENT_LABELS } from "@/lib/continents";
 
@@ -41,6 +41,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const selectedCountry = searchParams.get("country") ?? "";
   const selectedType = searchParams.get("type") ?? "";
   const selectedMonth = searchParams.get("month") ?? "";
+  const selectedDuration = searchParams.get("length") ?? "";
   const soonOnly = searchParams.get("soon") === "1";
 
   function setParam(key: string, value: string) {
@@ -54,6 +55,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const setSelectedCountry = (v: string) => setParam("country", v);
   const setSelectedType = (v: string) => setParam("type", v);
   const setSelectedMonth = (v: string) => setParam("month", v);
+  const setSelectedDuration = (v: string) => setParam("length", v);
   const setSoonOnly = (v: boolean) => setParam("soon", v ? "1" : "");
 
   // Keep sessionStorage in sync so the smart back button can return here with filters intact
@@ -125,7 +127,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   // effect, so the reset lands in the same commit instead of costing an extra render pass.
   const [prevFilteredEvents, setPrevFilteredEvents] = useState<EventListItem[] | null>(null);
 
-  const activeFilterCount = [selectedCountry, selectedType, selectedMonth, soonOnly ? "1" : ""].filter(Boolean).length;
+  const activeFilterCount = [selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly ? "1" : ""].filter(Boolean).length;
 
   // Reset all filters
   const resetFilters = () => {
@@ -206,8 +208,10 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   }, [events]);
 
   // Filter events locally on the client (blasing fast, updates map and list instantly)
+  // Collapsed after filtering, not before: a month filter must still find a recurring series'
+  // later instances (I-171). Same collapse for the "of N events" total, so both count list rows.
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
+    return collapseRecurringSeries(events.filter((event) => {
       // 0. Discipline — skip entirely when "All disciplines" is active
       if (!showAllDisciplines && selectedDisciplines.length > 0) {
         if (!event.discipline.some((d) => selectedDisciplines.includes(d))) {
@@ -242,6 +246,11 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
         return false;
       }
 
+      // 3b. Duration (I-073): trip length band, independent of type
+      if (selectedDuration && !matchesDurationBand(event, selectedDuration)) {
+        return false;
+      }
+
       // 4. Month Match
       if (selectedMonth && !event.startDate.startsWith(selectedMonth)) {
         return false;
@@ -253,8 +262,10 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
       }
 
       return true;
-    });
-  }, [events, searchQuery, selectedCountry, selectedType, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines]);
+    }));
+  }, [events, searchQuery, selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines]);
+
+  const totalListed = useMemo(() => collapseRecurringSeries(events).length, [events]);
 
   if (filteredEvents !== prevFilteredEvents) {
     setPrevFilteredEvents(filteredEvents);
@@ -431,6 +442,21 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
               ))}
             </select>
 
+            {/* Duration Selector (I-073) */}
+            <select
+              aria-label="Filter by length"
+              value={selectedDuration}
+              onChange={(e) => setSelectedDuration(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:w-44"
+            >
+              <option value="">Any Length</option>
+              {DURATION_BANDS.map((band) => (
+                <option key={band.value} value={band.value}>
+                  {band.label}
+                </option>
+              ))}
+            </select>
+
             {/* Month Selector */}
             <select
               aria-label="Filter by month"
@@ -460,9 +486,9 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
 
           <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 w-full justify-between sm:w-auto sm:justify-end border-t border-slate-50 pt-2 sm:border-none sm:pt-0">
             <span>
-              {filteredEvents.length} of {events.length} events
+              {filteredEvents.length} of {totalListed} events
             </span>
-            {(searchQuery || selectedCountry || selectedType || selectedMonth || soonOnly) && (
+            {(searchQuery || selectedCountry || selectedType || selectedDuration || selectedMonth || soonOnly) && (
               <button
                 onClick={resetFilters}
                 className="text-violet-600 hover:text-violet-800 transition"

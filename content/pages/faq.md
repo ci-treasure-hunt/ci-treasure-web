@@ -14,14 +14,14 @@ explains both, then answers the questions that come up most often.
 ## The four parts of the site
 
 **[Events](/).** The homepage is the calendar. Every contact improvisation festival, intensive,
-retreat, training and weekend workshop we know about, sorted by date, filterable by country and by
-type. Each event has its own page with dates, prices, teachers, venue, and a link straight to the
+retreat, training and weekend workshop we know about, plus regular jams and classes added by the
+people who run them, sorted by date, filterable by country, type and length. Each event has its own page with dates, prices, teachers, venue, and a link straight to the
 organizer. Past events stay online with an "ended" marker instead of disappearing.
 
 **[Communities](/communities).** A world map of local CI groups: jam series, weekly classes,
-collectives, teacher networks. This is where to look for the thing the calendar deliberately does
-not carry, your local Tuesday jam. Each entry links to whatever the group uses, usually a
-Telegram, WhatsApp or Facebook group.
+collectives, teacher networks. This is still the best place to look for your local Tuesday jam:
+few weekly jams are in the calendar yet, and the group running one always knows the latest. Each
+entry links to whatever the group uses, usually a Telegram, WhatsApp or Facebook group.
 
 **[Venues](/venues).** The studios, halls and retreat centers events happen in, with photos,
 addresses and everything that has been held there. Useful when you know you loved the space and
@@ -77,13 +77,15 @@ Yes. Claude, ChatGPT, Grok, Gemini and other assistants can connect to the direc
 answer from the live listings, with links back here. It is read-only and needs no account.
 [How to connect it](/agents).
 
-**Why is my weekly jam not listed?**
-The calendar lists one-off events, from a one-day workshop up to a festival. Recurring formats
-such as weekly jams and ongoing classes are not in it yet: a weekly jam changes venue, skips holidays and
-switches to a summer schedule, and a listing only stays accurate if the people running it can keep
-it up to date themselves. We are building that. Until then, what we list is the group itself, in
-[Communities](/communities), so you can find your jam by finding the people who run it. If your
-community is missing there, send it to [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com) and we will add it.
+**Can I list my weekly jam or class?**
+Yes. Sign in, go to [citreasurehunt.com/events/new](/events/new), choose jam or class, enter the
+first date, and say how it repeats: every week, every two weeks, or on specific dates. Each date
+gets its own listing, and the calendar shows them as one entry with the next dates. You can add
+dates up to about six months ahead, and more later. A weekly jam changes venue, skips holidays and
+switches to a summer schedule, so a listing only stays accurate if the people running it keep it
+up to date: each date can be edited or canceled on its own. Most local jams are still easiest to
+find through their group in [Communities](/communities). If your community is missing there, send
+it to [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com) and we will add it.
 
 **Can I buy tickets here?**
 No. We do not sell tickets, take payments, or handle registration. Every event page links to the
@@ -160,14 +162,16 @@ we will enter it by hand (for now, as long as capacity allows). Both cost nothin
 completely fine. Over time, we would love more organizers to add their own events.
 
 **What kinds of events do you list?**
-Events where people come together to dance contact improvisation, as a one-off: a single day, or one
-continuous stretch of days. Festivals, intensives, retreats, weekend workshops and one-day workshops.
+Events where people come together to dance contact improvisation: festivals, intensives, retreats,
+weekend workshops and one-day workshops, and regular jams and classes, where each date is its own
+listing.
 
-Two things sit outside that. The first is the shape of the schedule. A course that meets for a few
-hours a week across several months is a different animal from an event people arrive at and stay
-inside from beginning to end, even when the total hours are high, and even when it is aimed at
-people coming from elsewhere. For now, weekly classes and ongoing jam series are listed through their
-local [community](/communities) instead, which is where people look for them.
+Two things sit outside that. The first is the shape of the schedule. A jam or class you can drop
+into on any date is listed date by date. A course that meets for a few hours a week across several
+months, with one enrollment for the whole course, is a different animal: nobody joins week seven
+on its own, so it fits neither a single date nor an event people arrive at and stay inside from
+beginning to end. For now, courses like that are listed through their local
+[community](/communities) instead.
 
 The second is what is on offer. The dancing has to be the thing itself. Plenty of good CI work
 touches on somatics, emotional material and personal process, and that belongs here. Where the
@@ -191,8 +195,10 @@ so an image is the single highest-value thing to include.
 **Where will my event be announced?**
 As soon as your event is published, it is announced automatically. It goes to the Telegram channel
 with its photo and, if it runs 2+ days, into the Telegram group as well: the festivals topic for
-4+ days, otherwise your region's workshop topic. One-day workshops go to the channel only. Our
-Facebook groups work differently: there you post your event yourself, and you are very welcome to.
+4+ days, otherwise your region's workshop topic. One-day workshops go to the channel only. A jam
+or class that repeats with the same title and teachers is announced once, with its first date,
+not every week; a date with a different guest teacher is announced on its own. Our Facebook
+groups work differently: there you post your event yourself, and you are very welcome to.
 
 **Can I tag CI Treasure Hunt as an Instagram collaborator?**
 Yes, if your event runs 4+ days. You make the post on your own account as usual and add
@@ -279,8 +285,11 @@ BUILD NOTES (not page content, for whoever edits this page next)
    sentences, not by adding contractions.
 
 7. Lines that will need updating when other issues ship:
-   - I-171 (recurring jams and classes): FAQ "Why is my weekly jam not listed?" ("We are building
-     that") and "What kinds of events do you list?", plus about.md "What gets listed".
+   - I-171 (recurring jams and classes): done 2026-10-14. FAQ "Can I list my weekly jam or
+     class?" (renamed from "Why is my weekly jam not listed?"), "What kinds of events do you
+     list?", "Where will my event be announced?", the Events/Communities intro, and about.md
+     "What gets listed". Revisit when Stage 5 (staleness) ships, and when cohort courses (one
+     enrollment across months, the DBrl case) become listable.
    - I-173 (revenue model): "no advertising" (FAQ "Is it free?", about.md intro and costs section)
      and about.md's "Browsing and (basic) listings stay free".
 -->

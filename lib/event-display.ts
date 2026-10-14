@@ -7,6 +7,11 @@ export type SegmentItem = {
   title: string;
   startDate?: string;
   endDate?: string;
+  // I-171 DEC-6a: HH:MM or HH:MM:SS, local to the event's timezone. For a day with more than one
+  // session (RhMW: a 10:30-13:00 class and a 15:30-18:00 jam), which the event's single
+  // start_time/end_time pair can't express. Stored as start_time/end_time in the JSON.
+  startTime?: string;
+  endTime?: string;
   teachers?: string[];
   description?: string;
 };
@@ -37,6 +42,13 @@ export type EventListItem = {
   lng: number | null;
   discipline: string[];
   cancelled: boolean;
+  // I-171: set only when the event belongs to a `recurring` series (interchangeable instances,
+  // D-02), so lists can collapse it with collapseRecurringSeries(). Sequential series stay
+  // unset: their parts are distinct events and list individually, in order (DEC-6b).
+  recurringSeriesId?: string | null;
+  // Filled by collapseRecurringSeries(): start dates of the series' later instances that survived
+  // the same filters, in order.
+  moreDates?: string[];
 };
 
 // Shared fallback gradient — used for event types without a dedicated accent (below),
@@ -218,4 +230,73 @@ export function formatCardTimeRange(event: Pick<EventListItem, "startDate" | "en
   const start = event.startTime ? event.startTime.slice(0, 5) : "TBA";
   const end = event.endTime ? event.endTime.slice(0, 5) : "";
   return end ? `${start} - ${end}` : start;
+}
+
+// I-171 DEC-2: a recurring series (a monthly retreat, later a weekly jam) is one row per date in
+// the DB (D-01), but listing every date buries the one-off events around it. Keep the earliest
+// instance per series and fold the rest into its `moreDates`. Expects input sorted by start date.
+// Run it *after* any client-side filtering, so a month filter still finds a later instance.
+export function collapseRecurringSeries<T extends EventListItem>(events: T[]): T[] {
+  const firstBySeries = new Map<string, T>();
+  const result: T[] = [];
+  for (const event of events) {
+    const seriesId = event.recurringSeriesId;
+    if (!seriesId) {
+      result.push(event);
+      continue;
+    }
+    const first = firstBySeries.get(seriesId);
+    if (first) {
+      first.moreDates = [...(first.moreDates ?? []), event.startDate];
+      continue;
+    }
+    const copy = { ...event, moreDates: [] };
+    firstBySeries.set(seriesId, copy);
+    result.push(copy);
+  }
+  return result;
+}
+
+// "Also Jan 7, Mar 18 and 4 more dates": the next two later dates, then a count.
+export function formatMoreDates(dates: string[], shown = 2) {
+  if (dates.length === 0) return "";
+  const fmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
+  const listed = dates.slice(0, shown).map((d) => fmt.format(new Date(`${d}T12:00:00`))).join(", ");
+  const rest = dates.length - shown;
+  return rest > 0 ? `Also ${listed} and ${rest} more ${rest === 1 ? "date" : "dates"}` : `Also ${listed}`;
+}
+
+// A segment's date and time, e.g. "Sep 26, 2026 · 10:30 - 13:00", or just the time when the
+// segment has no date of its own (sessions within a single-day event).
+export function formatSegmentWhen(segment: Pick<SegmentItem, "startDate" | "endDate" | "startTime" | "endTime">) {
+  const date = segment.startDate
+    ? formatEventDateRange({ startDate: segment.startDate, endDate: segment.endDate ?? segment.startDate })
+    : "";
+  const start = segment.startTime?.slice(0, 5);
+  const end = segment.endTime?.slice(0, 5);
+  const time = start && end && end !== start ? `${start} - ${end}` : start ?? "";
+  return [date, time].filter(Boolean).join(" · ");
+}
+
+// I-073 duration filter: trip length, a separate question from event type (a `workshop` runs from
+// one day to a weekend, a `long_jam` from half a day to a week). Bands from the live distribution
+// (2026-10-14: 6 / 77 / 63 / 37 upcoming events), framed as how much time it costs you.
+export const DURATION_BANDS = [
+  { value: "day", label: "One day", min: 1, max: 1 },
+  { value: "weekend", label: "A weekend (2-3 days)", min: 2, max: 3 },
+  { value: "week", label: "Up to a week (4-7 days)", min: 4, max: 7 },
+  { value: "longer", label: "Longer (8+ days)", min: 8, max: Infinity },
+] as const;
+
+export function eventDayCount(event: Pick<EventListItem, "startDate" | "endDate">) {
+  const start = Date.parse(`${event.startDate}T00:00:00Z`);
+  const end = Date.parse(`${(event.endDate || event.startDate)}T00:00:00Z`);
+  return Math.round((end - start) / 86_400_000) + 1;
+}
+
+export function matchesDurationBand(event: Pick<EventListItem, "startDate" | "endDate">, band: string) {
+  const def = DURATION_BANDS.find((b) => b.value === band);
+  if (!def) return true;
+  const days = eventDayCount(event);
+  return days >= def.min && days <= def.max;
 }

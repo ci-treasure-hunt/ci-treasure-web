@@ -88,14 +88,15 @@ countries, {venueCount} venues, {profileCount} teacher and organizer profiles, a
 
 ## What gets listed, and what does not
 
-The calendar takes one-off events, from one-day workshops to festivals, intensives, retreats, camps,
-trainings and weekend workshops.
+The calendar takes events from one-day workshops to festivals, intensives, retreats, camps,
+trainings and weekend workshops, and, since October 2026, regular jams and classes.
 
-Weekly jams and ongoing classes are not listed yet. A weekly jam changes venue, skips a holiday,
-moves to a summer schedule, and a directory maintained from the outside will always lag a few weeks
-behind. A way for organizers to keep their own recurring events up to date is being
-built. Until then, local Telegram, WhatsApp, Signal, Line and Facebook groups do that job better, and
-what the site does instead is list the group itself, so you can find your local jam by finding the people who run it. That is what the [communities directory](/communities) is for.
+A weekly jam changes venue, skips a holiday, moves to a summer schedule, and a directory maintained
+from the outside will always lag a few weeks behind. So jams and classes come in from the people
+who run them: they add the first date and how it repeats, and keep each date up to date. Local
+Telegram, WhatsApp, Signal, Line and Facebook groups still do that job best, which is why the site
+also lists the group itself: you can find your local jam by finding the people who run it. That is
+what the [communities directory](/communities) is for.
 
 There is a second boundary. The site is built around contact improvisation, but CI
 does not happen in isolation: the same festivals often program dance improvisation, Body-Mind

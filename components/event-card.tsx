@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { CalendarDays, Clock3, MapPin } from "lucide-react";
 
-import { formatCardTimeRange, formatEventDateRange, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
+import { formatCardTimeRange, formatEventDateRange, formatMoreDates, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
 import { getMediumUrl, getSmallUrl, toCdnUrl } from "@/lib/image-url";
 
 export function EventCard({ event, compact = false }: { event: EventListItem; compact?: boolean }) {
   const imageUrl = event.imageUrl?.trim() ?? "";
   const renderImage = imageUrl.length > 0;
   const timeRange = formatCardTimeRange(event);
+  // I-171: later dates of a collapsed recurring series, see collapseRecurringSeries().
+  const moreDates = formatMoreDates(event.moreDates ?? []);
 
   if (compact) {
     return (
@@ -38,6 +40,7 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
               {formatEventDateRange(event)}
               {timeRange ? ` · ${timeRange}` : ""}
             </p>
+            {moreDates ? <p className="text-xs text-(--color-pine)">{moreDates}</p> : null}
             {/* slate-500, not slate-400: slate-400 measured 2.63:1 on white, below WCAG's 4.5:1 minimum */}
             <p className="text-xs text-slate-500">{event.city}, {getCountryLabel(event.country)}</p>
           </div>
@@ -81,7 +84,10 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
           <dl className="space-y-2 text-sm text-slate-600">
             <div className="flex items-start gap-2">
               <CalendarDays className="mt-0.5 size-4 text-(--color-pine)" />
-              <dd>{formatEventDateRange(event)}</dd>
+              <dd>
+                {formatEventDateRange(event)}
+                {moreDates ? <span className="block text-xs text-(--color-pine)">{moreDates}</span> : null}
+              </dd>
             </div>
             {timeRange ? (
               <div className="flex items-start gap-2">

@@ -9,6 +9,7 @@ import type { AdminLinkItem, AdminPriceItem } from "./admin-events";
 import { COUNTRIES } from "./countries";
 import { safeExternalUrl } from "./url-safety";
 import { isPhoneContactUrl, type PhoneContactInput } from "./phone-contacts";
+import { addDays, daysBetween, parseDateList } from "./date-list";
 
 export { EVENT_TYPE_OPTIONS, LINK_TYPE_OPTIONS, TEACHER_ROLE_OPTIONS } from "./admin-events";
 export type { AdminLinkItem, AdminPriceItem };
@@ -152,7 +153,28 @@ export type OrganizerEventFormData = {
   // carried for shape reuse with teachers but ignored on write — createEvent always inserts
   // these as 'lead' (co-organizer was abolished as a distinct role, see feedback memory).
   organizers: OrganizerTeacherItem[];
+  // I-171 Stage 4, create mode only: further dates of the same event. The form's own start/end
+  // date is the first occurrence; createEvent turns the rest into a recurring series
+  // (lib/series.ts). "" = one-off.
+  repeat: RepeatMode;
+  repeatUntil: string;
+  repeatDates: string;
 };
+
+export type RepeatMode = "" | "weekly" | "biweekly" | "dates";
+
+export const REPEAT_OPTIONS: Array<{ value: RepeatMode; label: string }> = [
+  { value: "", label: "No, a one-off event" },
+  { value: "weekly", label: "Every week" },
+  { value: "biweekly", label: "Every 2 weeks" },
+  { value: "dates", label: "On specific dates" },
+];
+
+// Rolling horizon (I-171 Stage 1): dates are materialised at most ~6 months ahead, so a weekly
+// jam doesn't fill the calendar with a year of rows nobody has confirmed. Extending later is a
+// matter of adding dates; staleness (Stage 5) will handle series that quietly stop.
+export const REPEAT_HORIZON_DAYS = 183;
+export const REPEAT_MAX_DATES = 30;
 
 export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
   return {
@@ -178,6 +200,9 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     features: "",
     teachers: [],
     organizers: [],
+    repeat: "",
+    repeatUntil: "",
+    repeatDates: "",
     discipline: ["contact_improvisation"],
     cancelled: false,
     cancelledText: "",
@@ -339,22 +364,48 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     teachers: [],
     organizers: [],
     phoneContacts: [],
+    repeat: "",
+    repeatUntil: "",
+    repeatDates: "",
   };
 }
 
-// I-171: jam/class are inherently recurring formats (weekly jam, ongoing class), not one-off
-// events with a different label. Unblocking single-day submission for them without recurrence
-// support (day-of-week, weekly/biweekly cadence) would invite "our weekly Tuesday jam" to be
-// submitted as a single dated row, which doesn't fit the events model and has to be cleaned up
-// later. Stays gated until I-171 ships its own submission path.
-const RECURRING_TYPES = new Set(["jam", "class"]);
+// The further dates a create-mode submission repeats on, not including its own start date.
+// Pure, so the form can preview exactly what the server will create.
+export function computeRepeatDates(data: Pick<OrganizerEventFormData, "startDate" | "repeat" | "repeatUntil" | "repeatDates">): {
+  dates: string[];
+  error: string | null;
+} {
+  if (!data.repeat || !data.startDate) return { dates: [], error: null };
+  const horizonEnd = addDays(data.startDate, REPEAT_HORIZON_DAYS);
 
-// Exported so the form can grey these out in the Type dropdown instead of letting someone fill
-// in a whole submission and only hit the wall on save (reported 2026-09-19). Blocking them
-// outright in the picker doesn't cost a legitimate case: a multi-day jam gathering is long_jam,
-// which stays available, and 34 of 34 live multi-day jam events use exactly that.
-export function isRecurringType(type: string): boolean {
-  return RECURRING_TYPES.has(type);
+  let dates: string[];
+  if (data.repeat === "dates") {
+    const { dates: parsed, invalid } = parseDateList(data.repeatDates);
+    if (invalid.length) return { dates: [], error: `Not a date: ${invalid.join(", ")}. Use 2026-11-07 or 07.11.2026.` };
+    dates = parsed.filter((d) => d !== data.startDate);
+    if (dates.some((d) => d < data.startDate)) {
+      return { dates: [], error: "The other dates should come after the first date." };
+    }
+    if (dates.some((d) => d > horizonEnd)) {
+      return { dates: [], error: "Add dates up to about 6 months ahead. You can add later ones nearer the time." };
+    }
+  } else {
+    if (!data.repeatUntil) return { dates: [], error: "Pick the last date it repeats until." };
+    if (data.repeatUntil <= data.startDate) return { dates: [], error: "The repeat-until date should come after the first date." };
+    const until = data.repeatUntil < horizonEnd ? data.repeatUntil : horizonEnd;
+    const step = data.repeat === "weekly" ? 7 : 14;
+    dates = [];
+    for (let offset = step; daysBetween(data.startDate, until) >= offset; offset += step) {
+      dates.push(addDays(data.startDate, offset));
+    }
+  }
+
+  if (!dates.length) return { dates: [], error: "Add at least one more date, or choose a one-off event." };
+  if (dates.length > REPEAT_MAX_DATES) {
+    return { dates: [], error: `That's ${dates.length + 1} dates. Add up to ${REPEAT_MAX_DATES + 1} for now, you can add more later.` };
+  }
+  return { dates, error: null };
 }
 
 // Validation shared by create + edit. `enforceMinDuration` is only passed true from
@@ -362,8 +413,7 @@ export function isRecurringType(type: string): boolean {
 // decision) because neither the organizer nor admin web forms captured start/end time of day,
 // and a single-day listing without a time is barely usable (I-170). Now: a same-day event for a
 // one-off format is allowed once it has a start time — the actual problem the 2026-07-05 guard
-// was standing in for. Recurring formats (RECURRING_TYPES) stay blocked regardless of time,
-// since the real gap for them is recurrence support (I-171), not a missing time field. Editing
+// was standing in for. Editing
 // an existing event never re-checks this, so already-linked single-day events (added via
 // /addevent or admin) stay editable.
 export function validateOrganizerEvent(
@@ -375,16 +425,15 @@ export function validateOrganizerEvent(
   if (!data.endDate) return "End date is required.";
   if (data.endDate < data.startDate) return "End date can't be before the start date.";
   if (options?.enforceMinDuration && data.endDate === data.startDate) {
-    if (RECURRING_TYPES.has(data.type)) {
-      // Reachable only by a direct API call now that the form greys these out (isRecurringType).
-      // Points at the local community, not our Telegram group: the group's topics are the
-      // festival index and the regional workshop lists, for things people travel to, and a
-      // weekly jam or ongoing class belongs with its own local scene (corrected 2026-09-19).
-      return "Weekly jams and ongoing classes aren't supported for self-service submission yet, we're building that next. For now, share it with your local CI community, which you can find at citreasurehunt.com/communities.";
-    }
     if (!data.startTime.trim()) {
       return "Add a start time for a single-day event.";
     }
+  }
+  // I-171 Stage 4: jam/class were blocked here until repeating dates existed. They're now
+  // submittable like any other type, as a one-off or with further dates (computeRepeatDates).
+  if (options?.enforceMinDuration && data.repeat) {
+    const { error } = computeRepeatDates(data);
+    if (error) return error;
   }
   if (!data.city.trim()) return "City is required.";
   if (!data.country.trim()) return "Country is required.";
