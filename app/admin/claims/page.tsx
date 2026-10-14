@@ -39,6 +39,11 @@ export default async function AdminClaimsPage() {
                   <p className="mt-1 text-sm text-slate-700">
                     Claimed by <span className="font-medium">{claim.claimerEmail}</span>
                   </p>
+                  {claim.emailMatches ? (
+                    <p className="mt-1 text-sm font-medium text-emerald-700">
+                      Email matches the address stored for this profile
+                    </p>
+                  ) : null}
                   {claim.bioSnippet ? <p className="mt-1 text-sm text-slate-500">{claim.bioSnippet}…</p> : null}
                 </div>
                 <ClaimActions profileId={claim.profileId} />

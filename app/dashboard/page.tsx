@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { isAdminEmail } from "@/lib/admin-auth";
 import { RemoveMeButton } from "@/components/organizer/remove-me-button";
+import { findClaimSuggestion, type ClaimSuggestion } from "@/lib/claim-suggestion";
 import { buildEventSlug } from "@/lib/events";
 import { getManageableSeriesIds } from "@/lib/series-access";
 import { supportHref } from "@/lib/support";
@@ -100,6 +101,9 @@ export default async function DashboardPage({
     .select("name")
     .eq("claim_pending_user_id", user.id)
     .maybeSingle();
+
+  // "Is this you?" (I-074 follow-up): only while the user has neither a profile nor a claim.
+  const claimSuggestion = !profile && !pendingClaim ? await findClaimSuggestion(user) : null;
 
   // Same middle state for event claims (I-118) — profiles has one pending-claim column to
   // check, event_claims is a separate table since a user can have several pending at once.
@@ -234,7 +238,10 @@ export default async function DashboardPage({
           </section>
         ) : !profile ? (
           <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-8 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
-            <h2 className="font-serif text-2xl text-slate-950">Find your profile</h2>
+            {claimSuggestion ? <ClaimSuggestionCard suggestion={claimSuggestion} /> : null}
+            <h2 className={`font-serif text-2xl text-slate-950${claimSuggestion ? " mt-8" : ""}`}>
+              {claimSuggestion ? "Not you?" : "Find your profile"}
+            </h2>
             <p className="mt-3 text-base leading-7 text-slate-700">
               To manage events, tell us whether you&apos;re already listed here or you&apos;re new.
             </p>
@@ -465,5 +472,37 @@ function EventList({ events, teacherId }: { events: DashboardEvent[]; teacherId?
         </li>
       ))}
     </ul>
+  );
+}
+
+function ClaimSuggestionCard({ suggestion }: { suggestion: ClaimSuggestion }) {
+  return (
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 className="font-serif text-2xl text-slate-950">Is this you?</h2>
+      <p className="mt-2 text-sm text-slate-700">
+        {suggestion.reason === "email"
+          ? "We have a profile listed with the email address you signed in with."
+          : "We have a profile listed with the name on your Google account."}
+      </p>
+      <div className="mt-4 rounded-xl bg-white px-4 py-3">
+        <a
+          href={`/teachers/${suggestion.slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-slate-950 underline decoration-(--color-sand-strong) underline-offset-4 hover:text-(--color-pine)"
+        >
+          {suggestion.name}
+        </a>
+        <p className="mt-1 text-sm text-slate-600">
+          {[suggestion.roles, suggestion.place].filter(Boolean).join(" · ")}
+        </p>
+      </div>
+      <Link
+        href={`/dashboard/claim?profile=${suggestion.id}`}
+        className="mt-4 inline-block rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist)"
+      >
+        Yes, this is me
+      </Link>
+    </div>
   );
 }

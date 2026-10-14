@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdminUser } from "@/lib/admin-auth";
+import { claimEmailMatches } from "@/lib/claim-suggestion";
 import { sendEmail } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -14,6 +15,8 @@ export type PendingClaim = {
   claimerEmail: string;
   claimerUserId: string;
   claimedAt: string | null;
+  // The claimant signed in with the address stored for this profile (strong hint, not proof).
+  emailMatches: boolean;
 };
 
 export async function getPendingClaims(): Promise<PendingClaim[]> {
@@ -37,6 +40,7 @@ export async function getPendingClaims(): Promise<PendingClaim[]> {
       claimerEmail: userData?.user?.email ?? "(unknown email)",
       claimerUserId: p.claim_pending_user_id as string,
       claimedAt: (p.updated_at as string) ?? null,
+      emailMatches: await claimEmailMatches(p.id as string, userData?.user?.email),
     });
   }
   return claims;
