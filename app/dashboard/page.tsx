@@ -6,6 +6,9 @@ import { RemoveMeButton } from "@/components/organizer/remove-me-button";
 import { buildEventSlug } from "@/lib/events";
 import { getManageableSeriesIds } from "@/lib/series-access";
 import { supportHref } from "@/lib/support";
+
+import { completeSignupOptin, newsletterState } from "./newsletter";
+import { NewsletterOffer } from "./newsletter-offer";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardEvent = {
@@ -58,6 +61,12 @@ export default async function DashboardPage({
   }
 
   const isAdmin = await isAdminEmail(user.email);
+
+  // I-160 rider: carry out the sign-up newsletter box now that the address is proven, else offer
+  // it once. Not on the post-submission redirect, which already carries the support ask.
+  const signupNewsletter = await completeSignupOptin(user);
+  const showNewsletterOffer =
+    !submitted && Boolean(user.email) && !newsletterState(user) && signupNewsletter === null;
 
   // Profile this user owns (claim approved, or self-created).
   const { data: profile } = await supabase
@@ -186,6 +195,14 @@ export default async function DashboardPage({
             </form>
           </div>
         </header>
+
+        {signupNewsletter === "pending" ? (
+          <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
+            Thanks for subscribing to the newsletter! We sent an email to {user.email}. Click the button in it to
+            confirm.
+          </p>
+        ) : null}
+        {showNewsletterOffer ? <NewsletterOffer email={user.email!} /> : null}
 
         {!profile && pendingClaim ? (
           <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-8 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">

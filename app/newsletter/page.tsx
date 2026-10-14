@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EOSubscribeForm } from "./eo-form";
+import { NewsletterForm } from "./newsletter-form";
 
 export const metadata: Metadata = {
   title: "Newsletter — CI Treasure Hunt",
@@ -20,9 +20,10 @@ export default function NewsletterPage() {
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <EOSubscribeForm />
+          <NewsletterForm />
           <p className="mt-4 text-xs text-slate-400">
-            Powered by EmailOctopus. Protected by Google reCAPTCHA.{" "}
+            You will get one email to confirm, then the newsletter. Sent with EmailOctopus, spam check by
+            Cloudflare Turnstile.{" "}
             <Link href="/privacy" className="underline hover:text-slate-600">
               Privacy policy
             </Link>

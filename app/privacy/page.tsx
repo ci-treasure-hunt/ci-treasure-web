@@ -200,9 +200,10 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-semibold text-slate-950">8. Newsletter</h2>
           <p>
-            The newsletter signup form is embedded directly on this site and is provided by EmailOctopus
-            (EmailOctopus Limited, UK). When you subscribe, your name and email address are transmitted to and stored
-            by EmailOctopus. Their{" "}
+            The newsletter is sent with EmailOctopus (EmailOctopus Limited, UK). When you subscribe, through the
+            form on our newsletter page, the checkbox when you create an account, or the button in your dashboard,
+            our server passes your email address to EmailOctopus, which stores it and sends you an email to
+            confirm your subscription. You only receive the newsletter after you confirm. Their{" "}
             <a
               href="https://emailoctopus.com/legal/privacy"
               className="underline"
@@ -211,34 +212,18 @@ export default function PrivacyPage() {
             >
               privacy policy
             </a>{" "}
-            governs that data. We do not store your email address on our own systems. Legal basis: Art. 6(1)(a)
-            GDPR: your consent at the time of signup. We keep your address until you unsubscribe or ask us to
-            remove it. You can unsubscribe at any time via the link in any newsletter email, and withdrawing your
-            consent that way does not affect the lawfulness of anything sent beforehand.
+            governs the data they hold. If you have an account with us, we already store your email address for
+            it (see section 12), and we also note in your account whether you subscribed through it or declined the
+            offer, so we do not ask again. Legal basis: Art. 6(1)(a) GDPR: your consent at the time of signup.
+            We keep your address on the list until you unsubscribe or ask us to remove it. You can unsubscribe at
+            any time via the link in any newsletter email, and withdrawing your consent that way does not affect
+            the lawfulness of anything sent beforehand.
           </p>
           <p className="mt-2">
-            The signup form uses Google reCAPTCHA to prevent automated spam submissions. When the form loads, Google
-            reCAPTCHA collects hardware and software information (including device and application data) and sends it
-            to Google Inc. (US). This processing serves our legitimate interest in keeping the mailing list free from
-            bots. Legal basis: Art. 6(1)(f) GDPR. See{" "}
-            <a
-              href="https://policies.google.com/privacy"
-              className="underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Google&apos;s privacy policy
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://policies.google.com/terms"
-              className="underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              terms of service
-            </a>
-            .
+            The form on the newsletter page is protected by the Cloudflare Turnstile check described in section
+            14, and we store a daily-rotating hash of your IP address to limit repeated signups, which cannot be
+            used to identify you. Legal basis: Art. 6(1)(f) GDPR: legitimate interest in keeping the mailing list
+            free from bots.
           </p>
         </section>
         <section>

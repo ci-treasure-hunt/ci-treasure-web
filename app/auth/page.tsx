@@ -81,11 +81,18 @@ async function sendMagicLink(formData: FormData) {
   const headerStore = await headers();
   const origin = headerStore.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+  // I-160 rider: the newsletter box only records the wish here. Subscribing now would let anyone
+  // sign a stranger's address up; the dashboard does it once the address is proven by sign-in
+  // (app/dashboard/newsletter.ts). `data` only lands on new accounts, which is the case this box
+  // is for; existing users get the dashboard offer instead.
+  const newsletter = formData.get("newsletter") === "on";
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}`,
+      ...(newsletter ? { data: { newsletter_optin: true } } : {}),
     },
   });
 
@@ -169,6 +176,11 @@ export default async function AuthPage({
               placeholder="you@example.com"
             />
           </div>
+          {/* Must stay unchecked by default: a pre-ticked box is not valid consent (Planet49, UWG §7). */}
+          <label className="flex items-start gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="newsletter" className="mt-1" />
+            <span>Also send me the monthly newsletter with new events and features. You confirm it once by email.</span>
+          </label>
           <button
             type="submit"
             className="rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist)"

@@ -11,6 +11,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const hasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL);
 
+test.describe.configure({ timeout: 120_000 });
+
 test.describe('I-118 claim flows (authenticated)', () => {
   test.skip(!hasServiceRole, 'SUPABASE_SERVICE_ROLE_KEY not set — skipping authenticated e2e coverage');
 
@@ -104,7 +106,9 @@ test.describe('I-118 claim flows (authenticated)', () => {
     // verification now sits behind an explicit button press. A scanner issues GETs and does not
     // submit forms; a real sign-in, and this test, click through.
     await page.getByRole('button', { name: 'Finish signing in' }).click();
-    await page.waitForURL(/\/dashboard/);
+    // Path check, not a regex: the confirm page's own URL carries next=/dashboard, so a regex
+    // matched before sign-in finished on a slow (dev) server.
+    await page.waitForURL((url) => url.pathname === '/dashboard', { timeout: 60_000 });
   }
 
   test('claiming a no-organizer event: CTA -> submit -> dashboard shows pending', async ({ page, baseURL }) => {
