@@ -180,6 +180,12 @@ export default async function RootLayout({
                   <Link href="/feedback" className="transition hover:text-slate-800">
                     Feedback
                   </Link>
+                  {" · "}
+                  {/* I-141: the human-facing page about the MCP server. Labelled for dancers, who
+                      say "my AI assistant", not "agent". */}
+                  <Link href="/agents" className="transition hover:text-slate-800">
+                    AI assistants
+                  </Link>
                 </p>
               </div>
               <div className="flex items-center gap-3 lg:justify-end">

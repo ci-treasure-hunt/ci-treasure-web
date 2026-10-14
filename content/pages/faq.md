@@ -72,6 +72,11 @@ you are part of.
 Yes. Free to browse, free to submit an event, free to claim your profile. There is no advertising
 on the site.
 
+**Can I ask my AI assistant about events?**
+Yes. Claude, ChatGPT, Grok, Gemini and other assistants can connect to the directory directly and
+answer from the live listings, with links back here. It is read-only and needs no account.
+[How to connect it](/agents).
+
 **Why is my weekly jam not listed?**
 The calendar lists one-off events, from a one-day workshop up to a festival. Recurring formats
 such as weekly jams and ongoing classes are not in it yet: a weekly jam changes venue, skips holidays and
