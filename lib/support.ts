@@ -4,7 +4,7 @@
 
 export const SUPPORT_TARGET = "https://buymeacoffee.com/citreasurehunt";
 
-export const SUPPORT_SOURCES = ["footer", "submit", "approval_email"] as const;
+export const SUPPORT_SOURCES = ["footer", "submit", "approval_email", "lnkbio", "newsletter", "telegram"] as const;
 export type SupportSource = (typeof SUPPORT_SOURCES)[number];
 
 export function supportHref(source: SupportSource, absolute = false) {
