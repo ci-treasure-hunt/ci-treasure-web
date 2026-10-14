@@ -402,3 +402,7 @@ verify_jwt = false
 
 [functions.announce-event-cancelled]
 verify_jwt = false
+
+# I-029: called by the communities trigger (20261015130000), same bearer-secret auth as above.
+[functions.announce-community]
+verify_jwt = false

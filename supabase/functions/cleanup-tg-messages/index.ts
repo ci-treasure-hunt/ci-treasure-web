@@ -16,12 +16,14 @@ Deno.serve(async (req) => {
 
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-  // event_channel rows (the public TG channel, I-138) are a permanent feed, not the ephemeral
-  // festival-thread announcements this cleanup exists for — never auto-delete those.
+  // Only the ephemeral group-thread event announcements this cleanup exists for. An allowlist, not
+  // a denylist: event_channel rows (the public TG channel, I-138) are a permanent feed, and so are
+  // the community announcements (I-029, 2026-10-15), which Jan's manual ones never expired either.
+  // A denylist would have silently started deleting every new entity type added after it.
   const { data: rows, error } = await supabase
     .from('tg_announcements')
     .select('id, chat_id, message_id')
-    .neq('entity_type', 'event_channel')
+    .in('entity_type', ['event', 'event_cancelled'])
     .lt('sent_at', cutoff)
     .is('deleted_at', null)
 
