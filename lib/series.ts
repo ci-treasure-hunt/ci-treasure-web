@@ -214,6 +214,11 @@ export async function addSeriesDates(opts: {
   // events.source for the new rows: "series" from the admin form, "self_submitted" when an
   // organizer's own submission generates them (I-171 Stage 4).
   source?: string;
+  // Organizer form (I-171): the teachers for these dates, picked explicitly (a guest teacher
+  // series names someone new each time), and the title to give them. Explicit teachers take
+  // precedence over copyTeachers; the title falls back to the copyTeachers rule below.
+  teachers?: Array<{ teacher_id: string; role: string }>;
+  title?: string;
 }): Promise<AddDatesResult> {
   const supabase = createAdminClient();
   const result: AddDatesResult = { created: [], skipped: [] };
@@ -271,11 +276,11 @@ export async function addSeriesDates(opts: {
         // Rotating guest teachers (copyTeachers off): the template's title and description name the
         // previous guest ("CI on Saturday with Alexa Papa & ..."), so start from the series' own
         // title/description instead and let the admin fill in this date's guest before publishing.
-        title: opts.copyTeachers ? template.title : series.title,
+        title: opts.title?.trim() || (opts.copyTeachers ? template.title : series.title),
         description: opts.copyTeachers ? template.description : series.description ?? template.description,
         image_url: template.image_url,
         image_credit: template.image_credit,
-        segments: adaptSegments(template.segments, offset, opts.copyTeachers),
+        segments: adaptSegments(template.segments, offset, opts.copyTeachers && !opts.teachers?.length),
         start_date: date,
         end_date: addDays(date, spanDays),
         type: pick(series.default_type, template.type),
@@ -314,7 +319,12 @@ export async function addSeriesDates(opts: {
         .insert(organizers.map((o) => ({ ...o, event_id: created.id })));
       if (orgError) throw new Error(orgError.message);
     }
-    if (opts.copyTeachers && teachers?.length) {
+    if (opts.teachers?.length) {
+      const { error: teacherError } = await supabase
+        .from("event_teachers")
+        .insert(opts.teachers.map((t) => ({ ...t, event_id: created.id })));
+      if (teacherError) throw new Error(teacherError.message);
+    } else if (opts.copyTeachers && teachers?.length) {
       const { error: teacherError } = await supabase
         .from("event_teachers")
         .insert(teachers.map((t) => ({ ...t, event_id: created.id })));

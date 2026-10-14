@@ -72,3 +72,28 @@ export async function notifyAdminOrganizerAdded(
     }),
   });
 }
+
+// I-171: an organizer added dates to their series from /dashboard/series. Same topic and same
+// no-personal-data rule as the new-event notifier in app/events/actions.ts. Only called for
+// organizers who are not trusted; a trusted organizer's dates publish straight away.
+export async function notifyAdminSeriesDatesAdded(seriesTitle: string, count: number) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const text = [
+    `🆕 ${count} new ${count === 1 ? "date" : "dates"} submitted for the series: ${seriesTitle}`,
+    `Review: https://citreasurehunt.com/admin/events/pending`,
+  ].join("\n");
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_thread_id: EVENT_THREAD_ID,
+      text,
+      link_preview_options: { is_disabled: true },
+    }),
+  });
+}

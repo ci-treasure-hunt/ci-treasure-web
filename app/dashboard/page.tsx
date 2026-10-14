@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { isAdminEmail } from "@/lib/admin-auth";
 import { RemoveMeButton } from "@/components/organizer/remove-me-button";
 import { buildEventSlug } from "@/lib/events";
+import { getManageableSeriesIds } from "@/lib/series-access";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardEvent = {
@@ -77,6 +78,7 @@ export default async function DashboardPage() {
   let organizeEvents: DashboardEvent[] = [];
   let teachEvents: DashboardEvent[] = [];
   let musicEvents: DashboardEvent[] = [];
+  let seriesList: Array<{ id: string; title: string }> = [];
 
   if (profile) {
     // 1. Organise
@@ -94,6 +96,17 @@ export default async function DashboardPage() {
       .or(orgOrFilter)
       .order("start_date", { ascending: true });
     organizeEvents = (orgRows ?? []) as DashboardEvent[];
+
+    // I-171: repeating jams and classes, each with its own page to add more dates.
+    const seriesIds = await getManageableSeriesIds(supabase, user.id, profile.id);
+    if (seriesIds.length) {
+      const { data: seriesRows } = await supabase
+        .from("event_series")
+        .select("id, title")
+        .in("id", seriesIds)
+        .order("title");
+      seriesList = seriesRows ?? [];
+    }
 
     // 2. Teach
     const { data: teachLinks } = await supabase
@@ -248,6 +261,25 @@ export default async function DashboardPage() {
                   </Link>
                 </div>
               </div>
+
+              {seriesList.length ? (
+                <div className="mt-6 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-4">
+                  <p className="text-sm font-semibold text-slate-800">Your repeating events</p>
+                  <ul className="mt-2 space-y-2">
+                    {seriesList.map((s) => (
+                      <li key={s.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-sm text-slate-700">{s.title}</span>
+                        <Link
+                          href={`/dashboard/series/${s.id}`}
+                          className="self-start rounded-full border border-(--color-sand-strong) bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
+                        >
+                          See all dates · add more
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
               {organizeEvents.length === 0 ? (
                 <p className="mt-6 text-base leading-7 text-slate-600">

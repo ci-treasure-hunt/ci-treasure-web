@@ -35,7 +35,7 @@ export default async function EditEventPage({
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, short_id, title, type, start_date, end_date, start_time, end_time, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, level, language, features, discipline, cancelled, cancelled_text, price, links, segments, status, user_id",
+      "id, short_id, title, type, start_date, end_date, start_time, end_time, timezone, city, country, address, venue_id, venues(id, name, city, country), description, image_url, level, language, features, discipline, cancelled, cancelled_text, price, links, segments, status, user_id, series_id",
     )
     .ilike("short_id", parsed.shortId)
     .maybeSingle();
@@ -149,6 +149,14 @@ export default async function EditEventPage({
             Changes save immediately. Editing a published event keeps it published — it won&apos;t need
             re-approval.
           </p>
+          {event.series_id ? (
+            <p className="mt-3 rounded-2xl border border-(--color-sand-strong) bg-white/80 px-4 py-3 text-sm text-slate-700">
+              This is one date of a repeating event. Changes here apply to this date only.{" "}
+              <Link href={`/dashboard/series/${event.series_id}`} className="font-semibold text-(--color-pine) underline">
+                See all dates or add more
+              </Link>
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-8">
