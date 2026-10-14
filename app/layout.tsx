@@ -9,6 +9,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import NavigationTracker from "@/components/navigation-tracker";
 import ServiceWorkerRegistration from "@/components/service-worker-registration";
+import { supportHref } from "@/lib/support";
 import { SiteHeader } from "@/components/site-header";
 import { getAllCountrySummaries } from "@/lib/country-pages";
 import { getCountryLabelWithArticle } from "@/lib/event-display";
@@ -164,7 +165,7 @@ export default async function RootLayout({
               </div>
               <div className="flex flex-col items-center gap-2 text-center">
                 <a
-                  href="https://buymeacoffee.com/citreasurehunt"
+                  href={supportHref("footer")}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1.5 text-xs font-medium text-yellow-700 transition hover:bg-yellow-100"

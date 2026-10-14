@@ -149,7 +149,8 @@ export function OrganizerEventForm({
       // it's actually seen instead of redirecting straight past it (create mode otherwise
       // jumps to /dashboard immediately).
       if (mode === "create" && !result.warning) {
-        router.push("/dashboard");
+        // The dashboard shows a thank-you note for this (and the support nudge, I-173 F).
+        router.push(`/dashboard?submitted=${result.published ? "live" : "review"}`);
         router.refresh();
         return;
       }

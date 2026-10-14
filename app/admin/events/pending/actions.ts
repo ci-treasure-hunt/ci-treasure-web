@@ -6,6 +6,7 @@ import { requireAdminUser } from "@/lib/admin-auth";
 import { sendEmail } from "@/lib/email";
 import { buildEventSlug } from "@/lib/events";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SUPPORT_EMAIL_LINES } from "@/lib/support";
 
 // Look up the submitter's email from the event's user_id.
 async function submitterEmail(admin: ReturnType<typeof createAdminClient>, userId: string | null) {
@@ -101,6 +102,8 @@ export async function approveEvent(eventId: string): Promise<{ success: boolean;
         url,
         "",
         "You can edit it anytime from your dashboard: https://citreasurehunt.com/dashboard",
+        "",
+        ...SUPPORT_EMAIL_LINES,
         "",
         "— CI Treasure Hunt",
       ].join("\n"),
@@ -206,6 +209,8 @@ export async function approveSeries(seriesId: string): Promise<{ success: boolea
         url,
         "",
         "You can edit each date from your dashboard: https://citreasurehunt.com/dashboard",
+        "",
+        ...SUPPORT_EMAIL_LINES,
         "",
         "— CI Treasure Hunt",
       ].join("\n"),

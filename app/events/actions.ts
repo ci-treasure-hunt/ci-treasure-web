@@ -27,7 +27,7 @@ import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { uniqueProfileSlug } from "@/lib/profile-slug";
-type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string };
+type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string; published?: boolean };
 
 // Columns written from the organizer form. Status is handled separately so an
 // organizer can never set it directly. imageUrl is resolved separately (see
@@ -267,6 +267,7 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     success: true,
     slug: buildEventSlug(inserted.short_id, inserted.title),
     warning: teacherWarning ?? organizerWarning ?? repeatWarning ?? warning,
+    published: Boolean(profile.is_trusted),
   };
 }
 

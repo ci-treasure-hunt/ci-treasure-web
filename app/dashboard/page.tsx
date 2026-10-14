@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin-auth";
 import { RemoveMeButton } from "@/components/organizer/remove-me-button";
 import { buildEventSlug } from "@/lib/events";
 import { getManageableSeriesIds } from "@/lib/series-access";
+import { supportHref } from "@/lib/support";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardEvent = {
@@ -39,7 +40,13 @@ async function signOut() {
   redirect("/auth");
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ submitted?: string }>;
+}) {
+  // Set by the event form after a new submission (components/organizer/event-form.tsx).
+  const { submitted } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -212,6 +219,8 @@ export default async function DashboardPage() {
           </section>
         ) : (
           <div className="flex flex-col gap-6">
+            {submitted === "live" || submitted === "review" ? <SubmittedThanks live={submitted === "live"} /> : null}
+
             {profile.source === "self_submitted" && profile.visibility === "shadow" ? (
               <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-6">
                 <h2 className="font-serif text-xl text-slate-950">Your profile is in review</h2>
@@ -327,6 +336,34 @@ export default async function DashboardPage() {
         )}
       </div>
     </main>
+  );
+}
+
+// I-173 option F: the support nudge sits here, right after a submission, because that is when
+// someone has just been helped. It leads with "free, and it stays free" so it cannot read as
+// paying for approval, and it only shows on the redirect, never on a normal dashboard visit.
+function SubmittedThanks({ live }: { live: boolean }) {
+  return (
+    <section className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6">
+      <h2 className="font-serif text-xl text-slate-950">Thank you, your event is {live ? "live" : "in review"}!</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-700">
+        {live
+          ? "It is on the calendar now. You can still change anything with Edit below."
+          : "We usually review new events within a day or two and email you when it is live."}
+      </p>
+      <p className="mt-3 text-sm leading-6 text-slate-700">
+        Listing events here is free, and it stays free. I build and run CI Treasure Hunt on my own, so if it
+        helps you reach dancers, a small monthly contribution keeps it going.
+      </p>
+      <a
+        href={supportHref("submit")}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-800 transition hover:bg-yellow-200"
+      >
+        Support CI Treasure Hunt ❤️
+      </a>
+    </section>
   );
 }
 
