@@ -124,7 +124,7 @@ test.describe('I-118 claim flows (authenticated)', () => {
 
     await page.getByRole('link', { name: 'Claim it' }).click();
     // /auth bounces straight through to next since we're already signed in.
-    await expect(page).toHaveURL(new RegExp(`/dashboard/claim-event\\?event=${testEventId}`));
+    await expect(page).toHaveURL(new RegExp(`/dashboard/claim-event\\?event=${testEventId}`), { timeout: 30_000 });
 
     await page.getByLabel('Organizer').check();
     await page.getByRole('button', { name: 'Submit claim' }).click();
@@ -142,6 +142,10 @@ test.describe('I-118 claim flows (authenticated)', () => {
     await page.goto('/dashboard/new-profile');
 
     // Deliberate near-miss of a real profile (Irene Sposetti) to trigger the pg_trgm warning.
+    // Wait for hydration before typing: text filled into the server-rendered input before React
+    // takes over shows in the field but never reaches React state, so the submit sees an empty
+    // name and answers "Name is required." (WebKit on a dev server, 2026-10-15).
+    await page.waitForLoadState('networkidle');
     await page.getByLabel('Name *').fill('Irene Sposetty');
     await page.getByRole('button', { name: 'Create profile' }).click();
 
@@ -151,6 +155,9 @@ test.describe('I-118 claim flows (authenticated)', () => {
     // Don't actually claim someone else's real profile from a throwaway account — confirm
     // the "not me" path completes account creation instead.
     await page.getByRole('button', { name: /None of these are me/ }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // Since abc1872 (2026-09-19) a new profile lands on its edit page, so the bio and photo get
+    // filled in straight away. This expected /dashboard until 2026-10-15; it never failed in CI
+    // only because CI has no service-role key and skips this suite.
+    await expect(page).toHaveURL(/\/dashboard\/profile\/edit$/, { timeout: 30_000 });
   });
 });
