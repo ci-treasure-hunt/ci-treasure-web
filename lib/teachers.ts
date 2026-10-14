@@ -80,7 +80,6 @@ export type TeacherProfile = {
   // Fetched via getTeacherBySlug's select("*"); NULL until backfilled (I-098 pattern).
   discipline: string[] | null;
   visibility: string;
-  show_in_list: boolean;
   image_url: string | null;
   image_credit: string | null;
   image_status: string;
