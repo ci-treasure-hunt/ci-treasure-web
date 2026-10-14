@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
   // topic only, including what the two public lines would say, and records nothing. For testing,
   // and for re-creating the paste lines of an existing community.
   const preview = body.preview === true
-  let id: string | undefined = preview ? body.community_id : body.record?.id
+  const id: string | undefined = preview ? body.community_id : body.record?.id
 
   if (!preview) {
     const { record, old_record, type } = body
