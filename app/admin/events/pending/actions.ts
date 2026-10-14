@@ -8,6 +8,11 @@ import { buildEventSlug } from "@/lib/events";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SUPPORT_EMAIL_LINES } from "@/lib/support";
 
+// Share kit (nudge 5, 2026-10-15): the moment an event goes live is when the organizer is most
+// likely to pass the link on, and every share brings dancers to the listing.
+const SHARE_EMAIL_LINE =
+  "Share this link with your community, in your group chats and on social media, so more dancers find it.";
+
 // Look up the submitter's email from the event's user_id.
 async function submitterEmail(admin: ReturnType<typeof createAdminClient>, userId: string | null) {
   if (!userId) return null;
@@ -100,6 +105,8 @@ export async function approveEvent(eventId: string): Promise<{ success: boolean;
       text: [
         `Good news — your event "${event.title}" has been approved and is now published on CI Treasure Hunt:`,
         url,
+        "",
+        SHARE_EMAIL_LINE,
         "",
         "You can edit it anytime from your dashboard: https://citreasurehunt.com/dashboard",
         "",
@@ -207,6 +214,8 @@ export async function approveSeries(seriesId: string): Promise<{ success: boolea
         dates.map((d) => d.start_date).join(", "),
         "",
         url,
+        "",
+        SHARE_EMAIL_LINE,
         "",
         "You can edit each date from your dashboard: https://citreasurehunt.com/dashboard",
         "",

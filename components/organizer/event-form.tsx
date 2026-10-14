@@ -150,7 +150,11 @@ export function OrganizerEventForm({
       // jumps to /dashboard immediately).
       if (mode === "create" && !result.warning) {
         // The dashboard shows a thank-you note for this (and the support nudge, I-173 F).
-        router.push(`/dashboard?submitted=${result.published ? "live" : "review"}`);
+        router.push(
+          result.published && result.slug
+            ? `/dashboard?submitted=live&event=${encodeURIComponent(result.slug)}`
+            : "/dashboard?submitted=review",
+        );
         router.refresh();
         return;
       }

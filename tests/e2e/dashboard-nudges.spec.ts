@@ -27,7 +27,12 @@ test.describe('I-173 support nudge (authenticated)', () => {
 
   test('thank-you note after submitting, and only then', async ({ page, baseURL }) => {
     const email = `hello+pwtest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@citreasurehunt.com`;
-    const { data: created, error } = await admin!.auth.admin.createUser({ email, email_confirm: true });
+    // Newsletter already answered, so the profile card (one ask at a time) is not held back by the offer.
+    const { data: created, error } = await admin!.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { newsletter: 'declined' },
+    });
     if (error || !created.user) throw error ?? new Error('createUser failed');
     cleanupUserIds.push(created.user.id);
     const { error: profileError } = await admin!.from('profiles').insert({
@@ -47,6 +52,10 @@ test.describe('I-173 support nudge (authenticated)', () => {
     await page.waitForURL((url) => url.pathname === '/dashboard', { timeout: 60_000 });
 
     await expect(page.getByText('Thank you, your event is')).toHaveCount(0);
+    // Nudge 6: a bare profile lists everything it is missing, photo first.
+    await expect(
+      page.getByText('Your teacher page is still missing a photo, a short bio, where you are based and a website or social link.'),
+    ).toBeVisible();
 
     await page.goto('/dashboard?submitted=review');
     await expect(page.getByText('Thank you, your event is in review!')).toBeVisible();
@@ -55,7 +64,18 @@ test.describe('I-173 support nudge (authenticated)', () => {
       '/support?from=submit',
     );
 
-    await page.goto('/dashboard?submitted=live');
+    // Only one ask at a time: no profile card next to the thank-you note.
+    await expect(page.getByText('Complete your profile')).toHaveCount(0);
+
+    // Nudge 5: a live event links itself for sharing; a malformed slug is ignored.
+    await page.goto('/dashboard?submitted=live&event=AbCd-some-event');
     await expect(page.getByText('Thank you, your event is live!')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'citreasurehunt.com/events/AbCd-some-event' })).toHaveAttribute(
+      'href',
+      '/events/AbCd-some-event',
+    );
+    await page.goto('/dashboard?submitted=live&event=%3Cscript%3E');
+    await expect(page.getByText('Thank you, your event is live!')).toBeVisible();
+    await expect(page.getByText(/Share it with your community/)).toHaveCount(0);
   });
 });

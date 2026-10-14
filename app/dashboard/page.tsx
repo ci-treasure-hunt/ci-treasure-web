@@ -46,10 +46,12 @@ async function signOut() {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ submitted?: string; event?: string }>;
 }) {
-  // Set by the event form after a new submission (components/organizer/event-form.tsx).
-  const { submitted } = await searchParams;
+  // Set by the event form after a new submission (components/organizer/event-form.tsx). The slug
+  // only ever becomes a link to /events/<slug>, so a strict pattern is all the checking it needs.
+  const { submitted, event: eventParam } = await searchParams;
+  const submittedEventSlug = eventParam && /^[A-Za-z0-9-]{1,120}$/.test(eventParam) ? eventParam : null;
   const supabase = await createClient();
   const {
     data: { user },
@@ -71,9 +73,26 @@ export default async function DashboardPage({
   // Profile this user owns (claim approved, or self-created).
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, name, slug, is_trusted, source, visibility")
+    .select("id, name, slug, is_trusted, source, visibility, bio, image_url, city, website, instagram, facebook, links")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  // Profile completeness nudge: what a visitor to their teacher page would miss, photo first
+  // (35 of 48 claimed profiles had none on 2026-10-15). One ask at a time: not alongside the
+  // post-submission note or the newsletter offer.
+  const profileGaps = profile
+    ? [
+        !profile.image_url && "a photo",
+        !profile.bio && "a short bio",
+        !profile.city && "where you are based",
+        !profile.website &&
+          !profile.instagram &&
+          !profile.facebook &&
+          !(Array.isArray(profile.links) && profile.links.length) &&
+          "a website or social link",
+      ].filter((g): g is string => Boolean(g))
+    : [];
+  const showProfileNudge = !submitted && !showNewsletterOffer && signupNewsletter !== "pending";
 
   // Middle state: a claim submitted but not yet approved by an admin.
   const { data: pendingClaim } = await supabase
@@ -236,7 +255,11 @@ export default async function DashboardPage({
           </section>
         ) : (
           <div className="flex flex-col gap-6">
-            {submitted === "live" || submitted === "review" ? <SubmittedThanks live={submitted === "live"} /> : null}
+            {submitted === "live" || submitted === "review" ? (
+              <SubmittedThanks live={submitted === "live"} eventSlug={submittedEventSlug} />
+            ) : null}
+
+            {profileGaps.length && showProfileNudge ? <ProfileGaps gaps={profileGaps} /> : null}
 
             {profile.source === "self_submitted" && profile.visibility === "shadow" ? (
               <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-6">
@@ -359,7 +382,7 @@ export default async function DashboardPage({
 // I-173 option F: the support nudge sits here, right after a submission, because that is when
 // someone has just been helped. It leads with "free, and it stays free" so it cannot read as
 // paying for approval, and it only shows on the redirect, never on a normal dashboard visit.
-function SubmittedThanks({ live }: { live: boolean }) {
+function SubmittedThanks({ live, eventSlug }: { live: boolean; eventSlug: string | null }) {
   return (
     <section className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6">
       <h2 className="font-serif text-xl text-slate-950">Thank you, your event is {live ? "live" : "in review"}!</h2>
@@ -368,6 +391,16 @@ function SubmittedThanks({ live }: { live: boolean }) {
           ? "It is on the calendar now. You can still change anything with Edit below."
           : "We usually review new events within a day or two and email you when it is live."}
       </p>
+      {/* Share kit: a live event's own link, so sharing is one copy away. Pending events get it in
+          the approval email instead. */}
+      {live && eventSlug ? (
+        <p className="mt-3 text-sm leading-6 text-slate-700">
+          Share it with your community, in your group chats and on social media, so more dancers find it:{" "}
+          <Link href={`/events/${eventSlug}`} className="font-semibold text-(--color-pine) underline">
+            citreasurehunt.com/events/{eventSlug}
+          </Link>
+        </p>
+      ) : null}
       <p className="mt-3 text-sm leading-6 text-slate-700">
         Listing events here is free, and it stays free. I build and run CI Treasure Hunt on my own, so if it
         helps you reach dancers, a small monthly contribution keeps it going.
@@ -380,6 +413,26 @@ function SubmittedThanks({ live }: { live: boolean }) {
       >
         Support CI Treasure Hunt ❤️
       </a>
+    </section>
+  );
+}
+
+function ProfileGaps({ gaps }: { gaps: string[] }) {
+  const list = gaps.length === 1 ? gaps[0] : `${gaps.slice(0, -1).join(", ")} and ${gaps[gaps.length - 1]}`;
+  return (
+    <section className="flex flex-col gap-3 rounded-[1.75rem] border border-(--color-sand-strong) bg-white/90 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 className="font-serif text-xl text-slate-950">Complete your profile</h2>
+        <p className="mt-1 text-sm leading-6 text-slate-700">
+          Your teacher page is still missing {list}. Dancers who find your events look there first.
+        </p>
+      </div>
+      <Link
+        href="/dashboard/profile/edit"
+        className="shrink-0 self-start rounded-full bg-(--color-ink) px-5 py-2.5 text-sm font-semibold text-(--color-mist) sm:self-center"
+      >
+        Edit profile
+      </Link>
     </section>
   );
 }
