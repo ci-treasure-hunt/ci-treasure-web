@@ -39,15 +39,15 @@ const DEFAULT_TYPE = 'General CI Community'
 
 // communities.region (lib/community-regions.ts) → the regional list it belongs in. The Telegram
 // lists group a little more coarsely than the website's regions. Balkans and Russia & Belarus
-// have no list of their own; Central & Eastern Europe is the closest.
+// have no list of their own and sit in Rest of EMEA (Jan, 2026-10-15).
 const REGION_LIST: Record<string, string> = {
   'North America': 'US & Canada',
   'Central America & Caribbean': 'Latin America & Caribbean',
   'South America': 'Latin America & Caribbean',
   'Nordics & Baltics': 'Nordics & Baltics',
   'Central & Eastern Europe': 'Central & Eastern Europe',
-  'Balkans': 'Central & Eastern Europe',
-  'Russia & Belarus': 'Central & Eastern Europe',
+  'Balkans': 'Rest of EMEA',
+  'Russia & Belarus': 'Rest of EMEA',
   'Western Europe': 'Western Europe',
   'Southern Europe': 'Southern Europe',
   'Africa': 'Rest of EMEA',
