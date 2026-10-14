@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { buildRichCaption, TEACHER_ROLES, slugify } from '../_shared/announce-format.ts'
+import { sameSiblingAlreadyAnnounced } from '../_shared/series-guard.ts'
 
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
 const CHAT_ID   = Deno.env.get('TELEGRAM_PUBLIC_CHAT_ID')!
@@ -126,35 +127,11 @@ Deno.serve(async (req) => {
     return new Response('already announced', { status: 200 })
   }
 
-  // Series de-dup: once any sibling in the same series has been announced, later siblings stay
-  // silent here. Prevents a repeating-format series (e.g. a retreat run bimonthly under one
-  // series_id) from posting one near-identical "New:" per date — found live 2026-07-25 adding
-  // an 8-date Deep Contact retreat series. Only applies to series_type = 'recurring' (identical
-  // format each time); 'sequential' series (distinct teacher/theme per module, e.g. Wallin Works,
-  // Tom Goldhand's "Deep Dive into CI") skip this check and announce every module — found live
-  // 2026-08-01 when FlAF/PwPl (modules 2-3 of Deep Dive into CI) were silently skipped after
-  // module 1 announced, even though each module is materially different content.
-  const { data: seriesRow } = event.series_id
-    ? await supabase.from('event_series').select('series_type').eq('id', event.series_id).single()
-    : { data: null }
-  if (event.series_id && seriesRow?.series_type === 'recurring') {
-    const { data: siblings } = await supabase
-      .from('events')
-      .select('id')
-      .eq('series_id', event.series_id)
-      .neq('id', event.id)
-    const siblingIds = (siblings ?? []).map((s) => s.id)
-    if (siblingIds.length) {
-      const { data: siblingAnnounced } = await supabase
-        .from('tg_announcements')
-        .select('id')
-        .eq('entity_type', 'event')
-        .in('entity_id', siblingIds)
-        .limit(1)
-      if (siblingAnnounced?.length) {
-        return new Response('skip: series sibling already announced', { status: 200 })
-      }
-    }
+  // Series de-dup: same title + same people as an announced sibling -> silent. See
+  // _shared/series-guard.ts for the rule and its history (replaced the recurring-only rule
+  // 2026-10-14).
+  if (await sameSiblingAlreadyAnnounced(supabase, event, 'event')) {
+    return new Response('skip: identical series sibling already announced', { status: 200 })
   }
 
   // Legacy Telegram Markdown treats _ * ` [ as formatting characters — an unescaped one
