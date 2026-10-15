@@ -199,6 +199,15 @@ function logCall(row: Record<string, unknown>) {
   }
 }
 
+// The spec allows a tool's display title in two places, top-level `title` and `annotations.title`.
+// Claude's directory review reads the annotation (it flagged all 8 tools as missing one, 2026-10-16),
+// so mirror the top-level title there for every tool instead of writing it twice.
+function withAnnotationTitle(config: unknown): unknown {
+  const c = config as { title?: string; annotations?: Record<string, unknown> };
+  if (!c?.title) return config;
+  return { ...c, annotations: { ...c.annotations, title: c.annotations?.title ?? c.title } };
+}
+
 // Wraps registerTool on this per-request server so every tool registered below is logged, without
 // touching each tool's own typing.
 function withUsageLog(server: McpServer) {
@@ -208,7 +217,7 @@ function withUsageLog(server: McpServer) {
     cb: AnyToolCallback,
   ) => unknown;
   (server as unknown as { registerTool: unknown }).registerTool = (name: string, config: unknown, cb: AnyToolCallback) =>
-    register(name, config, async (args, ctx) => {
+    register(name, withAnnotationTitle(config), async (args, ctx) => {
       const started = Date.now();
       let result: unknown;
       let isError = true;
