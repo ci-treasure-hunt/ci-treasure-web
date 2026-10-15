@@ -120,8 +120,15 @@ function eventSummary(e: EventListItem & { isPast?: boolean }) {
     practices: e.discipline.map(disciplineLabel),
     cancelled: e.cancelled || undefined,
     ended: e.isPast || undefined,
+    imageUrl: e.imageUrl ?? undefined,
     url: siteUrl(getEventHref(e)),
   };
+}
+
+// A real, filterable listing page for "show me all of them". Clients otherwise invent one (ChatGPT
+// produced /events?country=Thailand, which 404s; the list pages take the ISO code, not the name).
+function browseUrl(path: "/" | "/communities" | "/venues", countryCode: string | null): string | undefined {
+  return countryCode ? siteUrl(`${path}?country=${countryCode}`) : undefined;
 }
 
 // ---------- usage log (I-141) ----------
@@ -246,7 +253,8 @@ How the data works:
 - Event types: festival (multi-day gathering), workshop (teacher-led course, often a weekend), intensive (several full days of training), retreat (residential, often rural), long_jam (extended open practice), training (multi-module professional training), residency (several weeks), jam and class (regular local sessions; few listed yet).
 - Regular weekly jams and classes are mostly run by local communities: for "where can I dance CI in <city>", use search_communities and search_venues as well as search_events.
 - Dates are ISO (YYYY-MM-DD). search_events looks ahead from today by default; pass a past "from" date for history (ended events are marked "ended": true). Prices, teachers and full descriptions come from get_event, which also works for ended events.
-- Give the user the citreasurehunt.com URL from each result. Registration links, organizer contacts and group chat invites are on those pages and deliberately not in this API, so do not guess them.`;
+- Give the user the citreasurehunt.com URL from each result, and only URLs the tools returned: do not construct citreasurehunt.com links yourself. For "see all", use the browseUrl a search returns. Registration links, organizer contacts and group chat invites are on those pages and deliberately not in this API, so do not guess them.
+- Results include imageUrl where the listing has its own photo or flyer; prefer it over images from elsewhere.`;
 
 export function registerCiTreasureHuntTools(server: McpServer) {
   withUsageLog(server);
@@ -308,6 +316,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
       return json({
         totalMatches: matches.length,
         showing: Math.min(matches.length, max),
+        browseUrl: browseUrl("/", countryCode),
         events: matches.slice(0, max).map(eventSummary),
         ...(otherPracticeMatches > 0 && {
           otherPracticeMatches,
@@ -380,6 +389,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         })),
         ...(event.seriesName && { series: event.seriesName }),
         description: truncate(event.description),
+        imageUrl: event.imageUrl ?? undefined,
         registration: event.primaryRegistrationUrl
           ? "Registration and contact details are linked on the event page."
           : "No registration link listed; see the event page for contact options.",
@@ -510,9 +520,11 @@ export function registerCiTreasureHuntTools(server: McpServer) {
       return json({
         totalMatches: matches.length,
         showing: Math.min(matches.length, max),
+        browseUrl: browseUrl("/venues", countryCode),
         venues: matches.slice(0, max).map((v) => ({
           name: v.name,
           slug: v.slug,
+          imageUrl: v.imageUrl ?? undefined,
           city: v.city,
           country: v.country,
           description: truncate(v.description, 300),
@@ -543,6 +555,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         address: venue.address,
         description: truncate(venue.description),
         website: venue.website,
+        imageUrl: venue.imageUrl ?? undefined,
         upcomingEvents: upcoming.slice(0, MAX_NESTED_EVENTS).map(eventSummary),
         pastEventCount: past.length,
         url: siteUrl(`/venues/${venue.slug}`),
@@ -585,6 +598,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
       return json({
         totalMatches: matches.length,
         showing: Math.min(matches.length, max),
+        browseUrl: browseUrl("/communities", countryCode),
         communities: matches.slice(0, max).map((c) => ({
           name: c.name,
           slug: c.slug,
@@ -622,6 +636,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         activityLevel: community.activity_level,
         languages: (community.languages ?? []).map(getLanguageLabel),
         website: community.website,
+        imageUrl: community.image_url ?? undefined,
         hasGroupChat: community.has_invites || undefined,
         upcomingEvents: ownEvents.slice(0, MAX_NESTED_EVENTS).map(eventSummary),
         people: community.associatedPeople.slice(0, MAX_NESTED_EVENTS).map((p) => ({
