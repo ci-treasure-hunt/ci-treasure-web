@@ -41,6 +41,7 @@ No need to keep checking the site. Follow along wherever you already spend your 
 | [Facebook group: worldwide festivals & retreats (4+ days)](https://www.facebook.com/groups/citreasurehunt) | Festivals, intensives and retreats around the world, posted by the organizers themselves. |
 | [Facebook group: Europe, Middle East & Africa (2+ days)](https://www.facebook.com/groups/citreasurehuntemea) | Weekend workshops, intensives, festivals and other CI events of 2 days or longer across the region. |
 | [Facebook group: Americas (2+ days)](https://www.facebook.com/groups/citreasurehuntamericas) | Weekend workshops, intensives, festivals and other CI events of 2 days or longer across North, Central & South America and the Caribbean. |
+| [Facebook group: Asia, Australia & New Zealand (2+ days)](https://www.facebook.com/groups/citreasurehuntapac) | Weekend workshops, intensives, festivals and other CI events of 2 days or longer across Asia, Australia, New Zealand and the Pacific Islands. |
 | [Facebook group: Water Dance & Aquatic Movement (2+ days)](https://www.facebook.com/groups/citreasurehuntaqua) | Multi-day events in the water worldwide: aquatic CI, Watsu, WaterDance, Aguahara and related work. Open beyond contact improvisation. |
 | [Instagram](https://www.instagram.com/citreasurehunt/) | Visual highlights, festival posts and collaborations with organizers. |
 | [Newsletter](/newsletter) | A monthly roundup of handpicked events and project news. |
@@ -265,13 +266,14 @@ BUILD NOTES (not page content, for whoever edits this page next)
    /newsletter, /privacy, /about. All live. No links to /guides yet, on purpose: the guides
    section is not built, and we never link to a page that does not exist.
 
-3. Facebook groups, as of 2026-10-02: international (4+ days, facebook.com/groups/citreasurehunt),
+3. Facebook groups, as of 2026-10-15: international (4+ days, facebook.com/groups/citreasurehunt),
    EMEA (2+ days, launched 2026-08-01, .../citreasurehuntemea), Americas (2+ days, launched
-   2026-10-01, .../citreasurehuntamericas), Water Dance & Aquatic Movement (2+ days, I-162,
+   2026-10-01, .../citreasurehuntamericas), Asia, Australia & New Zealand (2+ days, launched
+   2026-10-15, .../citreasurehuntapac), Water Dance & Aquatic Movement (2+ days, I-162,
    .../citreasurehuntaqua). Same list on about.md's "Getting in touch". Naming uses "2+ days" /
    "4+ days" to match the groups' own Facebook descriptions; keep both pages in sync with them.
-   APAC is not launched and gets no "coming soon" mention (Jan, 2026-10-02): add the row on both
-   pages the day it launches.
+   The APAC group's title names Australia & New Zealand because people search for those, not
+   "Pacific"; the site's region label and the Telegram topic stay "Asia-Pacific".
 
 4. Review turnaround is deliberately vague here ("usually quick, can take a few days"). The
    dashboard (app/dashboard/page.tsx) says "a day or two"; Jan confirmed 2026-10-02 that this

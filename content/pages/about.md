@@ -158,6 +158,7 @@ when you write, you are not writing to a support queue.
 - Facebook group, worldwide festivals & retreats (4+ days): [facebook.com/groups/citreasurehunt](https://www.facebook.com/groups/citreasurehunt)
 - Facebook group, Europe, Middle East & Africa (2+ days): [facebook.com/groups/citreasurehuntemea](https://www.facebook.com/groups/citreasurehuntemea)
 - Facebook group, Americas (2+ days): [facebook.com/groups/citreasurehuntamericas](https://www.facebook.com/groups/citreasurehuntamericas)
+- Facebook group, Asia, Australia & New Zealand (2+ days): [facebook.com/groups/citreasurehuntapac](https://www.facebook.com/groups/citreasurehuntapac)
 - Facebook group, Water Dance & Aquatic Movement worldwide (2+ days, open beyond CI): [facebook.com/groups/citreasurehuntaqua](https://www.facebook.com/groups/citreasurehuntaqua)
 - Instagram: [@citreasurehunt](https://www.instagram.com/citreasurehunt/)
 - Newsletter, monthly: [citreasurehunt.com/newsletter](/newsletter)
