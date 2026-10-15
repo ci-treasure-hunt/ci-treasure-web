@@ -155,7 +155,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
   if (community.other_resource) communityLinks.push({
     type: "other",
     href: community.other_resource,
-    label: isMessengerUrl(community.other_resource) ? "Messenger Group" : isLineUrl(community.other_resource) ? "LINE Group" : "Other Resource",
+    label: community.other_resource_label ?? (isMessengerUrl(community.other_resource) ? "Messenger Group" : isLineUrl(community.other_resource) ? "LINE Group" : "Other Resource"),
     icon: isMessengerUrl(community.other_resource) ? <MessengerIcon /> : isLineUrl(community.other_resource) ? <LineIcon /> : <ExternalLink className="h-4 w-4" />,
   });
   communityLinks.sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));

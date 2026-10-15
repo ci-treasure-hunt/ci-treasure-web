@@ -296,6 +296,9 @@ export function CommunityForm({
                   {err(key)}
                 </Field>
               ))}
+              <Field label="Label for the other link">
+                <input value={form.otherLabel} onChange={(e) => set("otherLabel", e.target.value)} className={inputClassName} placeholder="e.g. Matrix, Hipsy, Spreadsheet" />
+              </Field>
             </div>
 
             <div className="space-y-3 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-4">

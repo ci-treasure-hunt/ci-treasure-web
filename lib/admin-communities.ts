@@ -93,6 +93,8 @@ export type AdminCommunityFormData = {
   youtube: string;
   calendar: string;
   other: string;
+  // Name for the "other" link (Matrix, Hipsy, Spreadsheet...), shown instead of "Other Resource".
+  otherLabel: string;
   invites: AdminCommunityInvite[];
   // Gated phone/WhatsApp contacts (entity_phone_contacts), not a column on communities.
   phoneContacts: PhoneContactInput[];
@@ -141,6 +143,7 @@ export function createEmptyCommunityFormData(): AdminCommunityFormData {
     youtube: "",
     calendar: "",
     other: "",
+    otherLabel: "",
     invites: [],
     phoneContacts: [],
     email: "",

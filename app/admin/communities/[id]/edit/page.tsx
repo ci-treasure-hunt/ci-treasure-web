@@ -19,7 +19,7 @@ export default async function AdminEditCommunityPage({
     supabase
       .from("communities")
       .select(
-        "id, name, slug, type, status, activity_level, focus, languages, description, city, country, region, address_for_map, lat, lng, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, contact_person, submitter_contact, audience_size, friendliness, last_verified, admin_notes, image_url, image_credit, deleted_at, updated_at",
+        "id, name, slug, type, status, activity_level, focus, languages, description, city, country, region, address_for_map, lat, lng, website, newsletter, instagram, facebook_group, facebook_page, telegram_group, telegram_channel, whatsapp_channel, youtube, calendar, other_resource, other_resource_label, contact_person, submitter_contact, audience_size, friendliness, last_verified, admin_notes, image_url, image_credit, deleted_at, updated_at",
       )
       .eq("id", id)
       .single(),
@@ -61,6 +61,7 @@ export default async function AdminEditCommunityPage({
     youtube: c.youtube ?? "",
     calendar: c.calendar ?? "",
     other: c.other_resource ?? "",
+    otherLabel: c.other_resource_label ?? "",
     invites: (invites ?? []).map((inv) => ({ ...inv, remove: false })),
     phoneContacts: await getEntityPhoneContacts("community", c.id),
     email: (await getEntityEmail("community", c.id)) ?? "",

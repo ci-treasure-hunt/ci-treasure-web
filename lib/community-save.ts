@@ -195,6 +195,8 @@ export async function saveCommunity(
     lat,
     lng,
     ...links.columns,
+    // A label only means something next to its link; the classifier may have moved the link away.
+    other_resource_label: links.columns.other_resource ? orNull(payload.otherLabel) : null,
     ...inviteFlags(current.keys()),
     contact_person: orNull(payload.contactPerson),
     submitter_contact: orNull(payload.submitterContact),
