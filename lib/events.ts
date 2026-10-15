@@ -402,6 +402,42 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
   }
 }
 
+// I-141: the MCP server's search over a date window that reaches into the past ("when did X
+// happen last spring"). Upcoming-only search stays on getUpcomingEvents(); this one also returns
+// archived events, with the same public-visibility rule as getVenueEvents (published, or archived
+// and not hidden). Window semantics: the event is still running on or after `from`, and starts on
+// or before `to`.
+export async function getPublicEventsInRange(
+  from: string,
+  to: string | null,
+): Promise<{ events: Array<EventListItem & { isPast: boolean }>; error: string | null }> {
+  if (!hasSupabaseEnv()) {
+    return { events: [], error: "Supabase environment variables are missing." };
+  }
+
+  const supabase = createStaticClient();
+  let query = supabase
+    .from("events")
+    .select(`${EVENT_LIST_COLUMNS}, status`)
+    .in("status", ["published", "archived"])
+    .eq("hide", false)
+    .gte("end_date", from)
+    .order("start_date", { ascending: true });
+  if (to) query = query.lte("start_date", to);
+
+  const { data, error } = await query;
+  if (error) {
+    return { events: [], error: `Could not load events: ${error.message}` };
+  }
+  return {
+    events: ((data ?? []) as unknown as Array<SupabaseEventRow & { status: string }>).map((row) => ({
+      ...mapEventRow(row),
+      isPast: row.status === "archived",
+    })),
+    error: null,
+  };
+}
+
 // I-167: one row per type-listing page (/festivals, /workshops, /retreats, /intensives,
 // /long-jams). Deliberately its own query rather than a client-side filter of
 // getUpcomingEvents()'s payload — that's exactly the pattern the homepage's `?type=` filter is

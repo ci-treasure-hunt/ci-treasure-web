@@ -9,6 +9,7 @@
 //     registration URL, so agent-driven visits are countable (I-173);
 //   - small capped result sets and no unfiltered bulk listing (I-127's scraping stance).
 import type { McpServer } from "@modelcontextprotocol/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { COUNTRIES } from "@/lib/countries";
 import { getCommunities, getCommunityBySlug, getCommunityOwnEvents } from "@/lib/communities";
@@ -20,10 +21,12 @@ import {
   getEventBySlug,
   getLanguageLabel,
   getLevelLabel,
+  getPublicEventsInRange,
   getUpcomingEvents,
   parseEventSlug,
 } from "@/lib/events";
 import { SITE_URL } from "@/lib/site";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveRoles, getListedPeople, getTeacherBySlug, getTeacherEvents } from "@/lib/teachers";
 import { getVenueBySlug, getVenueEvents, getVenues } from "@/lib/venues";
 
@@ -105,7 +108,7 @@ function unknownCountry(country: string) {
   return toolError(`"${country}" is not a country we recognise. Try an ISO code like "PT" or the English name.`);
 }
 
-function eventSummary(e: EventListItem) {
+function eventSummary(e: EventListItem & { isPast?: boolean }) {
   return {
     id: e.shortId,
     title: e.title,
@@ -116,8 +119,108 @@ function eventSummary(e: EventListItem) {
     country: getCountryLabel(e.country),
     practices: e.discipline.map(disciplineLabel),
     cancelled: e.cancelled || undefined,
+    ended: e.isPast || undefined,
     url: siteUrl(getEventHref(e)),
   };
+}
+
+// ---------- usage log (I-141) ----------
+//
+// One row per tool call in public.mcp_calls, written after the response is sent (next/server
+// after()), so logging never slows down or breaks a call. Records what was asked, never who asked:
+// no IP, no user agent, no account. `client` is a coarse platform label.
+
+const MAX_LOGGED_STRING = 100;
+
+function platformLabel(clientName: string | undefined, userAgent: string | null): string {
+  const source = `${clientName ?? ""} ${userAgent ?? ""}`;
+  const known: Array<[RegExp, string]> = [
+    [/claude|anthropic/i, "claude"],
+    [/chatgpt|openai/i, "chatgpt"],
+    [/grok|xai/i, "grok"],
+    [/gemini|google/i, "gemini"],
+    [/perplexity/i, "perplexity"],
+    [/cursor/i, "cursor"],
+    [/glama/i, "glama"],
+    [/meta|muse/i, "meta"],
+  ];
+  const hit = known.find(([re]) => re.test(source));
+  if (hit) return hit[1];
+  // The client's self-reported software name says nothing about a person; keep it, short.
+  return clientName ? clientName.toLowerCase().slice(0, 40) : "other";
+}
+
+function loggableParams(args: unknown): Record<string, unknown> {
+  if (!args || typeof args !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(args as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, typeof v === "string" ? v.slice(0, MAX_LOGGED_STRING) : v]),
+  );
+}
+
+function resultCount(result: unknown, isError: boolean): number {
+  if (isError) return 0;
+  try {
+    const text = (result as { content?: Array<{ text?: string }> }).content?.[0]?.text ?? "";
+    const parsed = JSON.parse(text) as { totalMatches?: unknown };
+    return typeof parsed.totalMatches === "number" ? parsed.totalMatches : 1;
+  } catch {
+    return 1;
+  }
+}
+
+type UsageCtx = {
+  mcpReq?: { envelope?: Record<string, unknown> };
+  http?: { req?: Request };
+};
+type AnyToolCallback = (args: unknown, ctx: UsageCtx) => Promise<unknown>;
+
+function logCall(row: Record<string, unknown>) {
+  const write = async () => {
+    try {
+      const { error } = await createAdminClient().from("mcp_calls").insert(row);
+      if (error) console.warn(`[mcp] usage log failed: ${error.message}`);
+    } catch (e) {
+      console.warn(`[mcp] usage log failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+  try {
+    after(write);
+  } catch {
+    void write();
+  }
+}
+
+// Wraps registerTool on this per-request server so every tool registered below is logged, without
+// touching each tool's own typing.
+function withUsageLog(server: McpServer) {
+  const register = server.registerTool.bind(server) as unknown as (
+    name: string,
+    config: unknown,
+    cb: AnyToolCallback,
+  ) => unknown;
+  (server as unknown as { registerTool: unknown }).registerTool = (name: string, config: unknown, cb: AnyToolCallback) =>
+    register(name, config, async (args, ctx) => {
+      const started = Date.now();
+      let result: unknown;
+      let isError = true;
+      try {
+        result = await cb(args, ctx);
+        isError = Boolean((result as { isError?: boolean } | undefined)?.isError);
+        return result;
+      } finally {
+        const clientInfo = ctx?.mcpReq?.envelope?.["io.modelcontextprotocol/clientInfo"] as { name?: string } | undefined;
+        logCall({
+          tool: name,
+          client: platformLabel(clientInfo?.name, ctx?.http?.req?.headers.get("user-agent") ?? null),
+          params: loggableParams(args),
+          result_count: resultCount(result, isError),
+          duration_ms: Date.now() - started,
+          is_error: isError,
+        });
+      }
+    });
 }
 
 const limitSchema = z
@@ -142,21 +245,27 @@ How the data works:
 - Contact Improvisation is the default. search_events returns CI events unless you pass another practice or practice="any". Related practices that also appear: conscious dance, Axis Syllabus, butoh, Authentic Movement, somatic movement and others, listed under "practices".
 - Event types: festival (multi-day gathering), workshop (teacher-led course, often a weekend), intensive (several full days of training), retreat (residential, often rural), long_jam (extended open practice), training (multi-module professional training), residency (several weeks), jam and class (regular local sessions; few listed yet).
 - Regular weekly jams and classes are mostly run by local communities: for "where can I dance CI in <city>", use search_communities and search_venues as well as search_events.
-- Dates are ISO (YYYY-MM-DD). Prices, teachers and full descriptions come from get_event.
+- Dates are ISO (YYYY-MM-DD). search_events looks ahead from today by default; pass a past "from" date for history (ended events are marked "ended": true). Prices, teachers and full descriptions come from get_event, which also works for ended events.
 - Give the user the citreasurehunt.com URL from each result. Registration links, organizer contacts and group chat invites are on those pages and deliberately not in this API, so do not guess them.`;
 
 export function registerCiTreasureHuntTools(server: McpServer) {
+  withUsageLog(server);
+
   server.registerTool(
     "search_events",
     {
       title: "Search events",
       description:
-        "Find upcoming Contact Improvisation events worldwide: festivals, workshops, intensives, retreats, long jams and residencies. Use for questions like 'CI festivals in Germany this summer' or 'workshops with <teacher>'. Filter by country, city, dates, type, practice or free text. Returns up to 20 events sorted by start date, each with id and citreasurehunt.com URL. Call get_event for prices, teachers and the full description.",
+        "Find Contact Improvisation events worldwide: festivals, workshops, intensives, retreats, long jams, residencies, jams and classes. Upcoming by default; a past 'from' date also searches ended events. Use for questions like 'CI festivals in Germany this summer', 'workshops with <teacher>' or 'when was X last year'. Filter by country, city, dates, type, practice or free text. Returns up to 20 events sorted by start date, each with id and citreasurehunt.com URL, plus the total match count. Call get_event for prices, teachers and the full description.",
       inputSchema: z.object({
         country: z.string().optional().describe('Country as ISO code ("PT") or English name ("Portugal").'),
         city: z.string().optional().describe("City name, e.g. Berlin."),
-        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Earliest date, YYYY-MM-DD. Default today."),
-        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Latest start date, YYYY-MM-DD."),
+        from: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe("Window start, YYYY-MM-DD. Default today. Includes events still running on or after this date; a past date also returns ended events."),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Window end: the latest start date, YYYY-MM-DD."),
         type: z.enum(EVENT_TYPES).optional().describe("Event type."),
         practice: z
           .string()
@@ -168,7 +277,11 @@ export function registerCiTreasureHuntTools(server: McpServer) {
       annotations: READ_ONLY,
     },
     async ({ country, city, from, to, type, practice, query, limit }) => {
-      const { events, error } = await getUpcomingEvents(today());
+      const start = from ?? today();
+      // Ended events only when the window reaches into the past; the upcoming path is the common
+      // case and keeps using the same fetcher as the homepage.
+      const { events, error } =
+        start < today() ? await getPublicEventsInRange(start, to ?? null) : await getUpcomingEvents(today());
       if (error) return toolError(error);
 
       let countryCode: string | null = null;
@@ -177,27 +290,33 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         if (!countryCode) return unknownCountry(country);
       }
       const practiceTag = practice ? practice.trim().toLowerCase().replace(/[\s-]+/g, "_") : "contact_improvisation";
-      const start = from ?? today();
 
-      const matches = events.filter(
+      const inWindow = events.filter(
         (e) =>
           e.endDate >= start &&
           (!to || e.startDate <= to) &&
           (!countryCode || e.country === countryCode) &&
           (!city || fold(e.city) === fold(city)) &&
           (!type || e.type === type) &&
-          (practiceTag === "any" || e.discipline.includes(practiceTag)) &&
           matchesText(query, e.title, e.description, e.city, getCountryLabel(e.country)),
       );
+      const matches = practiceTag === "any" ? inWindow : inWindow.filter((e) => e.discipline.includes(practiceTag));
+      // The CI default silently narrows results; say how much it hid, so an agent can widen it.
+      const otherPracticeMatches = practice ? 0 : inWindow.length - matches.length;
 
       const max = limit ?? DEFAULT_RESULTS;
       return json({
         totalMatches: matches.length,
         showing: Math.min(matches.length, max),
         events: matches.slice(0, max).map(eventSummary),
-        ...(matches.length === 0 && {
-          hint: "Nothing matched. Try widening the dates, dropping the city, or practice=\"any\".",
+        ...(otherPracticeMatches > 0 && {
+          otherPracticeMatches,
+          note: `${otherPracticeMatches} more event(s) in related practices match these filters. Pass practice="any" to include them.`,
         }),
+        ...(matches.length === 0 &&
+          otherPracticeMatches === 0 && {
+            hint: "Nothing matched. Try widening the dates, dropping the city, or practice=\"any\".",
+          }),
       });
     },
   );
