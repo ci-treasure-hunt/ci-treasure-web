@@ -406,3 +406,7 @@ verify_jwt = false
 # I-029: called by the communities trigger (20261015130000), same bearer-secret auth as above.
 [functions.announce-community]
 verify_jwt = false
+
+# I-029 stage 3: called by the weekly GitHub Action with the same bearer secret.
+[functions.sync-community-lists]
+verify_jwt = false
