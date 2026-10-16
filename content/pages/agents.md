@@ -26,7 +26,9 @@ https://citreasurehunt.com/api/mcp
 
 ## How to connect it
 
-- **Claude:** Settings, then Connectors, then add a custom connector with the address above.
+- **Claude:** CI Treasure Hunt is in Claude's connector directory. Open
+  [its directory page](https://claude.ai/directory/ci-treasure-hunt) and choose Connect, or find
+  it under Settings, then Connectors, then Browse.
 - **Grok:** go to grok.com/connectors, choose New Connector, then Custom, and paste the address.
 - **Gemini:** in Gemini Spark, open Connected Apps and add the address as an MCP server.
 - **ChatGPT:** with developer mode switched on, add the address as a connector under Settings.
