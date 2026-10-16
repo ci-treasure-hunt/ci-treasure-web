@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getEntityEmail } from "@/lib/entity-email";
 import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { getVenueInvites } from "@/lib/venue-invites";
 export default async function AdminEditVenuePage({
   params,
 }: {
@@ -45,6 +46,7 @@ export default async function AdminEditVenuePage({
     instagram: venue.instagram ?? "",
     youtube: venue.youtube ?? "",
     phoneContacts: await getEntityPhoneContacts("venue", venue.id),
+    invites: await getVenueInvites(venue.id),
     imageUrl: venue.image_url ?? "",
     imageCredit: venue.image_credit ?? "",
     visibility: venue.visibility,

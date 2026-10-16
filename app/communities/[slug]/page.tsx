@@ -368,7 +368,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
                       : "This community coordinates in a private group. Join our Telegram group and we'll help you connect."}
                   </p>
                   <div className="mt-4">
-                    <InviteButtons communityId={community.id} platforms={publishedInvitePlatforms} />
+                    <InviteButtons entity={{ kind: "community", id: community.id }} platforms={publishedInvitePlatforms} />
                   </div>
                 </section>
               )}

@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
-import { getInviteLinks } from "@/lib/invite-links-action";
+import { getInviteLinks, getVenueInviteLinks } from "@/lib/invite-links-action";
 import { TELEGRAM_URL } from "@/lib/site";
 
 type Platform = "telegram" | "whatsapp" | "signal" | "line";
@@ -19,14 +19,14 @@ const SESSION_TTL_MS = 30 * 60 * 1000; // 30 min
 
 type CachedLinks = { links: Partial<Record<Platform, string>>; expiresAt: number };
 
-function readCache(communityId: string): Partial<Record<Platform, string>> | null {
+function readCache(entityId: string): Partial<Record<Platform, string>> | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_PREFIX + communityId);
+    const raw = window.localStorage.getItem(STORAGE_PREFIX + entityId);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedLinks;
     if (!parsed.expiresAt || parsed.expiresAt < Date.now()) {
-      window.localStorage.removeItem(STORAGE_PREFIX + communityId);
+      window.localStorage.removeItem(STORAGE_PREFIX + entityId);
       return null;
     }
     return parsed.links;
@@ -35,10 +35,10 @@ function readCache(communityId: string): Partial<Record<Platform, string>> | nul
   }
 }
 
-function writeCache(communityId: string, links: Partial<Record<Platform, string>>) {
+function writeCache(entityId: string, links: Partial<Record<Platform, string>>) {
   try {
     window.localStorage.setItem(
-      STORAGE_PREFIX + communityId,
+      STORAGE_PREFIX + entityId,
       JSON.stringify({ links, expiresAt: Date.now() + SESSION_TTL_MS } satisfies CachedLinks)
     );
   } catch {
@@ -49,11 +49,13 @@ function writeCache(communityId: string, links: Partial<Record<Platform, string>
 const ERROR_MESSAGES: Record<string, string> = {
   rate_limited: "Too many requests from this network — try again tomorrow, or ask in our Telegram group.",
   challenge_failed: "Verification failed. Please try again.",
-  not_found: "No invite links found for this community.",
+  not_found: "No invite links found.",
 };
 
 type InviteButtonsProps = {
-  communityId: string;
+  // A community's or a venue's invites; both go through the same gate and rate limit. The cache key
+  // is the bare id either way, which is safe because ids are UUIDs.
+  entity: { kind: "community" | "venue"; id: string };
   platforms: Partial<Record<Platform, boolean>>;
 };
 
@@ -64,14 +66,15 @@ function formatPlatformList(platforms: Platform[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-export function InviteButtons({ communityId, platforms }: InviteButtonsProps) {
+export function InviteButtons({ entity, platforms }: InviteButtonsProps) {
+  const entityId = entity.id;
   const availablePlatforms = (Object.keys(platforms) as Platform[]).filter(
     (platform) => platforms[platform]
   );
   const platformList = formatPlatformList(availablePlatforms);
 
   const [links, setLinks] = useState<Partial<Record<Platform, string>> | null>(() =>
-    readCache(communityId)
+    readCache(entityId)
   );
   const [showWidget, setShowWidget] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -85,7 +88,10 @@ export function InviteButtons({ communityId, platforms }: InviteButtonsProps) {
   const handleSuccess = useCallback(
     async (token: string) => {
       setVerifying(true);
-      const result = await getInviteLinks(communityId, token);
+      const result =
+        entity.kind === "venue"
+          ? await getVenueInviteLinks(entityId, token)
+          : await getInviteLinks(entityId, token);
       setShowWidget(false);
       setVerifying(false);
 
@@ -95,9 +101,9 @@ export function InviteButtons({ communityId, platforms }: InviteButtonsProps) {
       }
 
       setLinks(result.links);
-      writeCache(communityId, result.links);
+      writeCache(entityId, result.links);
     },
-    [communityId]
+    [entity.kind, entityId]
   );
 
   const handleWidgetError = useCallback(() => {

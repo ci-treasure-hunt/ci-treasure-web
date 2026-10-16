@@ -8,6 +8,7 @@ import { geocodeAddress } from "@/lib/geocode";
 import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts, stripPhoneLinks } from "@/lib/phone-contacts";
+import { resolveVenueInvites, setVenueInvites, stripInviteLinks, venueInvitesErrorMessage } from "@/lib/venue-invites";
 import { removeImageIfUnused } from "@/lib/upload-action";
 export async function PUT(
   request: NextRequest,
@@ -29,7 +30,7 @@ export async function PUT(
 
     // A phone-number link never goes in a public column; it moves into the gated
     // entity_phone_contacts below (rule: ci-treasure-hunt/docs/web/link-types.md).
-    const { fields: socials, phoneUrls } = stripPhoneLinks({
+    const { fields: withoutPhones, phoneUrls } = stripPhoneLinks({
       website: String(payload.website ?? "").trim(),
       newsletter: String(payload.newsletter ?? "").trim(),
       facebook: String(payload.facebook ?? "").trim(),
@@ -39,6 +40,14 @@ export async function PUT(
     const phoneContacts = resolvePhoneContacts(payload.phoneContacts, phoneUrls);
     if (phoneContacts.invalid.length) {
       return NextResponse.json({ error: phoneContactsErrorMessage(phoneContacts.invalid) }, { status: 400 });
+    }
+    // Group invite links likewise never sit in a public column: they move to the gated venue_invites.
+    // Callers that don't send `invites` (the event form's quick-add) leave the stored set untouched.
+    const { fields: socials, inviteUrls } = stripInviteLinks(withoutPhones);
+    const manageInvites = Array.isArray(payload.invites) || inviteUrls.length > 0;
+    const venueInvites = resolveVenueInvites(payload.invites, inviteUrls);
+    if (venueInvites.invalid.length) {
+      return NextResponse.json({ error: venueInvitesErrorMessage(venueInvites.invalid) }, { status: 400 });
     }
 
     // Manual lat/lng always wins if provided (an admin correcting a bad geocode). Otherwise
@@ -113,6 +122,10 @@ export async function PUT(
     await setEntityEmail("venue", id, String(payload.email ?? ""));
     const phoneResult = await setEntityPhoneContacts("venue", id, phoneContacts.contacts, "admin");
     if (phoneResult.error) throw new Error(phoneResult.error);
+    if (manageInvites) {
+      const inviteResult = await setVenueInvites(id, venueInvites.invites);
+      if (inviteResult.error) throw new Error(inviteResult.error);
+    }
 
     // Cached ISR pages (the /venues directory, this venue's own detail page, and any event
     // page linking to it) won't otherwise pick up an admin edit for up to an hour.

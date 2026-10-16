@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { CountryPicker } from "@/components/shared/country-picker";
 import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
+import { invitePlatformOf } from "@/lib/community-links";
 import {
   VENUE_LEVELS,
   createEmptyVenueFormData,
@@ -29,6 +30,24 @@ export function VenueForm({
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [isSaving, startSaveTransition] = useTransition();
   const [dedupMatches, setDedupMatches] = useState<DedupMatch[]>([]);
+  const [newInvite, setNewInvite] = useState("");
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  // A pasted invite replaces any stored one for the same platform and starts not revealable.
+  function addInvite() {
+    const url = newInvite.trim();
+    const platform = invitePlatformOf(url);
+    if (!platform) {
+      setInviteError("Not a group invite link (WhatsApp group, Telegram +/joinchat, Signal group or LINE group).");
+      return;
+    }
+    setInviteError(null);
+    setNewInvite("");
+    setForm({
+      ...form,
+      invites: [...form.invites.filter((inv) => inv.platform !== platform), { platform, url, published: false }],
+    });
+  }
   const dedupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Dedup check, create mode only — every other venue-creation path in this project
@@ -237,6 +256,64 @@ export function VenueForm({
                 labelPlaceholder="Name (optional), e.g. Reception"
               />
             </div>
+            <div className="space-y-3">
+              <span className="text-sm font-medium text-slate-700">Private group invites</span>
+              <p className="text-xs text-slate-500">
+                The venue&apos;s own WhatsApp/Telegram/Signal/LINE group (venue_invites). Revealed behind Turnstile on the
+                venue page, and only when ticked &quot;Revealable&quot;: tick it if the venue shares the link publicly or
+                asked us to list it. An invite link in a field above is moved here on save.
+              </p>
+              {form.invites.length === 0 ? (
+                <p className="text-sm text-slate-500">None stored.</p>
+              ) : (
+                form.invites.map((inv) => (
+                  <div key={inv.platform} className="flex flex-col gap-2 rounded-xl border border-(--color-sand-strong) bg-white p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900">{INVITE_PLATFORM_LABEL[inv.platform]}</p>
+                      <p className="truncate text-xs text-slate-500">{inv.url}</p>
+                    </div>
+                    <div className="flex shrink-0 gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={inv.published}
+                          onChange={(event) =>
+                            setForm({
+                              ...form,
+                              invites: form.invites.map((x) => (x.platform === inv.platform ? { ...x, published: event.target.checked } : x)),
+                            })
+                          }
+                        />
+                        Revealable
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, invites: form.invites.filter((x) => x.platform !== inv.platform) })}
+                        className="text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={newInvite}
+                  onChange={(event) => setNewInvite(event.target.value)}
+                  className={inputClassName}
+                  placeholder="https://chat.whatsapp.com/..."
+                />
+                <button
+                  type="button"
+                  onClick={addInvite}
+                  className="shrink-0 rounded-full border border-(--color-sand-strong) px-5 py-3 text-sm font-semibold text-slate-800"
+                >
+                  Add invite
+                </button>
+              </div>
+              {inviteError ? <p className="text-xs text-rose-700">{inviteError}</p> : null}
+            </div>
           </div>
 
           {/* Media Section */}
@@ -330,6 +407,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
+const INVITE_PLATFORM_LABEL = { telegram: "Telegram", whatsapp: "WhatsApp", signal: "Signal", line: "LINE" } as const;
 
 const inputClassName =
   "w-full rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm text-slate-950 outline-none ring-0 transition focus:border-(--color-pine)";

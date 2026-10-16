@@ -16,6 +16,7 @@ import VenueMap from "@/components/venue-map";
 import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
 import { RevealPhoneContacts } from "@/components/reveal-phone-contacts";
+import { InviteButtons } from "@/components/invite-buttons";
 import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
 import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
@@ -23,7 +24,7 @@ import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import { safeExternalUrl } from "@/lib/url-safety";
 import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
-import { getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect, getVenueRingNeighbors } from "@/lib/venues";
+import { getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect, getVenueRingNeighbors, getPublishedVenueInvitePlatforms } from "@/lib/venues";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
 import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
@@ -93,11 +94,12 @@ export default async function VenuePage({ params }: VenuePageProps) {
     notFound();
   }
 
-  const [{ upcoming, past }, countryLink, associations, ring] = await Promise.all([
+  const [{ upcoming, past }, countryLink, associations, ring, invitePlatforms] = await Promise.all([
     getVenueEvents(venue.id),
     getCountryPageLink(venue.country),
     getVenueAssociations(venue.id),
     getVenueRingNeighbors(venue.slug, venue.country),
+    getPublishedVenueInvitePlatforms(venue.id),
   ]);
   const ringHeading = ringSectionHeading(
     "venues",
@@ -297,6 +299,18 @@ export default async function VenuePage({ params }: VenuePageProps) {
                   {venue.has_phone_contacts && <RevealPhoneContacts entityType="venue" entityId={venue.id} />}
                 </div>
               </section>
+
+              {Object.keys(invitePlatforms).length > 0 && (
+                <section id="invite" className="scroll-mt-6 rounded-[1.75rem] border border-(--color-pine)/20 bg-(--color-pine)/5 p-6">
+                  <h2 className="font-serif text-xl text-slate-950">Join the venue&apos;s group</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Invite links to chat groups are shared here after a quick verification to reduce spam.
+                  </p>
+                  <div className="mt-4">
+                    <InviteButtons entity={{ kind: "venue", id: venue.id }} platforms={invitePlatforms} />
+                  </div>
+                </section>
+              )}
             </aside>
           </div>
         </section>

@@ -1,9 +1,37 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, SupabaseEventRow, LinkItem, getLinkLabel, linkSortKey } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
+import type { InvitePlatform } from "./communities";
+
+// Which chat-group invite platforms are published for a venue, same contract as the community
+// helper getPublishedInvitePlatforms: venue_invites is service-role-only, and only published rows
+// count, so the page never offers a reveal that would come back empty.
+export async function getPublishedVenueInvitePlatforms(
+  venueId: string,
+): Promise<Partial<Record<InvitePlatform, boolean>>> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("venue_invites")
+      .select("platform")
+      .eq("venue_id", venueId)
+      .eq("published", true);
+    const result: Partial<Record<InvitePlatform, boolean>> = {};
+    for (const row of data ?? []) {
+      const platform = row.platform as string;
+      if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
+        result[platform] = true;
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
 
 // I-153: associated communities (community_venues) and people (venue_profiles, e.g. an owner or
 // resident teacher). Separate call, same reasoning as lib/teachers.ts's getProfileAssociations.

@@ -1,4 +1,5 @@
 import type { PhoneContactInput } from "./phone-contacts";
+import type { InvitePlatform } from "./community-links";
 
 export const VENUE_VISIBILITY_OPTIONS = ["public", "hidden"] as const;
 
@@ -42,6 +43,8 @@ export type AdminVenueFormData = {
   youtube: string;
   // Gated phone/WhatsApp contacts (entity_phone_contacts), not a column on venues.
   phoneContacts: PhoneContactInput[];
+  // Gated chat-group invites (venue_invites), not a column on venues.
+  invites: { platform: InvitePlatform; url: string; published: boolean }[];
   imageUrl: string;
   imageCredit: string;
   visibility: string;
@@ -70,6 +73,7 @@ export function createEmptyVenueFormData(): AdminVenueFormData {
     instagram: "",
     youtube: "",
     phoneContacts: [],
+    invites: [],
     imageUrl: "",
     imageCredit: "",
     visibility: "hidden",

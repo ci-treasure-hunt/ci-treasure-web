@@ -6,13 +6,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const RATE_LIMIT_PER_DAY = 20;
 
-type InviteLinks = Partial<Record<"telegram" | "whatsapp" | "signal" | "line", string>>;
+type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
+type InviteLinks = Partial<Record<InvitePlatform, string>>;
+type InviteResult = { links: InviteLinks } | { error: string };
 
-export async function getInviteLinks(
-  communityId: string,
-  token: string
-): Promise<{ links: InviteLinks } | { error: string }> {
-  if (!communityId || !token) {
+// Both reveals share one rate limit: the log counts rows per ip_hash whichever kind they are.
+type RevealTarget =
+  | { kind: "community"; id: string }
+  | { kind: "venue"; id: string };
+
+export async function getInviteLinks(communityId: string, token: string): Promise<InviteResult> {
+  return revealInviteLinks({ kind: "community", id: communityId }, token);
+}
+
+export async function getVenueInviteLinks(venueId: string, token: string): Promise<InviteResult> {
+  return revealInviteLinks({ kind: "venue", id: venueId }, token);
+}
+
+async function revealInviteLinks(target: RevealTarget, token: string): Promise<InviteResult> {
+  if (!target.id || !token) {
     return { error: "invalid" };
   }
 
@@ -53,23 +65,39 @@ export async function getInviteLinks(
     return { error: "rate_limited" };
   }
 
-  // Parent community must exist and be active (not soft-deleted) before revealing its invites.
-  const { data: community } = await supabase
-    .from("communities")
-    .select("id")
-    .eq("id", communityId)
-    .is("deleted_at", null)
-    .maybeSingle();
+  // The parent must be live before revealing its invites: an active (not soft-deleted) community,
+  // or a venue with a public page.
+  const parent =
+    target.kind === "community"
+      ? await supabase
+          .from("communities")
+          .select("id")
+          .eq("id", target.id)
+          .is("deleted_at", null)
+          .maybeSingle()
+      : await supabase
+          .from("venues")
+          .select("id")
+          .eq("id", target.id)
+          .eq("visibility", "public")
+          .maybeSingle();
 
-  if (!community) {
+  if (!parent.data) {
     return { error: "not_found" };
   }
 
-  const { data, error } = await supabase
-    .from("community_invites")
-    .select("platform, url")
-    .eq("community_id", communityId)
-    .eq("published", true);
+  const { data, error } =
+    target.kind === "community"
+      ? await supabase
+          .from("community_invites")
+          .select("platform, url")
+          .eq("community_id", target.id)
+          .eq("published", true)
+      : await supabase
+          .from("venue_invites")
+          .select("platform, url")
+          .eq("venue_id", target.id)
+          .eq("published", true);
 
   if (error) {
     return { error: "lookup_failed" };
@@ -81,7 +109,11 @@ export async function getInviteLinks(
 
   await supabase
     .from("invite_reveal_log")
-    .insert({ ip_hash: ipHash, community_id: communityId });
+    .insert(
+      target.kind === "community"
+        ? { ip_hash: ipHash, community_id: target.id }
+        : { ip_hash: ipHash, venue_id: target.id }
+    );
 
   const rows = data as { platform: string; url: string }[];
   const links: InviteLinks = {};

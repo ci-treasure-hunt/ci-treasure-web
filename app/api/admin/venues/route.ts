@@ -9,6 +9,7 @@ import { createUniqueVenueSlug } from "@/lib/venue-records";
 import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts, stripPhoneLinks } from "@/lib/phone-contacts";
+import { resolveVenueInvites, setVenueInvites, stripInviteLinks, venueInvitesErrorMessage } from "@/lib/venue-invites";
 
 // Two callers share this route: (1) the inline quick-add from the event form, which sends
 // only name/city/country/address and deliberately always lands as 'hidden' (see below —
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     // A phone-number link never goes in a public column; it moves into the gated
     // entity_phone_contacts below (rule: ci-treasure-hunt/docs/web/link-types.md). The quick-add
     // caller sends none of these fields, so for it this is a no-op.
-    const { fields: socials, phoneUrls } = stripPhoneLinks({
+    const { fields: withoutPhones, phoneUrls } = stripPhoneLinks({
       website: String(payload.website ?? "").trim(),
       newsletter: String(payload.newsletter ?? "").trim(),
       facebook: String(payload.facebook ?? "").trim(),
@@ -42,6 +43,14 @@ export async function POST(request: NextRequest) {
     const phoneContacts = resolvePhoneContacts(payload.phoneContacts, phoneUrls);
     if (phoneContacts.invalid.length) {
       return NextResponse.json({ error: phoneContactsErrorMessage(phoneContacts.invalid) }, { status: 400 });
+    }
+    // Group invite links likewise never sit in a public column: they move to the gated venue_invites.
+    // Callers that don't send `invites` (the event form's quick-add) leave the stored set untouched.
+    const { fields: socials, inviteUrls } = stripInviteLinks(withoutPhones);
+    const manageInvites = Array.isArray(payload.invites) || inviteUrls.length > 0;
+    const venueInvites = resolveVenueInvites(payload.invites, inviteUrls);
+    if (venueInvites.invalid.length) {
+      return NextResponse.json({ error: venueInvitesErrorMessage(venueInvites.invalid) }, { status: 400 });
     }
 
     const manualLat = Number.parseFloat(String(payload.lat ?? ""));
@@ -89,6 +98,10 @@ export async function POST(request: NextRequest) {
     if (phoneContacts.contacts.length) {
       const phoneResult = await setEntityPhoneContacts("venue", data.id, phoneContacts.contacts, "admin");
       if (phoneResult.error) throw new Error(phoneResult.error);
+    }
+    if (manageInvites && venueInvites.invites.length) {
+      const inviteResult = await setVenueInvites(data.id, venueInvites.invites);
+      if (inviteResult.error) throw new Error(inviteResult.error);
     }
 
     return NextResponse.json({ venue: data });
