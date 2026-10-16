@@ -108,6 +108,12 @@ function unknownCountry(country: string) {
   return toolError(`"${country}" is not a country we recognise. Try an ISO code like "PT" or the English name.`);
 }
 
+// Community languages are stored as names ("English"), event languages as ISO codes ("en").
+// getLanguageLabel expects a code and uppercases anything it cannot resolve, so names pass through.
+function communityLanguage(value: string): string {
+  return value.length <= 3 ? getLanguageLabel(value) : value;
+}
+
 function eventSummary(e: EventListItem & { isPast?: boolean }) {
   return {
     id: e.shortId,
@@ -643,7 +649,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         description: truncate(community.description),
         focus: community.focus,
         activityLevel: community.activity_level,
-        languages: (community.languages ?? []).map(getLanguageLabel),
+        languages: (community.languages ?? []).map(communityLanguage),
         website: community.website,
         imageUrl: community.image_url ?? undefined,
         hasGroupChat: community.has_invites || undefined,

@@ -114,8 +114,10 @@ export function getCountryLabelWithArticle(country: string) {
 export function getTypeLabel(type: string) {
   const labels: Record<string, string> = {
     camp: "Camp",
+    class: "Class",
     festival: "Festival",
     intensive: "Intensive",
+    jam: "Jam",
     long_jam: "Long Jam",
     residency: "Residency",
     retreat: "Retreat",

@@ -153,7 +153,7 @@ export async function getVenueEvents(venueId: string) {
   const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng";
+  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, discipline";
 
   const { data: upcoming, error: upcomingError } = await supabase
     .from("events")
