@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { escapeHtml, toFlag } from '../_shared/announce-format.ts'
+import { communityDisplayName } from '../_shared/community-name.ts'
 
 // I-029 stage 3: Steve maintains the Telegram community lists (topic 13) and chat-link lists
 // (topic 30) himself. Renders every list from the communities table, compares it with the text he
@@ -120,17 +121,8 @@ function norm(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
-// Same rule as announce-community: add the city unless the name already says where.
-function displayName(c: Community): string {
-  const city = c.city?.trim()
-  if (!city) return c.name
-  const cty = norm(city)
-  if (norm(c.name).includes(cty)) return c.name
-  if (c.country && norm(countryName(c.country)) === cty) return c.name
-  if (c.country && norm(intlNames.of(c.country) ?? '') === cty) return c.name
-  if (['uk', 'usa', 'us', 'worldwide', 'online', 'nationwide'].includes(cty)) return c.name
-  return `${c.name} (${city})`
-}
+// Shared with announce-community: add the city only where the name doesn't already say where.
+const displayName = (c: Community) => communityDisplayName(c, c.country ? [countryName(c.country)] : [])
 
 // Country-wide groups first: the city is the country itself, or the name carries the country.
 function isCountryWide(c: Community): boolean {

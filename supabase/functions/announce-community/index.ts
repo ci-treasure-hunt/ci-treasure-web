@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { escapeHtml, toFlag } from '../_shared/announce-format.ts'
+import { communityDisplayName as displayName } from '../_shared/community-name.ts'
 
 // I-029 stage 1 (2026-10-15): when a community goes live, Steve posts what Jan used to type by
 // hand.
@@ -106,28 +107,9 @@ type Community = {
 
 type Invite = { platform: string; url: string }
 
-function norm(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-}
-
 function countryName(iso: string | null): string | null {
   if (!iso) return null
   try { return countryNames.of(iso) ?? iso } catch { return iso }
-}
-
-// "Oriu (Poitiers)" but "Contact Improv Chiemgau", not "Contact Improv Chiemgau (Chiemgau)": the
-// city is added only when the name doesn't already say where the group is. Country-level "cities"
-// (city = "France", "United Kingdom") never get a suffix either.
-function displayName(c: Community): string {
-  const city = c.city?.trim()
-  if (!city) return c.name
-  const n = norm(c.name)
-  const cty = norm(city)
-  const country = countryName(c.country)
-  if (n.includes(cty)) return c.name
-  if (country && norm(country) === cty) return c.name
-  if (['uk', 'usa', 'us', 'worldwide', 'online'].includes(cty)) return c.name
-  return `${c.name} (${city})`
 }
 
 function flagFor(c: Community): string {
