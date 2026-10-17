@@ -114,6 +114,12 @@ function communityLanguage(value: string): string {
   return value.length <= 3 ? getLanguageLabel(value) : value;
 }
 
+// An empty list reads to a model like permission to fill the gap from memory or the web (r/mcp
+// feedback, 2026-10-17), so every search says what to try next and what "nothing" means.
+function emptyHint(what: string, tips: string): string {
+  return `No ${what} in this directory match these filters. ${tips} This means the directory has no listing, not that none exist; tell the user so instead of filling in ${what} from memory.`;
+}
+
 function eventSummary(e: EventListItem & { isPast?: boolean }) {
   return {
     id: e.shortId,
@@ -339,7 +345,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         }),
         ...(matches.length === 0 &&
           otherPracticeMatches === 0 && {
-            hint: "Nothing matched. Try widening the dates, dropping the city, or practice=\"any\".",
+            hint: emptyHint("events", 'Try widening the dates, dropping the city, or practice="any".'),
           }),
       });
     },
@@ -457,6 +463,9 @@ export function registerCiTreasureHuntTools(server: McpServer) {
           bio: p.bioSnippet,
           url: siteUrl(`/teachers/${p.slug}`),
         })),
+        ...(matches.length === 0 && {
+          hint: emptyHint("people", "Try only the country, a shorter name, or no role filter; profiles exist only for people credited on listed events."),
+        }),
       });
     },
   );
@@ -545,6 +554,9 @@ export function registerCiTreasureHuntTools(server: McpServer) {
           description: truncate(v.description, 300),
           url: siteUrl(`/venues/${v.slug}`),
         })),
+        ...(matches.length === 0 && {
+          hint: emptyHint("venues", "Try only the country, or search_communities, which covers groups that meet in unlisted venues."),
+        }),
       });
     },
   );
@@ -622,6 +634,9 @@ export function registerCiTreasureHuntTools(server: McpServer) {
           description: truncate(c.description, 300),
           url: siteUrl(`/communities/${c.slug}`),
         })),
+        ...(matches.length === 0 && {
+          hint: emptyHint("communities", "Try only the country, a nearby larger city, or search_events for that place."),
+        }),
       });
     },
   );
