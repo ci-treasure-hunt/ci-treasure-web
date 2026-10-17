@@ -7,8 +7,8 @@ import { communityDisplayName as displayName } from '../_shared/community-name.t
 //   1. Communities topic (t.me/citreasurehunt/13): "✨☝️🇫🇷 Oriu (Poitiers) new on the list☝️✨"
 //   2. Chat links topic (t.me/citreasurehunt/30), only if the community has a chat group:
 //      "✨☝️🇬🇧 Oxford Contact Dance (WhatsApp) new on the list☝️✨"
-// The regional lists themselves are Steve's own messages, kept current by sync-community-lists
-// (hourly), so nothing needs pasting any more. The lines carry no links.
+// The regional lists themselves are Steve's own messages, kept current by sync-community-lists:
+// called right after the announcement, plus every 6 hours for edits. The lines carry no links.
 
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
 const CHAT_ID = Deno.env.get('TELEGRAM_PUBLIC_CHAT_ID')!
@@ -164,6 +164,16 @@ Deno.serve(async (req) => {
 
   if (sent.length) {
     await supabase.from('tg_announcements').insert(sent.map(s => ({ ...s, entity_id: c.id })))
+  }
+
+  // The new community goes into Steve's lists right away instead of at the next 6-hourly sync.
+  if (!preview) {
+    const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-community-lists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WEBHOOK_SECRET}` },
+      body: JSON.stringify({ target: 'live' }),
+    }).catch(e => { console.error('list sync failed:', e); return null })
+    if (res && !res.ok) console.error('list sync failed:', res.status, await res.text())
   }
 
   console.log(`${preview ? 'Previewed' : 'Announced'} community: ${c.slug}`)
