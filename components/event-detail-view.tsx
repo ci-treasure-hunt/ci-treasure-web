@@ -92,13 +92,22 @@ export function EventDetailView({
         addressCountry: event.country,
       },
     },
+    // Credited communities (I-153) are organizers too, typed as Organization; without them a
+    // community-run event like a weekly collective jam carried no organizer at all.
     organizer:
-      event.organizers.length > 0
-        ? event.organizers.map((organizer) => ({
-            "@type": "Person",
-            name: organizer.name,
-            ...(organizer.slug ? { url: `${SITE_URL}/teachers/${organizer.slug}` } : {}),
-          }))
+      event.organizers.length + event.organizingCommunities.length > 0
+        ? [
+            ...event.organizers.map((organizer) => ({
+              "@type": "Person",
+              name: organizer.name,
+              ...(organizer.slug ? { url: `${SITE_URL}/teachers/${organizer.slug}` } : {}),
+            })),
+            ...event.organizingCommunities.map((community) => ({
+              "@type": "Organization",
+              name: community.name,
+              url: `${SITE_URL}/communities/${community.slug}`,
+            })),
+          ]
         : undefined,
     performer: event.teachers.map((teacher) => ({
       "@type": "Person",
