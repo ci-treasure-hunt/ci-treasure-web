@@ -131,7 +131,18 @@ function isCountryWide(c: Community): boolean {
   if (!c.country) return true
   const names = [countryName(c.country), intlNames.of(c.country) ?? ''].map(norm).filter(Boolean)
   const city = norm(c.city ?? '')
-  return !city || names.includes(city) || names.some(n => norm(c.name).includes(n))
+  if (!city || names.includes(city)) return true
+  // A festival happens in one place. A group that names its own town before the country
+  // ("Contact Improvisation Corfu, Greece") is local; one that leads with the country
+  // ("Contact Improvisation in Netherlands (& Amsterdam)") is the national group.
+  if (c.type === 'Festival') return false
+  const nameN = ` ${norm(c.name)} `
+  const countryAt = Math.min(...names.map(n => nameN.indexOf(` ${n} `)).filter(i => i >= 0))
+  if (!Number.isFinite(countryAt)) return false
+  const countryWords = names.flatMap(n => n.split(' '))
+  const cityWords = city.split(' ').filter(w => w.length >= 4 && !countryWords.includes(w))
+  const cityAt = Math.min(...[` ${city} `, ...cityWords.map(w => ` ${w} `)].map(t => nameN.indexOf(t)).filter(i => i >= 0))
+  return !(cityAt < countryAt)
 }
 
 const isMessenger = (u: string) => /messenger\.com|m\.me\//i.test(u)
@@ -270,6 +281,13 @@ function chatLine(c: Community, url: string): string {
   return `${flag}${emoji} ${a(label || displayName(c), url)}`
 }
 
+// Same place in the list as the working link would have, asking for the new one instead.
+function expiredChatLine(c: Community): string {
+  const flag = c.country ? toFlag(c.country) : (area(c) === 'Worldwide' ? '🌐' : '🌎')
+  const emoji = c.type && c.type !== 'General CI Community' ? (TYPE_EMOJI[c.type] ?? '') : ''
+  return `${flag}${emoji} ${escapeHtml(displayName(c))}: link expired, ${a('send us the new one', `https://citreasurehunt.com/communities/${c.slug}#invite`)}`
+}
+
 function orderForChats(list: Community[]): Community[] {
   // Same order as the community lists: list order, then country order, then within country.
   const listIndex = (c: Community) => { const l = listFor(c); return l ? LISTS.indexOf(l) : -1 }
@@ -292,6 +310,9 @@ function renderChatLists(all: Community[]): Rendered[] {
   const ordered = orderForChats(all)
   const tgGroup = (c: Community) => c.invites.find(i => i.platform === 'telegram')?.url ?? c.telegram_group
   const inv = (c: Community, p: string) => c.invites.find(i => i.platform === p)?.url
+  // Working invite for platform p, or the request for a new one if it expired.
+  const has = (c: Community, p: string) => Boolean(inv(c, p)) || c.expired.includes(p)
+  const line = (c: Community, p: string) => (inv(c, p) ? chatLine(c, inv(c, p)!) : expiredChatLine(c))
 
   const back = a('back to overview of CI chat groups', CHAT_OVERVIEW)
   const make = (key: string, title: string, intro: string[], sections: Section[]): Rendered => {
@@ -301,7 +322,8 @@ function renderChatLists(all: Community[]): Rendered[] {
     return { key, parts, links: parts.reduce((n, p) => n + countLinks(p), 0) }
   }
 
-  const tgSection = (ar: string) => ordered.filter(c => area(c) === ar && tgGroup(c)).map(c => chatLine(c, tgGroup(c)!))
+  const tgSection = (ar: string) => ordered.filter(c => area(c) === ar && (tgGroup(c) || c.expired.includes('telegram')))
+    .map(c => (tgGroup(c) ? chatLine(c, tgGroup(c)!) : expiredChatLine(c)))
   const telegram = make('chats-telegram', '⚡️ Quick list of CI Telegram groups (TG Channels 👇)', [], [
     { heading: null, lines: tgSection('Worldwide') },
     { heading: 'Telegram Groups Asia-Pacific', lines: tgSection('Asia-Pacific') },
@@ -311,7 +333,7 @@ function renderChatLists(all: Community[]): Rendered[] {
   ])
 
   const privacy = ['⚠️ Privacy notice: WhatsApp groups show all members\' phone numbers to everyone in the group, please join only if you\'re okay with that! ⚠️', RULE]
-  const wa = (ar: string) => ordered.filter(c => area(c) === ar && inv(c, 'whatsapp')).map(c => chatLine(c, inv(c, 'whatsapp')!))
+  const wa = (ar: string) => ordered.filter(c => area(c) === ar && has(c, 'whatsapp')).map(c => line(c, 'whatsapp'))
   const whatsappAmApac = make('chats-whatsapp-americas-apac', '⚡️ Quick list of CI WhatsApp groups (Americas & Asia-Pacific)', privacy, [
     { heading: 'WhatsApp Groups Americas', lines: wa('Americas') },
     { heading: 'WhatsApp Groups Asia-Pacific', lines: wa('Asia-Pacific') },
@@ -321,8 +343,8 @@ function renderChatLists(all: Community[]): Rendered[] {
   ])
 
   const other = make('chats-signal-line-messenger', '⚡️ Quick list of CI Signal / LINE / Facebook Messenger groups', [], [
-    { heading: 'Signal groups', lines: ordered.filter(c => inv(c, 'signal')).map(c => chatLine(c, inv(c, 'signal')!)) },
-    { heading: 'LINE groups', lines: ordered.filter(c => inv(c, 'line')).map(c => chatLine(c, inv(c, 'line')!)) },
+    { heading: 'Signal groups', lines: ordered.filter(c => has(c, 'signal')).map(c => line(c, 'signal')) },
+    { heading: 'LINE groups', lines: ordered.filter(c => has(c, 'line')).map(c => line(c, 'line')) },
     { heading: 'Facebook Messenger groups', lines: ordered.filter(c => c.other_resource && isMessenger(c.other_resource)).map(c => chatLine(c, c.other_resource!)) },
   ])
   return [telegram, whatsappAmApac, whatsappEmea, other]
