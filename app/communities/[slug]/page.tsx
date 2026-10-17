@@ -40,6 +40,7 @@ import {
   getCommunityOwnEvents,
   getCommunityEventsByCountry,
   getPublishedInvitePlatforms,
+  getExpiredInvitePlatforms,
   isLineUrl,
   isMessengerUrl,
   isPrivateGroupInvite,
@@ -111,6 +112,8 @@ export async function generateMetadata({ params }: CommunityPageProps): Promise<
   };
 }
 
+const CHAT_PLATFORM_LABEL = { telegram: "Telegram", whatsapp: "WhatsApp", signal: "Signal", line: "LINE" } as const;
+
 export default async function CommunityPage({ params }: CommunityPageProps) {
   const { slug } = await params;
   const community = await getCommunityBySlug(slug);
@@ -123,8 +126,9 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     notFound();
   }
 
-  const [publishedInvitePlatforms, ownEvents, relatedEventsRaw, countryLink, ring] = await Promise.all([
+  const [publishedInvitePlatforms, expiredInvitePlatforms, ownEvents, relatedEventsRaw, countryLink, ring] = await Promise.all([
     getPublishedInvitePlatforms(community.id),
+    getExpiredInvitePlatforms(community.id),
     getCommunityOwnEvents(community.id),
     getCommunityEventsByCountry(community.country),
     getCountryPageLink(community.country),
@@ -137,6 +141,8 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     getContinent(community.country),
   );
   const hasPublishedInvites = Object.keys(publishedInvitePlatforms).length > 0;
+  const expiredLabels = expiredInvitePlatforms.map((p) => CHAT_PLATFORM_LABEL[p]);
+  const onlyExpiredInvites = expiredInvitePlatforms.length > 0 && !hasPublishedInvites;
   const ownEventIds = new Set(ownEvents.map((e) => e.id));
   const relatedEvents = relatedEventsRaw.filter((e) => !ownEventIds.has(e.id));
 
@@ -362,14 +368,24 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
               {community.has_invites && (
                 <section id="invite" className="scroll-mt-6 rounded-[1.75rem] border border-(--color-pine)/20 bg-(--color-pine)/5 p-6">
                   <h2 className="font-serif text-xl text-slate-950">Join this community</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    {hasPublishedInvites
-                      ? "Invite links to chat groups are shared here after a quick verification to reduce spam."
-                      : "This community coordinates in a private group. Join our Telegram group and we'll help you connect."}
-                  </p>
-                  <div className="mt-4">
-                    <InviteButtons entity={{ kind: "community", id: community.id }} platforms={publishedInvitePlatforms} />
-                  </div>
+                  {!onlyExpiredInvites && (
+                    <p className="mt-2 text-sm text-slate-600">
+                      {hasPublishedInvites
+                        ? "Invite links to chat groups are shared here after a quick verification to reduce spam."
+                        : "This community coordinates in a private group. Join our Telegram group and we'll help you connect."}
+                    </p>
+                  )}
+                  {expiredLabels.length > 0 && (
+                    <p className="mt-2 text-sm text-slate-600">
+                      The {expiredLabels.join(" and ")} group link we had has expired. Know the new one? Please send it
+                      to us with &ldquo;Suggest an edit&rdquo; below.
+                    </p>
+                  )}
+                  {!onlyExpiredInvites && (
+                    <div className="mt-4">
+                      <InviteButtons entity={{ kind: "community", id: community.id }} platforms={publishedInvitePlatforms} />
+                    </div>
+                  )}
                 </section>
               )}
             </aside>

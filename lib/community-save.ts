@@ -130,24 +130,37 @@ export async function saveCommunity(
   // ---- Invites: stored ones, minus removals, plus anything newly classified -------------------
   // A new or changed invite URL starts unpublished: whether a private group link may be revealed
   // is a consent decision (organizer OK, link already public, or group public), made per link.
-  const current = new Map<string, { url: string; published: boolean; label: string | null }>();
+  // broken_since: kept while the admin leaves "Link expired" ticked, cleared by unticking or by a new URL.
+  const current = new Map<string, { url: string; published: boolean; label: string | null; broken_since: string | null }>();
   if (id) {
     const { data: stored, error } = await supabase
       .from("community_invites")
-      .select("platform, url, published, label")
+      .select("platform, url, published, label, broken_since")
       .eq("community_id", id);
     if (error) throw error;
-    for (const row of stored ?? []) current.set(row.platform, { url: row.url, published: row.published, label: row.label });
+    for (const row of stored ?? []) current.set(row.platform, { url: row.url, published: row.published, label: row.label, broken_since: row.broken_since });
   }
   for (const inv of payload.invites ?? []) {
     const existing = current.get(inv.platform);
     if (!existing) continue;
     if (inv.remove) current.delete(inv.platform);
-    else current.set(inv.platform, { url: existing.url, published: Boolean(inv.published), label: orNull(inv.label) });
+    else
+      current.set(inv.platform, {
+        url: existing.url,
+        published: Boolean(inv.published),
+        label: orNull(inv.label),
+        broken_since: inv.broken ? (existing.broken_since ?? new Date().toISOString()) : null,
+      });
   }
   for (const [platform, url] of Object.entries(links.invites) as Array<[InvitePlatform, string]>) {
     const existing = current.get(platform);
-    current.set(platform, { url, published: existing?.url === url ? existing.published : false, label: existing?.label ?? null });
+    const same = existing?.url === url;
+    current.set(platform, {
+      url,
+      published: same ? existing.published : false,
+      label: existing?.label ?? null,
+      broken_since: same ? existing.broken_since : null,
+    });
   }
 
   // ---- Location --------------------------------------------------------------------------------
@@ -250,6 +263,7 @@ export async function saveCommunity(
         url: v.url,
         published: v.published,
         label: v.label,
+        broken_since: v.broken_since,
         synced_at: new Date().toISOString(),
       })),
       { onConflict: "community_id,platform" },

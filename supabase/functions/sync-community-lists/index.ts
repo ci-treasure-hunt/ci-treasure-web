@@ -115,6 +115,8 @@ type Community = {
   facebook_group: string | null; facebook_page: string | null; instagram: string | null; youtube: string | null
   calendar: string | null; newsletter: string | null; other_resource: string | null; other_resource_label: string | null
   invites: { platform: string; url: string; label: string | null }[]
+  /** Chat platforms whose invite link expired (broken_since): no link, a request for the new one. */
+  expired: string[]
 }
 
 function norm(s: string): string {
@@ -136,6 +138,8 @@ const isMessenger = (u: string) => /messenger\.com|m\.me\//i.test(u)
 const withScheme = (u: string) => (/^https?:\/\//i.test(u) ? u : `https://${u}`)
 const a = (label: string, url: string) => `<a href="${escapeHtml(withScheme(url))}">${escapeHtml(label)}</a>`
 
+const PLATFORM_NAME: Record<string, string> = { telegram: 'Telegram', whatsapp: 'WhatsApp', signal: 'Signal', line: 'LINE' }
+
 function communityLine(c: Community): string {
   const inv = (p: string) => c.invites.find(i => i.platform === p)?.url
   const parts: string[] = []
@@ -156,6 +160,11 @@ function communityLine(c: Community): string {
   if (c.newsletter) parts.push(a('Newsletter', c.newsletter))
   if (c.other_resource) {
     parts.push(a(c.other_resource_label ?? (isMessenger(c.other_resource) ? 'Messenger' : 'More'), c.other_resource))
+  }
+  // An expired invite stays visible as a request, so whoever knows the new link can send it.
+  if (c.expired.length > 0) {
+    const names = c.expired.map(p => PLATFORM_NAME[p] ?? p).join(' & ')
+    parts.push(`${names} link expired, ${a('send us the new one', `https://citreasurehunt.com/communities/${c.slug}#invite`)}`)
   }
   const emoji = TYPE_EMOJI[c.type ?? ''] ?? '🌀'
   return `${emoji} ${escapeHtml(displayName(c))}: ${parts.join(' | ') || '(no links yet)'}`
@@ -338,10 +347,18 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
   const { data: rows, error } = await supabase.from('communities')
-    .select('id, slug, name, type, city, country, region, lat, lng, website, telegram_group, telegram_channel, whatsapp_channel, facebook_group, facebook_page, instagram, youtube, calendar, newsletter, other_resource, other_resource_label, community_invites(platform, url, label)')
+    .select('id, slug, name, type, city, country, region, lat, lng, website, telegram_group, telegram_channel, whatsapp_channel, facebook_group, facebook_page, instagram, youtube, calendar, newsletter, other_resource, other_resource_label, community_invites(platform, url, label, broken_since)')
     .eq('status', 'published').is('deleted_at', null)
   if (error) return new Response(`db error: ${error.message}`, { status: 500 })
-  const all: Community[] = (rows ?? []).map((r: Record<string, unknown>) => ({ ...(r as unknown as Community), invites: (r.community_invites as Community['invites']) ?? [] }))
+  type InviteRow = Community['invites'][number] & { broken_since: string | null }
+  const all: Community[] = (rows ?? []).map((r: Record<string, unknown>) => {
+    const invites = (r.community_invites as InviteRow[] | null) ?? []
+    return {
+      ...(r as unknown as Community),
+      invites: invites.filter(i => !i.broken_since),
+      expired: invites.filter(i => i.broken_since).map(i => i.platform),
+    }
+  })
 
   const jobs = [
     ...renderCommunityLists(all).map(r => ({ ...r, thread: target.communities })),

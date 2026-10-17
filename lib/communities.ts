@@ -12,7 +12,8 @@ export type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
 
 // Which invite platforms are ALLOW-LISTED (published) for a community. community_invites
 // is service-role-only, so this uses the admin client. Only published rows are returned,
-// so the pre-captcha UI never advertises a link that won't be revealed.
+// so the pre-captcha UI never advertises a link that won't be revealed. Expired links
+// (broken_since set) are left out too: the page asks for the new link instead.
 export async function getPublishedInvitePlatforms(
   communityId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
@@ -22,7 +23,8 @@ export async function getPublishedInvitePlatforms(
       .from("community_invites")
       .select("platform")
       .eq("community_id", communityId)
-      .eq("published", true);
+      .eq("published", true)
+      .is("broken_since", null);
     const result: Partial<Record<InvitePlatform, boolean>> = {};
     for (const row of data ?? []) {
       const platform = row.platform as string;
@@ -33,6 +35,24 @@ export async function getPublishedInvitePlatforms(
     return result;
   } catch {
     return {};
+  }
+}
+
+// I-029: chat platforms whose stored invite link has expired, published or not. Only the platform
+// name leaves the server, never the dead URL.
+export async function getExpiredInvitePlatforms(communityId: string): Promise<InvitePlatform[]> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("community_invites")
+      .select("platform")
+      .eq("community_id", communityId)
+      .not("broken_since", "is", null);
+    return (data ?? [])
+      .map((row) => row.platform as string)
+      .filter((p): p is InvitePlatform => p === "telegram" || p === "whatsapp" || p === "signal" || p === "line");
+  } catch {
+    return [];
   }
 }
 

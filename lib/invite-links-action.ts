@@ -93,6 +93,7 @@ async function revealInviteLinks(target: RevealTarget, token: string): Promise<I
           .select("platform, url")
           .eq("community_id", target.id)
           .eq("published", true)
+          .is("broken_since", null)
       : await supabase
           .from("venue_invites")
           .select("platform, url")

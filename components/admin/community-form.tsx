@@ -335,6 +335,17 @@ export function CommunityForm({
                         />
                         Revealable
                       </label>
+                      <label className="flex items-center gap-2 text-amber-700">
+                        <input
+                          type="checkbox"
+                          checked={inv.broken}
+                          disabled={inv.remove}
+                          onChange={(e) =>
+                            set("invites", form.invites.map((x, i) => (i === index ? { ...x, broken: e.target.checked } : x)))
+                          }
+                        />
+                        Link expired
+                      </label>
                       <label className="flex items-center gap-2 text-rose-700">
                         <input
                           type="checkbox"

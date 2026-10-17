@@ -410,3 +410,6 @@ verify_jwt = false
 # I-029 stage 3: called by the weekly GitHub Action with the same bearer secret.
 [functions.sync-community-lists]
 verify_jwt = false
+
+[functions.check-invite-links]
+verify_jwt = false

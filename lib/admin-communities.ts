@@ -53,6 +53,8 @@ export type AdminCommunityInvite = {
   published: boolean;
   /** The group's own name for Steve's Telegram chat lists; empty = the community name. */
   label: string;
+  /** The link stopped working (weekly check or admin): hidden, and readers are asked for the new one. */
+  broken: boolean;
   /** Admin ticked "remove". */
   remove: boolean;
 };
