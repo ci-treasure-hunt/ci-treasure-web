@@ -22,6 +22,8 @@ import {
   REPEAT_OPTIONS,
   computeRepeatDates,
   createEmptyOrganizerEventFormData,
+  isClosedClassSeries,
+  type DropInAnswer,
   type RepeatMode,
   type AdminLinkItem,
   type AdminPriceItem,
@@ -124,6 +126,9 @@ export function OrganizerEventForm({
   const showTimeFields = span != null && span <= 4;
   // I-171 Stage 4: live preview of the extra dates, computed by the same function the server uses.
   const repeatPreview = mode === "create" ? computeRepeatDates(form) : { dates: [], error: null };
+  // I-171 DEC-8: only a repeating class asks about drop-in. Jams are drop-in by nature.
+  const askDropIn = mode === "create" && form.type === "class" && Boolean(form.repeat);
+  const closedSeries = isClosedClassSeries(form);
 
   function toggleLanguage(code: string) {
     setForm((prev) => ({
@@ -245,9 +250,40 @@ export function OrganizerEventForm({
                   />
                 </Field>
               ) : null}
+              {askDropIn ? (
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium text-slate-700">
+                    Can people come to single dates (drop-in)?
+                  </legend>
+                  {(
+                    [
+                      { value: "yes", label: "Yes, drop-in is possible (a series price on top is fine)" },
+                      { value: "no", label: "No, people book the whole series" },
+                    ] as Array<{ value: DropInAnswer; label: string }>
+                  ).map((o) => (
+                    <label key={o.value} className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="radio"
+                        name="dropIn"
+                        value={o.value}
+                        checked={form.dropIn === o.value}
+                        onChange={() => set("dropIn", o.value)}
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                </fieldset>
+              ) : null}
               {form.repeat ? (
                 repeatPreview.error ? (
                   <p className="text-xs text-rose-700">{repeatPreview.error}</p>
+                ) : closedSeries ? (
+                  <p className="text-xs text-slate-600">
+                    {repeatPreview.dates.length + 1} sessions: {form.startDate}
+                    {repeatPreview.dates.length ? `, ${repeatPreview.dates.join(", ")}` : ""}. This
+                    becomes one listing, a class series booked as a whole, with each date shown as
+                    a session. It stays in the calendar until the first session.
+                  </p>
                 ) : (
                   <p className="text-xs text-slate-600">
                     {repeatPreview.dates.length + 1} dates in total: {form.startDate}

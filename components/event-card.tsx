@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Clock3, MapPin } from "lucide-react";
 
-import { formatCardTimeRange, formatEventDateRange, formatMoreDates, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
+import { formatCardTimeRange, formatClassSeriesLabel, formatEventDateRange, formatMoreDates, getCountryLabel, getEventHref, getTypeLabel, type EventListItem } from "@/lib/event-display";
 import { getMediumUrl, getSmallUrl, toCdnUrl } from "@/lib/image-url";
 
 export function EventCard({ event, compact = false }: { event: EventListItem; compact?: boolean }) {
@@ -10,6 +10,8 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
   const timeRange = formatCardTimeRange(event);
   // I-171: later dates of a collapsed recurring series, see collapseRecurringSeries().
   const moreDates = formatMoreDates(event.moreDates ?? []);
+  // I-171 DEC-8: "12-week class series · Thursdays", for a class series booked as a whole.
+  const seriesLabel = event.classSeries ? formatClassSeriesLabel(event.classSeries) : "";
 
   if (compact) {
     return (
@@ -40,6 +42,7 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
               {formatEventDateRange(event)}
               {timeRange ? ` · ${timeRange}` : ""}
             </p>
+            {seriesLabel ? <p className="text-xs text-(--color-pine)">{seriesLabel}</p> : null}
             {moreDates ? <p className="text-xs text-(--color-pine)">{moreDates}</p> : null}
             {/* slate-500, not slate-400: slate-400 measured 2.63:1 on white, below WCAG's 4.5:1 minimum */}
             <p className="text-xs text-slate-500">{event.city}, {getCountryLabel(event.country)}</p>
@@ -86,6 +89,7 @@ export function EventCard({ event, compact = false }: { event: EventListItem; co
               <CalendarDays className="mt-0.5 size-4 text-(--color-pine)" />
               <dd>
                 {formatEventDateRange(event)}
+                {seriesLabel ? <span className="block text-xs text-(--color-pine)">{seriesLabel}</span> : null}
                 {moreDates ? <span className="block text-xs text-(--color-pine)">{moreDates}</span> : null}
               </dd>
             </div>

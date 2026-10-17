@@ -11,6 +11,7 @@ import { resolveVenueLocation } from "@/lib/geocode";
 import {
   BARE_EMAIL,
   computeRepeatDates,
+  isClosedClassSeries,
   normalizeCountry,
   normalizeJsonItems,
   parseCsvArray,
@@ -152,11 +153,33 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     };
   }
 
+  // I-171 DEC-8: a repeating class without drop-in is ONE listing, booked as a whole. Its dates
+  // become dated sessions (segments) on this row, which then spans first to last date; no series
+  // rows are created below. Each session carries the form's times.
+  const { dates: repeatDates } = computeRepeatDates(data);
+  const closedSeries = isClosedClassSeries(data) && repeatDates.length > 0;
+  const sessionDates = closedSeries ? [data.startDate, ...repeatDates] : [];
+  const closedSeriesColumns = closedSeries
+    ? {
+        end_date: sessionDates[sessionDates.length - 1],
+        segments: {
+          items: sessionDates.map((date, index) => ({
+            title: `Session ${index + 1}`,
+            start_date: date,
+            end_date: date,
+            ...(data.startTime.trim() ? { start_time: data.startTime.trim() } : {}),
+            ...(data.endTime.trim() ? { end_time: data.endTime.trim() } : {}),
+          })),
+        },
+      }
+    : {};
+
   // Insert as pending. short_id is filled by the generate_short_id() DB trigger.
   const { data: inserted, error: insertError } = await supabase
     .from("events")
     .insert({
       ...eventColumns(data, imageUrl, timezone),
+      ...closedSeriesColumns,
       venue_id,
       address,
       ...(lat != null && lng != null ? { lat, lng } : {}),
@@ -222,10 +245,9 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   // first date; it becomes a recurring series and the generator adds the rest from it, with the
   // same teachers, organizers and contacts. Non-fatal like the links above: the first date
   // exists either way, and the series can be completed from /admin/series.
-  const { dates: repeatDates } = computeRepeatDates(data);
   const repeatIds: string[] = [];
   let repeatWarning: string | undefined;
-  if (repeatDates.length) {
+  if (repeatDates.length && !closedSeries) {
     try {
       const seriesId = await createSeriesFromEvent({
         eventId: inserted.id,

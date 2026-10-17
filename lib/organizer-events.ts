@@ -159,7 +159,23 @@ export type OrganizerEventFormData = {
   repeat: RepeatMode;
   repeatUntil: string;
   repeatDates: string;
+  // I-171 DEC-8, create mode, repeating classes only: can people book single dates (drop-in)?
+  // "no" makes the dates the sessions of ONE listing, a class series booked as a whole, instead
+  // of one listing per date. "" = not answered yet (required before a repeating class submits).
+  dropIn: DropInAnswer;
 };
+
+export type DropInAnswer = "" | "yes" | "no";
+
+// A repeating class booked as a whole: one row, its dates stored as segments (DEC-8).
+export function isClosedClassSeries(data: Pick<OrganizerEventFormData, "type" | "repeat" | "dropIn">) {
+  return data.type === "class" && Boolean(data.repeat) && data.dropIn === "no";
+}
+
+// A closed class series has a fixed end and nothing to roll forward, so it may run longer than
+// the drop-in horizon: a school-year course is about 9 months.
+export const CLOSED_SERIES_HORIZON_DAYS = 366;
+export const CLOSED_SERIES_MAX_DATES = 60;
 
 export type RepeatMode = "" | "weekly" | "biweekly" | "dates";
 
@@ -203,6 +219,7 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     repeat: "",
     repeatUntil: "",
     repeatDates: "",
+    dropIn: "",
     discipline: ["contact_improvisation"],
     cancelled: false,
     cancelledText: "",
@@ -367,17 +384,24 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     repeat: "",
     repeatUntil: "",
     repeatDates: "",
+    dropIn: "",
   };
 }
 
 // The further dates a create-mode submission repeats on, not including its own start date.
 // Pure, so the form can preview exactly what the server will create.
-export function computeRepeatDates(data: Pick<OrganizerEventFormData, "startDate" | "repeat" | "repeatUntil" | "repeatDates">): {
+export function computeRepeatDates(
+  data: Pick<OrganizerEventFormData, "startDate" | "repeat" | "repeatUntil" | "repeatDates"> &
+    Partial<Pick<OrganizerEventFormData, "type" | "dropIn">>,
+): {
   dates: string[];
   error: string | null;
 } {
   if (!data.repeat || !data.startDate) return { dates: [], error: null };
-  const horizonEnd = addDays(data.startDate, REPEAT_HORIZON_DAYS);
+  const closed = isClosedClassSeries({ type: data.type ?? "", repeat: data.repeat, dropIn: data.dropIn ?? "" });
+  const horizonDays = closed ? CLOSED_SERIES_HORIZON_DAYS : REPEAT_HORIZON_DAYS;
+  const maxDates = closed ? CLOSED_SERIES_MAX_DATES : REPEAT_MAX_DATES;
+  const horizonEnd = addDays(data.startDate, horizonDays);
 
   let dates: string[];
   if (data.repeat === "dates") {
@@ -388,7 +412,12 @@ export function computeRepeatDates(data: Pick<OrganizerEventFormData, "startDate
       return { dates: [], error: "The other dates should come after the first date." };
     }
     if (dates.some((d) => d > horizonEnd)) {
-      return { dates: [], error: "Add dates up to about 6 months ahead. You can add later ones nearer the time." };
+      return {
+        dates: [],
+        error: closed
+          ? "A class series can run up to a year from its first date."
+          : "Add dates up to about 6 months ahead. You can add later ones nearer the time.",
+      };
     }
   } else {
     if (!data.repeatUntil) return { dates: [], error: "Pick the last date it repeats until." };
@@ -402,8 +431,13 @@ export function computeRepeatDates(data: Pick<OrganizerEventFormData, "startDate
   }
 
   if (!dates.length) return { dates: [], error: "Add at least one more date, or choose a one-off event." };
-  if (dates.length > REPEAT_MAX_DATES) {
-    return { dates: [], error: `That's ${dates.length + 1} dates. Add up to ${REPEAT_MAX_DATES + 1} for now, you can add more later.` };
+  if (dates.length > maxDates) {
+    return {
+      dates: [],
+      error: closed
+        ? `That's ${dates.length + 1} sessions. A class series can have up to ${maxDates + 1}.`
+        : `That's ${dates.length + 1} dates. Add up to ${maxDates + 1} for now, you can add more later.`,
+    };
   }
   return { dates, error: null };
 }
@@ -432,6 +466,9 @@ export function validateOrganizerEvent(
   // I-171 Stage 4: jam/class were blocked here until repeating dates existed. They're now
   // submittable like any other type, as a one-off or with further dates (computeRepeatDates).
   if (options?.enforceMinDuration && data.repeat) {
+    if (data.type === "class" && !data.dropIn) {
+      return "Say whether people can come to single dates (drop-in), or only book the whole series.";
+    }
     const { error } = computeRepeatDates(data);
     if (error) return error;
   }

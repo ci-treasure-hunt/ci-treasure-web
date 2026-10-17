@@ -93,7 +93,8 @@ trainings and weekend workshops, and, since October 2026, regular jams and class
 
 A weekly jam changes venue, skips a holiday, moves to a summer schedule, and a directory maintained
 from the outside will always lag a few weeks behind. So jams and classes come in from the people
-who run them: they add the first date and how it repeats, and keep each date up to date. Local
+who run them: they add the first date and how it repeats, and keep each date up to date. A class
+series that people book as a whole, without drop-in, is one listing with its sessions. Local
 Telegram, WhatsApp, Signal, Line and Facebook groups still do that job best, which is why the site
 also lists the group itself: you can find your local jam by finding the people who run it. That is
 what the [communities directory](/communities) is for.

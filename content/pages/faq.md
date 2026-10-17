@@ -80,9 +80,11 @@ answer from the live listings, with links back here. It is read-only and needs n
 
 **Can I list my weekly jam or class?**
 Yes. Sign in, go to [citreasurehunt.com/events/new](/events/new), choose jam or class, enter the
-first date, and say how it repeats: every week, every two weeks, or on specific dates. Each date
-gets its own listing, and the calendar shows them as one entry with the next dates. You can add
-dates up to about six months ahead, and more later. A weekly jam changes venue, skips holidays and
+first date, and say how it repeats: every week, every two weeks, or on specific dates. For a
+class, say whether people can come to single dates (drop-in). With drop-in, each date gets its own
+listing, and the calendar shows them as one entry with the next dates, up to about six months
+ahead and more later. Without drop-in, it becomes one listing, a class series booked as a whole,
+with each date shown as a session; it stays in the calendar until the first session. A weekly jam changes venue, skips holidays and
 switches to a summer schedule, so a listing only stays accurate if the people running it keep it
 up to date: each date can be edited or canceled on its own. Most local jams are still easiest to
 find through their group in [Communities](/communities). If your community is missing there, send
@@ -164,18 +166,15 @@ completely fine. Over time, we would love more organizers to add their own event
 
 **What kinds of events do you list?**
 Events where people come together to dance contact improvisation: festivals, intensives, retreats,
-weekend workshops and one-day workshops, and regular jams and classes, where each date is its own
-listing.
+weekend workshops and one-day workshops, regular jams and classes, and class series.
 
-Two things sit outside that. The first is the shape of the schedule. A jam or class you can drop
-into on any date is listed date by date. A course that meets for a few hours a week across several
-months, with one enrollment for the whole course, is a different animal: nobody joins week seven
-on its own, so it fits neither a single date nor an event people arrive at and stay inside from
-beginning to end. For now, courses like that are listed through their local
-[community](/communities) instead.
+How a schedule is listed follows how people book it. A jam or class you can drop into on any
+date is listed date by date. A class series with one booking for the whole run, a few hours a week
+across several weeks or months, is one listing with its sessions, shown until the first session,
+because nobody joins week seven on its own.
 
-The second is what is on offer. The dancing has to be the thing itself. Plenty of good CI work
-touches on somatics, emotional material and personal process, and that belongs here. Where the
+One thing sits outside, whatever the format: the dancing has to be the thing itself. Plenty of
+good CI work touches on somatics, emotional material and personal process, and that belongs here. Where the
 dance is mainly the vehicle for a program of guided personal or therapeutic process work, it sits
 outside what this calendar covers, whatever its length.
 
@@ -290,8 +289,9 @@ BUILD NOTES (not page content, for whoever edits this page next)
    - I-171 (recurring jams and classes): done 2026-10-14. FAQ "Can I list my weekly jam or
      class?" (renamed from "Why is my weekly jam not listed?"), "What kinds of events do you
      list?", "Where will my event be announced?", the Events/Communities intro, and about.md
-     "What gets listed". Revisit when Stage 5 (staleness) ships, and when cohort courses (one
-     enrollment across months, the DBrl case) become listable.
+     "What gets listed". Class series without drop-in (DEC-8) added 2026-10-17 to "Can I list
+     my weekly jam or class?" and "What kinds of events do you list?". Revisit when Stage 5
+     (staleness) ships.
    - I-173 (revenue model): "no advertising" (FAQ "Is it free?", about.md intro and costs section)
      and about.md's "Browsing and (basic) listings stay free".
 -->

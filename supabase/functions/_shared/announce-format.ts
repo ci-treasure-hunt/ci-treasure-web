@@ -188,6 +188,47 @@ export function formatTimeOfDay(
   return end && end !== start ? `${start}-${end}` : start
 }
 
+// I-171 DEC-8: a class series booked as a whole is one `class` row spanning weeks, its sessions
+// dated segments. Same marker and wording as isClassSeries()/formatClassSeriesLabel() in
+// ci-treasure-web/lib/event-display.ts (Deno can't import from there): "12-week class series ·
+// Thursdays 19:00-21:00".
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAY_PLURAL = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays']
+
+export function isClassSeries(event: { type: string; start_date: string; end_date: string | null }): boolean {
+  return event.type === 'class' && Boolean(event.end_date) && event.start_date < (event.end_date as string)
+}
+
+export function formatClassSeries(event: {
+  start_date: string
+  end_date: string | null
+  start_time?: string | null
+  end_time?: string | null
+  segments?: { items?: Array<{ start_date?: string }> } | null
+}): string {
+  const days = new Set<number>()
+  const dated = (event.segments?.items ?? []).filter((s) => typeof s.start_date === 'string')
+  for (const s of dated.length ? dated : [{ start_date: event.start_date }]) {
+    days.add(new Date(`${s.start_date}T12:00:00Z`).getUTCDay())
+  }
+  const order = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+  const mf = order.map((d) => (d + 6) % 7)
+  const consecutive = mf.every((d, i) => i === 0 || d === mf[i - 1] + 1)
+  const dayText =
+    order.length === 1
+      ? WEEKDAY_PLURAL[order[0]]
+      : consecutive && order.length >= 3
+        ? `${WEEKDAY_SHORT[order[0]]}-${WEEKDAY_SHORT[order[order.length - 1]]}`
+        : `${order.slice(0, -1).map((d) => WEEKDAY_SHORT[d]).join(', ')} & ${WEEKDAY_SHORT[order[order.length - 1]]}`
+  const spanDays =
+    Math.round((Date.parse(`${event.end_date}T00:00:00Z`) - Date.parse(`${event.start_date}T00:00:00Z`)) / 86400000) + 1
+  const weeks = Math.ceil(spanDays / 7)
+  const start = event.start_time ? event.start_time.slice(0, 5) : null
+  const end = event.end_time ? event.end_time.slice(0, 5) : null
+  const time = start ? (end && end !== start ? `${start}-${end}` : start) : ''
+  return `${weeks > 1 ? `${weeks}-week class series` : 'Class series'} · ${dayText}${time ? ` ${time}` : ''}`
+}
+
 export type RichCaptionEvent = {
   type: string
   title: string
@@ -200,6 +241,7 @@ export type RichCaptionEvent = {
   price: { items?: PriceItem[] } | null
   level: string | null
   discipline: string[] | null
+  segments?: { items?: Array<{ start_date?: string }> } | null
 }
 
 // Builds the photo-card caption shared by announce-event-channel and announce-event's
@@ -218,7 +260,9 @@ export function buildRichCaption(event: RichCaptionEvent, teacherNames: string[]
   const lines: string[] = [
     `${TYPE_EMOJI[event.type] ?? '📌'} <a href="${eventUrl}">${escapeHtml(event.title)}</a>`,
     `${toFlag(event.country)} ${escapeHtml(location)}`,
-    `📅 ${formatDates(event.start_date, event.end_date)}${timeOfDay ? ` · ${timeOfDay}` : ''}`,
+    isClassSeries(event)
+      ? `📅 ${formatDates(event.start_date, event.end_date)} · ${escapeHtml(formatClassSeries(event))}`
+      : `📅 ${formatDates(event.start_date, event.end_date)}${timeOfDay ? ` · ${timeOfDay}` : ''}`,
   ]
 
   const price = headlinePrice(event.price)

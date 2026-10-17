@@ -4,7 +4,7 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { countryName } from "./countries";
 import { mapEventRow, type SupabaseEventRow } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
-import { getCountryLabel } from "./event-display";
+import { getCountryLabel, isUpcomingListing, upcomingClassSeriesFilter } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
 
@@ -560,7 +560,12 @@ export async function getCommunityOwnEvents(communityId: string) {
   type Row = { events: (SupabaseEventRow & { status: string }) | (SupabaseEventRow & { status: string })[] | null };
   const events = (data as Row[])
     .map((row) => (Array.isArray(row.events) ? row.events[0] : row.events))
-    .filter((e): e is SupabaseEventRow & { status: string } => Boolean(e) && e!.status === "published" && e!.end_date >= today)
+    .filter(
+      (e): e is SupabaseEventRow & { status: string } =>
+        Boolean(e) &&
+        e!.status === "published" &&
+        isUpcomingListing({ type: e!.type, startDate: e!.start_date, endDate: e!.end_date }, today),
+    )
     .sort((a, b) => a.start_date.localeCompare(b.start_date));
 
   return events.map(mapEventRow);
@@ -580,6 +585,7 @@ export async function getCommunityEventsByCountry(countryIso: string | null) {
     .eq("country", countryIso)
     .eq("status", "published")
     .gte("end_date", today)
+    .or(upcomingClassSeriesFilter(today))
     .order("start_date", { ascending: true })
     .limit(COMMUNITY_RELATED_EVENTS_LIMIT);
 

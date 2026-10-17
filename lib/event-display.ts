@@ -14,6 +14,9 @@ export type SegmentItem = {
   endTime?: string;
   teachers?: string[];
   description?: string;
+  // I-171 DEC-8: one session of a class series called off, shown struck through. Stored as
+  // `cancelled: true` in the JSON; absent means it takes place.
+  cancelled?: boolean;
 };
 
 export type SegmentsData = {
@@ -49,7 +52,82 @@ export type EventListItem = {
   // Filled by collapseRecurringSeries(): start dates of the series' later instances that survived
   // the same filters, in order.
   moreDates?: string[];
+  // I-171 DEC-8: set when this row is a class series booked as a whole (no drop-in), i.e. a
+  // `class` spanning more than one day, its sessions held as dated segments. See isClassSeries().
+  classSeries?: ClassSeriesSummary | null;
 };
+
+// I-171 DEC-8. A class series without drop-in is ONE row (one thing people book), its sessions
+// dated segments. Computed from the segments so nothing about the schedule is stored twice.
+export type ClassSeriesSummary = {
+  // Sessions that take place (cancelled ones excluded); null when the row has no dated segments.
+  sessions: number | null;
+  weeks: number;
+  // 0 = Sunday ... 6 = Saturday, sorted Monday-first for display.
+  weekdays: number[];
+};
+
+// A `class` row is a single class or one date of a drop-in series (one day), unless it spans
+// several days: that shape only exists for a class series booked as a whole (DEC-8). Verified
+// 2026-10-17 that no other multi-day `class` rows exist, so the shape is the marker.
+export function isClassSeries(event: { type: string; startDate: string; endDate: string }) {
+  return event.type === "class" && Boolean(event.endDate) && event.startDate < event.endDate;
+}
+
+export function summarizeClassSeries(
+  event: { startDate: string; endDate: string },
+  segments: SegmentItem[] | null | undefined,
+): ClassSeriesSummary {
+  const dated = (segments ?? []).filter((s) => s.startDate);
+  const weekdaySet = new Set<number>();
+  for (const s of dated.length ? dated : [{ startDate: event.startDate }]) {
+    weekdaySet.add(new Date(`${s.startDate}T12:00:00Z`).getUTCDay());
+  }
+  const mondayFirst = (d: number) => (d + 6) % 7;
+  return {
+    sessions: dated.length ? dated.filter((s) => !s.cancelled).length : null,
+    weeks: Math.ceil(eventDayCount(event) / 7),
+    weekdays: [...weekdaySet].sort((a, b) => mondayFirst(a) - mondayFirst(b)),
+  };
+}
+
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_PLURAL = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+
+// "Thursdays", "Tue & Thu", "Mon-Thu" (three or more consecutive days), "Mon, Wed & Fri".
+export function formatWeekdays(weekdays: number[]) {
+  if (weekdays.length === 0) return "";
+  if (weekdays.length === 1) return WEEKDAY_PLURAL[weekdays[0]];
+  const order = weekdays.map((d) => (d + 6) % 7);
+  const consecutive = order.every((d, i) => i === 0 || d === order[i - 1] + 1);
+  if (consecutive && weekdays.length >= 3) {
+    return `${WEEKDAY_SHORT[weekdays[0]]}-${WEEKDAY_SHORT[weekdays[weekdays.length - 1]]}`;
+  }
+  const names = weekdays.map((d) => WEEKDAY_SHORT[d]);
+  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+}
+
+// "12-week class series · Thursdays"
+export function formatClassSeriesLabel(summary: ClassSeriesSummary) {
+  const length = summary.weeks <= 1 ? "Class series" : `${summary.weeks}-week class series`;
+  const days = formatWeekdays(summary.weekdays);
+  return days ? `${length} · ${days}` : length;
+}
+
+// The rule every upcoming list applies (DEC-8): a class series booked as a whole lists until its
+// first session, after which nobody can join it, so it leaves the upcoming lists while it runs.
+// Its own page, the archive and past-event search keep it. Everything else lists until it ends.
+export function isUpcomingListing(event: { type: string; startDate: string; endDate: string }, today: string) {
+  if (event.endDate < today) return false;
+  return !(isClassSeries(event) && event.startDate < today);
+}
+
+// Same rule as isUpcomingListing(), for a PostgREST query that already filters end_date >= today:
+// `.or(upcomingClassSeriesFilter(today))`. A one-day class has start = end, so it passes whenever
+// end_date does; only a multi-day class row (a class series) is cut off at its start.
+export function upcomingClassSeriesFilter(today: string) {
+  return `type.neq.class,start_date.gte.${today}`;
+}
 
 // Shared fallback gradient — used for event types without a dedicated accent (below),
 // and as the generic hero background for entity types with no "type" taxonomy of their
@@ -226,8 +304,11 @@ export function formatEventDateRange(event: Pick<EventListItem, "startDate" | "e
 // country, and repeating "(Europe/Berlin)" on every card in a list is clutter the detail page
 // can afford but a grid can't. Multi-day events don't get a card-level time at all: the "first
 // day start / last day end" phrasing only makes sense with room to explain it.
-export function formatCardTimeRange(event: Pick<EventListItem, "startDate" | "endDate" | "startTime" | "endTime">) {
-  if (event.startDate !== event.endDate) return "";
+export function formatCardTimeRange(
+  event: Pick<EventListItem, "startDate" | "endDate" | "startTime" | "endTime" | "classSeries">,
+) {
+  // A class series (DEC-8) spans weeks, but its times are the times of every session.
+  if (event.startDate !== event.endDate && !event.classSeries) return "";
   if (!event.startTime && !event.endTime) return "";
   const start = event.startTime ? event.startTime.slice(0, 5) : "TBA";
   const end = event.endTime ? event.endTime.slice(0, 5) : "";
@@ -296,7 +377,13 @@ export function eventDayCount(event: Pick<EventListItem, "startDate" | "endDate"
   return Math.round((end - start) / 86_400_000) + 1;
 }
 
-export function matchesDurationBand(event: Pick<EventListItem, "startDate" | "endDate">, band: string) {
+export function matchesDurationBand(
+  event: Pick<EventListItem, "startDate" | "endDate" | "classSeries">,
+  band: string,
+) {
+  // A class series spans weeks but is a few hours a week near home, not an 8+ day trip: it
+  // counts as its sessions, a day each (DEC-8).
+  if (event.classSeries) return band === "day";
   const def = DURATION_BANDS.find((b) => b.value === band);
   if (!def) return true;
   const days = eventDayCount(event);

@@ -1,5 +1,5 @@
 import { createClient as createStaticClient } from "@/lib/supabase/static";
-import { getCountryLabel, type EventListItem } from "@/lib/event-display";
+import { getCountryLabel, upcomingClassSeriesFilter, type EventListItem } from "@/lib/event-display";
 import { mapEventRow, slugify, type SupabaseEventRow } from "@/lib/events";
 import { getCommunities, type Community } from "@/lib/communities";
 import { safeExternalUrl } from "@/lib/url-safety";
@@ -165,6 +165,7 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
         .eq("country", summary.iso)
         .eq("status", "published")
         .gte("end_date", today)
+        .or(upcomingClassSeriesFilter(today))
         .order("start_date", { ascending: true }),
       supabase
         .from("venues")

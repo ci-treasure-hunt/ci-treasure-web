@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { type SupabaseEventRow, mapEventRow } from "./events";
-import { type EventListItem } from "./event-display";
+import { type EventListItem, isUpcomingListing } from "./event-display";
 import { getContinent, getContinentCountries } from "./entity-continents";
 import { getCountryLabel } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
@@ -324,8 +324,8 @@ export async function getTeacherEvents(profileId: string): Promise<{
     return { upcoming: [], past: [] };
   }
   const supabase = createStaticClient();
-  const fields = `role, teacher_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, status, hide)`;
-  const orgFields = `organizer_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, status, hide)`;
+  const fields = `role, teacher_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, segments, status, hide)`;
+  const orgFields = `organizer_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, segments, status, hide)`;
 
   const [{ data: asTeacher }, { data: asOrganizer }] = await Promise.all([
     supabase.from("event_teachers").select(fields).eq("teacher_id", profileId),
@@ -372,7 +372,7 @@ export async function getTeacherEvents(profileId: string): Promise<{
   const today = new Date().toISOString().split("T")[0];
   return {
     upcoming: results
-      .filter(e => e.endDate >= today)
+      .filter(e => isUpcomingListing(e, today))
       .sort((a, b) => a.startDate.localeCompare(b.startDate)),
     past: results
       .filter(e => e.endDate < today)

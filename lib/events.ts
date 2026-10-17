@@ -13,6 +13,9 @@ import {
   GENERIC_ACCENT_GRADIENT,
   collapseRecurringSeries,
   disciplineLabel,
+  isClassSeries,
+  summarizeClassSeries,
+  upcomingClassSeriesFilter,
 } from "@/lib/event-display";
 
 export type SupabaseEventRow = {
@@ -196,13 +199,21 @@ export function mapEventRow(row: SupabaseEventRow): EventListItem {
     cancelled: row.cancelled,
     // Only when the query embedded event_series(series_type), i.e. the list queries below.
     recurringSeriesId: row.event_series?.series_type === "recurring" ? row.series_id ?? null : null,
+    classSeries: isClassSeries({ type: row.type, startDate: row.start_date, endDate: row.end_date })
+      ? summarizeClassSeries(
+          { startDate: row.start_date, endDate: row.end_date },
+          normalizeSegments(row.segments)?.items,
+        )
+      : null,
   };
 }
 
 // Columns for the two upcoming-event list queries. event_series is embedded for its type: only
-// `recurring` series collapse in lists (I-171), sequential ones list part by part.
+// `recurring` series collapse in lists (I-171), sequential ones list part by part. `segments` is
+// read for class series (DEC-8): mapEventRow() reduces it to a small summary, so the full
+// program never reaches the client (~25 KB across all upcoming events, 2026-10-17).
 const EVENT_LIST_COLUMNS =
-  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled, series_id, event_series(series_type)";
+  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled, segments, series_id, event_series(series_type)";
 
 export const LINK_CANONICAL_ORDER: Record<string, number> = {
   // Event link order (unchanged from original)
@@ -311,6 +322,7 @@ function normalizeSegments(payload: unknown): SegmentsData | null {
         end_time?: unknown;
         teachers?: unknown;
         description?: unknown;
+        cancelled?: unknown;
       };
 
       if (typeof typed.title !== "string" || !typed.title) {
@@ -327,6 +339,7 @@ function normalizeSegments(payload: unknown): SegmentsData | null {
           ? typed.teachers.filter((t): t is string => typeof t === "string")
           : undefined,
         description: typeof typed.description === "string" ? typed.description : undefined,
+        cancelled: typed.cancelled === true ? true : undefined,
       };
     })
     .filter((item): item is SegmentItem => item !== null);
@@ -378,6 +391,7 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
       .select(EVENT_LIST_COLUMNS)
       .eq("status", "published")
       .gte("end_date", today)
+      .or(upcomingClassSeriesFilter(today))
       .order("start_date", { ascending: true });
 
     if (error) {
@@ -460,6 +474,7 @@ export async function getEventsByType(type: string, today: string): Promise<{ ev
       .eq("type", type)
       .contains("discipline", ["contact_improvisation"])
       .gte("end_date", today)
+      .or(upcomingClassSeriesFilter(today))
       .order("start_date", { ascending: true });
 
     if (error) {
@@ -830,7 +845,8 @@ export function stripMarkdown(text: string) {
 }
 
 export function formatTimeRange(
-  event: Pick<EventDetail, "startTime" | "endTime" | "timezone" | "startDate" | "endDate">,
+  event: Pick<EventDetail, "startTime" | "endTime" | "timezone" | "startDate" | "endDate"> &
+    Partial<Pick<EventDetail, "classSeries">>,
 ) {
   if (!event.startTime && !event.endTime) {
     return event.timezone;
@@ -842,7 +858,8 @@ export function formatTimeRange(
   // ordinary single-day case (e.g. 10:00-17:00) — so every single-day event with a distinct end
   // time got the multi-day "first day / last day" phrasing. The phrasing is only meaningful when
   // the event actually spans more than one date.
-  if (event.startTime && event.endTime && event.startDate !== event.endDate) {
+  // A class series (I-171 DEC-8) spans weeks, but these are the times of each session.
+  if (event.startTime && event.endTime && event.startDate !== event.endDate && !event.classSeries) {
     return `Starts ${start} first day · ends ${end} last day (${event.timezone})`;
   }
   return `${start}${event.endTime ? ` - ${end}` : ""} (${event.timezone})`;

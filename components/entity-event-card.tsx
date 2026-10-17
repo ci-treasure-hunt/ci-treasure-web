@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   type EventListItem,
   formatCardTimeRange,
+  formatClassSeriesLabel,
   formatEventDateRange,
   getEventHref,
   getEventLocation,
@@ -14,6 +15,7 @@ import { getCountryFlag } from "@/lib/utils";
 
 export function EntityEventCard({ event }: { event: EventListItem }) {
   const timeRange = formatCardTimeRange(event);
+  const seriesLabel = event.classSeries ? formatClassSeriesLabel(event.classSeries) : "";
   return (
     <Link
       href={getEventHref(event)}
@@ -36,6 +38,7 @@ export function EntityEventCard({ event }: { event: EventListItem }) {
           <p className="flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" />
             {formatEventDateRange(event)}
+            {seriesLabel ? <span className="text-(--color-pine)"> · {seriesLabel}</span> : null}
           </p>
           {timeRange ? (
             <p className="flex items-center gap-1.5">

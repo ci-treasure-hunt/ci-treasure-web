@@ -13,7 +13,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { COUNTRIES } from "@/lib/countries";
 import { getCommunities, getCommunityBySlug, getCommunityOwnEvents } from "@/lib/communities";
-import { disciplineLabel, getCountryLabel, getEventHref, getTypeLabel } from "@/lib/event-display";
+import { disciplineLabel, formatClassSeriesLabel, formatSegmentWhen, getCountryLabel, getEventHref, getTypeLabel } from "@/lib/event-display";
 import type { EventListItem } from "@/lib/event-display";
 import {
   formatPriceLabel,
@@ -127,6 +127,12 @@ function eventSummary(e: EventListItem & { isPast?: boolean }) {
     type: getTypeLabel(e.type),
     startDate: e.startDate,
     endDate: e.endDate,
+    // I-171 DEC-8: a class row spanning weeks is a class series booked as a whole, not an
+    // 80-day event. Said explicitly so a client doesn't describe it as one.
+    ...(e.classSeries && {
+      schedule: formatClassSeriesLabel(e.classSeries),
+      booking: "Whole series only, no drop-in for single dates",
+    }),
     city: e.city,
     country: getCountryLabel(e.country),
     practices: e.discipline.map(disciplineLabel),
@@ -271,7 +277,7 @@ When to use these tools: for any question about Contact Improvisation events, fe
 
 How the data works:
 - Contact Improvisation is the default. search_events returns CI events unless you pass another practice or practice="any". Related practices that also appear: conscious dance, Axis Syllabus, butoh, Authentic Movement, somatic movement and others, listed under "practices".
-- Event types: festival (multi-day gathering), workshop (teacher-led course, often a weekend), intensive (several full days of training), retreat (residential, often rural), long_jam (extended open practice), training (multi-module professional training), residency (several weeks), jam and class (regular local sessions; few listed yet).
+- Event types: festival (multi-day gathering), workshop (teacher-led course, often a weekend), intensive (several full days of training), retreat (residential, often rural), long_jam (extended open practice), training (multi-module professional training), residency (several weeks), jam and class (regular local sessions; few listed yet). A class whose dates span several weeks is a class series booked as a whole (no drop-in): results then carry "schedule" and "booking", and get_event lists its sessions.
 - Regular weekly jams and classes are mostly run by local communities: for "where can I dance CI in <city>", use search_communities and search_venues as well as search_events.
 - Dates are ISO (YYYY-MM-DD). search_events looks ahead from today by default; pass a past "from" date for history (ended events are marked "ended": true). Prices, teachers and full descriptions come from get_event, which also works for ended events.
 - Give the user the citreasurehunt.com URL from each result, and only URLs the tools returned: do not construct citreasurehunt.com links yourself. For "see all", use the browseUrl a search returns. Registration links, organizer contacts and group chat invites are on those pages and deliberately not in this API, so do not guess them.
@@ -385,6 +391,14 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         startDate: event.startDate,
         endDate: event.endDate,
         times: event.startTime || event.endTime ? formatTimeRange(event) : null,
+        ...(event.classSeries && {
+          schedule: formatClassSeriesLabel(event.classSeries),
+          booking: "Whole series only, no drop-in for single dates",
+          sessions: (event.segments?.items ?? []).map((s) => ({
+            when: formatSegmentWhen(s),
+            ...(s.cancelled && { cancelled: true }),
+          })),
+        }),
         timezone: event.timezone,
         city: event.city,
         country: getCountryLabel(event.country),

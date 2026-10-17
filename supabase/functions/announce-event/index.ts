@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { buildRichCaption, TEACHER_ROLES, slugify } from '../_shared/announce-format.ts'
+import { buildRichCaption, isClassSeries, TEACHER_ROLES, slugify } from '../_shared/announce-format.ts'
 import { sameSiblingAlreadyAnnounced } from '../_shared/series-guard.ts'
 
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
@@ -98,6 +98,11 @@ Deno.serve(async (req) => {
   const days = daySpan(event.start_date, event.end_date)
   if (days === 1) {
     return new Response('skip: 1-day event (group excluded)', { status: 200 })
+  }
+  // I-171 DEC-8: a class series spans weeks, which would read as a "4+ day" festival here, but it
+  // is a local weekly class. Like a one-day workshop it gets the channel post only.
+  if (isClassSeries(event)) {
+    return new Response('skip: class series (group excluded)', { status: 200 })
   }
 
   // The group is a CI community, so only CI and its closest sibling, dance improvisation, reach

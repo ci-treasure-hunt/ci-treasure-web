@@ -23,7 +23,7 @@ import {
   getOgImageStyle,
 } from "@/lib/events";
 import { toCdnUrl } from "@/lib/image-url";
-import { formatEventDateRange, getCountryLabel, getEventHref, getEventLocation, getTypeLabel } from "@/lib/event-display";
+import { formatClassSeriesLabel, formatEventDateRange, getCountryLabel, getEventHref, getEventLocation, getTypeLabel } from "@/lib/event-display";
 import { SITE_URL } from "@/lib/site";
 
 function renderDescription(text: string) {
@@ -57,6 +57,13 @@ export function EventDetailView({
   // multi-day case ("starts X first day, ends Y last day"), so a short block with a daily
   // schedule (e.g. a 3-day workshop) can show it too, not just literal single-day events.
   const timeRange = event.startTime || event.endTime ? formatTimeRange(event) : "";
+
+  // I-171 DEC-8: a class series booked as a whole. Once its first session has passed it leaves
+  // the upcoming lists, and its page says booking is closed instead of looking joinable.
+  const classSeries = event.classSeries ?? null;
+  const today = new Date().toISOString().slice(0, 10);
+  const classSeriesStarted = Boolean(classSeries) && !event.isPast && event.startDate < today;
+  const SCHEMA_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   // I-181: the street address under the place's name. Skipped when the name already contains it,
   // as on older self-submitted events where name and address were typed into one box.
@@ -92,6 +99,19 @@ export function EventDetailView({
     eventStatus: event.cancelled ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
     startDate: event.startDateIso,
     endDate: event.endDateIso,
+    // A class series: one Event, its weekly sessions as a schema.org Schedule.
+    eventSchedule: classSeries
+      ? {
+          "@type": "Schedule",
+          repeatFrequency: "P1W",
+          byDay: classSeries.weekdays.map((d) => `https://schema.org/${SCHEMA_DAYS[d]}`),
+          startDate: event.startDate,
+          endDate: event.endDate,
+          startTime: event.startTime ?? undefined,
+          endTime: event.endTime ?? undefined,
+          scheduleTimezone: event.timezone,
+        }
+      : undefined,
     location: {
       "@type": "Place",
       name: event.venueName ?? event.city,
@@ -240,6 +260,25 @@ export function EventDetailView({
                 </div>
               ) : null}
 
+              {classSeries ? (
+                <div
+                  className={`rounded-[1.5rem] border p-4 text-sm leading-6 ${
+                    classSeriesStarted
+                      ? "border-slate-300 bg-slate-100 text-slate-700"
+                      : "border-(--color-sand-strong) bg-(--color-mist) text-slate-800"
+                  }`}
+                >
+                  <p className="font-semibold text-slate-950">{formatClassSeriesLabel(classSeries)}</p>
+                  <p>
+                    {classSeriesStarted
+                      ? "This class series has already started, booking is closed."
+                      : `Booking for the whole series${
+                          classSeries.sessions ? ` (${classSeries.sessions} sessions)` : ""
+                        }. No drop-in for single dates.`}
+                  </p>
+                </div>
+              ) : null}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoCard icon={<CalendarDays className="size-4" />} label="Dates" value={formatEventDateRange(event)} />
                 {timeRange ? <InfoCard icon={<Clock3 className="size-4" />} label="Time" value={timeRange} /> : null}
@@ -292,7 +331,13 @@ export function EventDetailView({
                 </section>
               ) : null}
 
-              {event.segments ? <SegmentsSection segments={event.segments} teacherProfiles={event.teachers} /> : null}
+              {event.segments ? (
+                <SegmentsSection
+                  segments={event.segments}
+                  teacherProfiles={event.teachers}
+                  variant={classSeries ? "sessions" : "program"}
+                />
+              ) : null}
 
               {event.seriesSiblings.length > 1 ? (
                 <SeriesSection

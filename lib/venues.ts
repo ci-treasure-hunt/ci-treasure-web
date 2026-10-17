@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, SupabaseEventRow, LinkItem, getLinkLabel, linkSortKey } from "./events";
+import { upcomingClassSeriesFilter } from "./event-display";
 import { getContinent, getContinentCountries } from "./entity-continents";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
@@ -189,6 +190,7 @@ export async function getVenueEvents(venueId: string) {
     .eq("venue_id", venueId)
     .eq("status", "published")
     .gte("end_date", today)
+    .or(upcomingClassSeriesFilter(today))
     .order("start_date", { ascending: true });
 
   // Past events transition to status='archived' once their end_date passes (confirmed:

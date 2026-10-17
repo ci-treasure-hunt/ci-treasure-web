@@ -9,11 +9,15 @@ import { slugify } from "@/lib/slug";
 interface SegmentsSectionProps {
   segments: SegmentsData;
   teacherProfiles?: Array<{ name: string; slug?: string | null }>;
+  // "sessions": the dated sessions of a class series (I-171 DEC-8), a compact list shown in full.
+  variant?: "program" | "sessions";
 }
 
-export function SegmentsSection({ segments, teacherProfiles = [] }: SegmentsSectionProps) {
+export function SegmentsSection({ segments, teacherProfiles = [], variant = "program" }: SegmentsSectionProps) {
   const [isExpanded, setIsExpanded] = useState(segments.items.length <= 2);
   const showCollapseToggle = segments.items.length > 2;
+  // After the hook, so the hook order never depends on the variant.
+  if (variant === "sessions") return <SessionList segments={segments} />;
 
   const displayedItems = isExpanded ? segments.items : segments.items.slice(0, 2);
 
@@ -48,10 +52,16 @@ export function SegmentsSection({ segments, teacherProfiles = [] }: SegmentsSect
             className="rounded-[1.5rem] border border-(--color-sand-strong) bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
           >
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-              <h3 className="font-serif text-xl leading-tight text-slate-900">{segment.title}</h3>
-              {when && (
+              <h3 className={`font-serif text-xl leading-tight ${segment.cancelled ? "text-slate-400 line-through" : "text-slate-900"}`}>
+                {segment.title}
+              </h3>
+              {segment.cancelled ? (
+                <span className="shrink-0 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-rose-700">
+                  Cancelled
+                </span>
+              ) : when ? (
                 <span className="shrink-0 text-sm font-semibold text-(--color-pine)">{when}</span>
-              )}
+              ) : null}
             </div>
 
             {segment.teachers && segment.teachers.length > 0 && (
@@ -111,6 +121,40 @@ export function SegmentsSection({ segments, teacherProfiles = [] }: SegmentsSect
           + {segments.items.length - 2} more segments
         </button>
       )}
+    </section>
+  );
+}
+
+// I-171 DEC-8: a class series' sessions, one line each. All shown: twelve dates are short, and
+// hiding later ones would hide exactly the holiday gaps people need to see.
+function SessionList({ segments }: { segments: SegmentsData }) {
+  return (
+    <section className="space-y-4">
+      <h2 className="font-serif text-2xl text-slate-950">Sessions</h2>
+      <ol className="divide-y divide-(--color-sand-strong) overflow-hidden rounded-[1.5rem] border border-(--color-sand-strong) bg-white">
+        {segments.items.map((segment, index) => {
+          const when = formatSegmentWhen(segment);
+          return (
+            <li
+              key={`${segment.startDate ?? segment.title}-${index}`}
+              className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm"
+            >
+              <span className={segment.cancelled ? "text-slate-400 line-through" : "text-slate-800"}>
+                <span className="font-semibold">{segment.title}</span>
+                {when ? <span className="text-slate-600"> · {when}</span> : null}
+              </span>
+              {segment.cancelled ? (
+                <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-rose-700">
+                  Cancelled
+                </span>
+              ) : null}
+              {segment.description ? (
+                <p className="w-full text-xs leading-relaxed text-slate-500">{segment.description}</p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
