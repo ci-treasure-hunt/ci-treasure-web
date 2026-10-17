@@ -407,7 +407,7 @@ verify_jwt = false
 [functions.announce-community]
 verify_jwt = false
 
-# I-029 stage 3: called by the weekly GitHub Action with the same bearer secret.
+# I-029 stage 3: called hourly by pg_cron (migration 20261017210000) with the same bearer secret.
 [functions.sync-community-lists]
 verify_jwt = false
 

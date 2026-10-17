@@ -433,9 +433,12 @@ Deno.serve(async (req) => {
     const thread = key.startsWith('chats-') ? target.chats : target.communities
     return s ? `${target.linkBase}/${thread}/${s.message_id}` : null
   }
-  const report: string[] = [`🤖 List sync (${targetName}) · ${date}`, ...(log.length ? log : ['no changes'])]
-  if (warnings.length) report.push('', '⚠️ ' + warnings.join('\n⚠️ '))
-  await tg('sendMessage', { chat_id: ADMIN_CHAT_ID, message_thread_id: ADMIN_PASTE_THREAD_ID, text: escapeHtml(report.join('\n')), parse_mode: 'HTML' })
+  // Runs hourly: report only when a list changed (warnings ride along then), never "no changes".
+  if (log.length || body.report === true) {
+    const report: string[] = [`🤖 List sync (${targetName}) · ${date}`, ...(log.length ? log : ['no changes'])]
+    if (warnings.length) report.push('', '⚠️ ' + warnings.join('\n⚠️ '))
+    await tg('sendMessage', { chat_id: ADMIN_CHAT_ID, message_thread_id: ADMIN_PASTE_THREAD_ID, text: escapeHtml(report.join('\n')), parse_mode: 'HTML' })
+  }
 
   if (newMessages.length) {
     const groups: string[] = []
