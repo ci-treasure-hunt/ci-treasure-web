@@ -130,24 +130,24 @@ export async function saveCommunity(
   // ---- Invites: stored ones, minus removals, plus anything newly classified -------------------
   // A new or changed invite URL starts unpublished: whether a private group link may be revealed
   // is a consent decision (organizer OK, link already public, or group public), made per link.
-  const current = new Map<string, { url: string; published: boolean }>();
+  const current = new Map<string, { url: string; published: boolean; label: string | null }>();
   if (id) {
     const { data: stored, error } = await supabase
       .from("community_invites")
-      .select("platform, url, published")
+      .select("platform, url, published, label")
       .eq("community_id", id);
     if (error) throw error;
-    for (const row of stored ?? []) current.set(row.platform, { url: row.url, published: row.published });
+    for (const row of stored ?? []) current.set(row.platform, { url: row.url, published: row.published, label: row.label });
   }
   for (const inv of payload.invites ?? []) {
     const existing = current.get(inv.platform);
     if (!existing) continue;
     if (inv.remove) current.delete(inv.platform);
-    else current.set(inv.platform, { url: existing.url, published: Boolean(inv.published) });
+    else current.set(inv.platform, { url: existing.url, published: Boolean(inv.published), label: orNull(inv.label) });
   }
   for (const [platform, url] of Object.entries(links.invites) as Array<[InvitePlatform, string]>) {
     const existing = current.get(platform);
-    current.set(platform, { url, published: existing?.url === url ? existing.published : false });
+    current.set(platform, { url, published: existing?.url === url ? existing.published : false, label: existing?.label ?? null });
   }
 
   // ---- Location --------------------------------------------------------------------------------
@@ -249,6 +249,7 @@ export async function saveCommunity(
         platform,
         url: v.url,
         published: v.published,
+        label: v.label,
         synced_at: new Date().toISOString(),
       })),
       { onConflict: "community_id,platform" },

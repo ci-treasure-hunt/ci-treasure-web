@@ -311,6 +311,17 @@ export function CommunityForm({
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900">{PLATFORM_LABEL[inv.platform] ?? inv.platform}</p>
                       <p className="truncate text-xs text-slate-500">{inv.url}</p>
+                      <input
+                        type="text"
+                        value={inv.label}
+                        disabled={inv.remove}
+                        placeholder="Group name in the Telegram chat lists (optional)"
+                        aria-label={`${PLATFORM_LABEL[inv.platform] ?? inv.platform} group name`}
+                        onChange={(e) =>
+                          set("invites", form.invites.map((x, i) => (i === index ? { ...x, label: e.target.value } : x)))
+                        }
+                        className="mt-1 w-full rounded-lg border border-(--color-sand-strong) px-2 py-1 text-xs sm:w-72"
+                      />
                     </div>
                     <div className="flex shrink-0 gap-4">
                       <label className="flex items-center gap-2">

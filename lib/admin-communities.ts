@@ -51,6 +51,8 @@ export type AdminCommunityInvite = {
   platform: string;
   url: string;
   published: boolean;
+  /** The group's own name for Steve's Telegram chat lists; empty = the community name. */
+  label: string;
   /** Admin ticked "remove". */
   remove: boolean;
 };

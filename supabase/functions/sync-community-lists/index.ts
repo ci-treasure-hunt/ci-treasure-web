@@ -114,7 +114,7 @@ type Community = {
   website: string | null; telegram_group: string | null; telegram_channel: string | null; whatsapp_channel: string | null
   facebook_group: string | null; facebook_page: string | null; instagram: string | null; youtube: string | null
   calendar: string | null; newsletter: string | null; other_resource: string | null; other_resource_label: string | null
-  invites: { platform: string; url: string }[]
+  invites: { platform: string; url: string; label: string | null }[]
 }
 
 function norm(s: string): string {
@@ -256,7 +256,9 @@ function renderCommunityLists(all: Community[]): Rendered[] {
 function chatLine(c: Community, url: string): string {
   const flag = c.country ? toFlag(c.country) : (area(c) === 'Worldwide' ? '🌐' : '🌎')
   const emoji = c.type && c.type !== 'General CI Community' ? (TYPE_EMOJI[c.type] ?? '') : ''
-  return `${flag}${emoji} ${a(displayName(c), url)}`
+  // The group's own name where the admin set one (two Bonn groups, JamitHelsinki), else the community.
+  const label = c.invites.find(i => i.url === url)?.label?.trim()
+  return `${flag}${emoji} ${a(label || displayName(c), url)}`
 }
 
 function orderForChats(list: Community[]): Community[] {
@@ -336,7 +338,7 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
   const { data: rows, error } = await supabase.from('communities')
-    .select('id, slug, name, type, city, country, region, lat, lng, website, telegram_group, telegram_channel, whatsapp_channel, facebook_group, facebook_page, instagram, youtube, calendar, newsletter, other_resource, other_resource_label, community_invites(platform, url)')
+    .select('id, slug, name, type, city, country, region, lat, lng, website, telegram_group, telegram_channel, whatsapp_channel, facebook_group, facebook_page, instagram, youtube, calendar, newsletter, other_resource, other_resource_label, community_invites(platform, url, label)')
     .eq('status', 'published').is('deleted_at', null)
   if (error) return new Response(`db error: ${error.message}`, { status: 500 })
   const all: Community[] = (rows ?? []).map((r: Record<string, unknown>) => ({ ...(r as unknown as Community), invites: (r.community_invites as Community['invites']) ?? [] }))

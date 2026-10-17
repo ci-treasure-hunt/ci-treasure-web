@@ -23,7 +23,7 @@ export default async function AdminEditCommunityPage({
       )
       .eq("id", id)
       .single(),
-    supabase.from("community_invites").select("platform, url, published").eq("community_id", id).order("platform"),
+    supabase.from("community_invites").select("platform, url, published, label").eq("community_id", id).order("platform"),
   ]);
 
   if (error || !c) {
@@ -62,7 +62,7 @@ export default async function AdminEditCommunityPage({
     calendar: c.calendar ?? "",
     other: c.other_resource ?? "",
     otherLabel: c.other_resource_label ?? "",
-    invites: (invites ?? []).map((inv) => ({ ...inv, remove: false })),
+    invites: (invites ?? []).map((inv) => ({ ...inv, label: inv.label ?? "", remove: false })),
     phoneContacts: await getEntityPhoneContacts("community", c.id),
     email: (await getEntityEmail("community", c.id)) ?? "",
     contactPerson: c.contact_person ?? "",
