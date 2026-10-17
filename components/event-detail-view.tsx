@@ -23,7 +23,7 @@ import {
   getOgImageStyle,
 } from "@/lib/events";
 import { toCdnUrl } from "@/lib/image-url";
-import { formatEventDateRange, getEventHref, getEventLocation, getTypeLabel } from "@/lib/event-display";
+import { formatEventDateRange, getCountryLabel, getEventHref, getEventLocation, getTypeLabel } from "@/lib/event-display";
 import { SITE_URL } from "@/lib/site";
 
 function renderDescription(text: string) {
@@ -60,8 +60,18 @@ export function EventDetailView({
 
   // I-181: the street address under the place's name. Skipped when the name already contains it,
   // as on older self-submitted events where name and address were typed into one box.
-  const streetAddress =
+  const rawStreetAddress =
     event.venueAddress && !(event.venueName ?? "").includes(event.venueAddress) ? event.venueAddress : null;
+  // When the street line already names the city ("Sommerecke 1, 77709 Wolfach"), a separate
+  // "Wolfach, Germany" line below only repeats it: fold the country into the street line instead.
+  const foldText = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const countryLabel = getCountryLabel(event.country);
+  const streetHasCity = Boolean(rawStreetAddress && event.city && foldText(rawStreetAddress).includes(foldText(event.city)));
+  const streetAddress =
+    rawStreetAddress && streetHasCity && !foldText(rawStreetAddress).includes(foldText(countryLabel))
+      ? `${rawStreetAddress}, ${countryLabel}`
+      : rawStreetAddress;
+  const locationLine = streetHasCity ? null : getEventLocation(event);
 
   // Registration links are tied to one instance of the event and routinely go dead once it's
   // over (organizers take the signup page down post-event) — and even when they don't, nobody
@@ -246,7 +256,7 @@ export function EventDetailView({
                           {event.venueName}
                         </Link>
                         {streetAddress ? <span className="text-sm text-slate-600">{streetAddress}</span> : null}
-                        <span className="text-sm text-slate-600">{getEventLocation(event)}</span>
+                        {locationLine ? <span className="text-sm text-slate-600">{locationLine}</span> : null}
                       </div>
                     ) : event.venueName || streetAddress ? (
                       <div className="flex flex-col gap-1">
@@ -254,7 +264,7 @@ export function EventDetailView({
                           <span className="font-semibold text-slate-900">{event.venueName}</span>
                         ) : null}
                         {streetAddress ? <span className="text-sm text-slate-600">{streetAddress}</span> : null}
-                        <span className="text-sm text-slate-600">{getEventLocation(event)}</span>
+                        {locationLine ? <span className="text-sm text-slate-600">{locationLine}</span> : null}
                       </div>
                     ) : (
                       getEventLocation(event)
