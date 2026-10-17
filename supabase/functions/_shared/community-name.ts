@@ -51,6 +51,7 @@ export function countryNames(iso: string | null): string[] {
 export interface NamedCommunity {
   slug?: string | null
   name: string
+  type?: string | null
   city: string | null
   country: string | null
 }
@@ -65,8 +66,9 @@ export function communityDisplayName(c: NamedCommunity, extraCountryNames: strin
   // The "city" is the country itself (city = "France").
   if (countries.some(n => norm(n) === cty)) return c.name
   const nameWords = new Set(norm(c.name).split(' '))
-  // The name names the country: a national group tagged with its capital ("Italy (Rome)").
-  if (countries.some(n => words(n).some(w => nameWords.has(w)))) return c.name
+  // The name names the country: a national group tagged with its capital ("Italy (Rome)"). A
+  // festival still keeps its city, it happens in one place ("CI Camp Croatia (Rovinj)").
+  if (c.type !== 'Festival' && countries.some(n => words(n).some(w => nameWords.has(w)))) return c.name
   // The name names the city, in either direction ("Kansai" / "Kansai (Kyoto, Osaka)").
   if (norm(c.name).includes(cty) || words(city).some(w => nameWords.has(w))) return c.name
   return `${c.name} (${city})`
