@@ -35,6 +35,9 @@ const NATIONAL_COMMUNITY_SLUGS: Record<string, string[]> = {
   // The UK-wide Facebook group. No website on file: the old national site,
   // contactimprovisation.co.uk, stopped resolving in 2026.
   GB: ["contact-improvisation-in-the-uk-ciuk"],
+  // The national Facebook group (~12,300 members, 2026-10); the city and regional groups (Paris,
+  // Lyon, Grand Ouest, Rhône-Alpes, ...) are listed separately.
+  FR: ["dance-contact-improvisation-france"],
 };
 
 export type CountrySummary = {

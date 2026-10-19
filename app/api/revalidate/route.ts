@@ -98,6 +98,10 @@ export async function POST(request: NextRequest) {
       // Supabase helper just to look up a string transform.
       if (record?.iso) {
         revalidatePath(`/${slugify(getCountryLabel(record.iso as string))}`);
+        // A new summary is a new page: the index and the sitemap list it too, so a crawler sent
+        // to the sitemap finds it the same day instead of after their daily timers.
+        revalidatePath("/countries");
+        revalidatePath("/sitemap.xml");
       }
       break;
     }
