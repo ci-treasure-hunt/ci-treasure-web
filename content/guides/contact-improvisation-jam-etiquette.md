@@ -6,7 +6,7 @@ keywords: ["contact improvisation etiquette", "contact improvisation first jam",
 ogImage: default
 author: "Jan, who started CI Treasure Hunt"
 published: 2026-08-07
-updated: 2026-09-02
+updated: 2026-10-19
 ---
 
 # Contact Improvisation Jam Etiquette
@@ -102,7 +102,8 @@ you?" are normal things to say.
 ## Leaving a dance
 
 Any time, for any reason, including no reason. Leipzig's guidelines call this *the gift of the
-no*, which is a better framing than treating it as a rejection to be softened.
+no*: a no is something you give your partner, clear information about what you want right now, not a
+rejection you need to soften or apologize for.
 
 If you find it hard to end or decline dances without apologizing, the Philadelphia guidelines
 suggest practicing: say no to dances, verbally and physically, often enough that it stops feeling
@@ -129,8 +130,10 @@ experience, age, size, physical strength, class, disability, race, and gender al
 are the more advantaged person in a dance, the listening is yours to do. Don't leave it to the
 other person to produce a no.
 
-Many jams and festivals now have a **Consent Team**: named people you can approach with a question
-or a concern. If one exists, it will usually be introduced at the start.
+Many jams and festivals now have a **Consent Team** or **Care Team**: named people you can
+approach with a question or a concern. If one exists, it will usually be introduced at the start.
+If there isn't one, the host or facilitator is the person to talk to, whether something went wrong
+or you simply feel unsure. Talking about it early helps, for you and for the jam.
 
 The CI community has written far more about this than fits here.
 [Contact Improv Consent Culture](https://contactimprovconsentculture.com/), founded by Kathleen
@@ -140,6 +143,10 @@ where to look if you want to see how different communities have written this dow
 first visit is a good habit.
 
 ## Sharing the space
+
+**Everyone makes the jam.** A jam isn't a service someone provides; it's co-created by everyone in
+the room. That includes noticing people who seem lost or uncomfortable, often newcomers, and going
+over to say hello or ask how they're doing. A small gesture, and it changes how the room feels.
 
 **If you're not dancing, stay off the dance floor.** Jams often put it more bluntly: no parking on
 the dance floor. Sit at the edges to watch, warm up, stretch, or do bodywork, and put bags and
