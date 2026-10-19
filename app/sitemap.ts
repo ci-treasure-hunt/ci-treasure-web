@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site";
 import { getAllCountrySummaries } from "@/lib/country-pages";
 import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
 import { getAllGuides } from "@/lib/guides";
+import { getAllIssues } from "@/lib/newsletter-issues";
 
 // I-172: 24h. This enumerates every event, teacher, venue, community and country URL, so it is
 // one of the most expensive things on the site to regenerate, and crawlers refetch it often.
@@ -161,6 +162,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
+  // I-182: sent newsletter issues, off disk like the guides. An issue does not change after it is
+  // sent, so its send date is its last modification.
+  const issues = await getAllIssues();
+  const issueUrls: MetadataRoute.Sitemap = issues.map((i) => ({
+    url: `${SITE_URL}/newsletter/${i.frontmatter.slug}`,
+    lastModified: new Date(`${i.frontmatter.sent}T00:00:00Z`),
+    changeFrequency: "yearly",
+    priority: 0.4,
+  }));
+
   const countryUrls: MetadataRoute.Sitemap = countrySummaries.map((c) => ({
     url: `${SITE_URL}/${c.slug}`,
     lastModified: new Date(c.updatedAt),
@@ -168,5 +179,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...eventUrls, ...venueUrls, ...teacherUrls, ...communityUrls, ...countryUrls, ...guideUrls];
+  return [...staticPages, ...eventUrls, ...venueUrls, ...teacherUrls, ...communityUrls, ...countryUrls, ...guideUrls, ...issueUrls];
 }

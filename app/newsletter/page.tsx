@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getAllIssues, issueLabel } from "@/lib/newsletter-issues";
 import { NewsletterForm } from "./newsletter-form";
 
 export const metadata: Metadata = {
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
     "Occasional updates on new Contact Improvisation events and news from the CI world, delivered straight to your inbox. Free to subscribe, unsubscribe any time.",
 };
 
-export default function NewsletterPage() {
+export default async function NewsletterPage() {
+  const issues = await getAllIssues();
+
   return (
     <main className="min-h-screen bg-(--color-mist)">
       <section className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8">
@@ -30,6 +33,22 @@ export default function NewsletterPage() {
             . Unsubscribe any time.
           </p>
         </div>
+
+        {/* I-182: past issues, newest first, so people can see what they would get. */}
+        {issues.length > 0 && (
+          <div className="mt-10">
+            <h2 className="font-serif text-xl text-slate-950">Past issues</h2>
+            <ul className="mt-3 space-y-2 text-base">
+              {issues.map((issue) => (
+                <li key={issue.frontmatter.slug}>
+                  <Link href={`/newsletter/${issue.frontmatter.slug}`} className="text-(--color-pine) underline">
+                    {issueLabel(issue, issues)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
     </main>
   );
