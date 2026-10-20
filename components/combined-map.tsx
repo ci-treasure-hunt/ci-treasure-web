@@ -30,7 +30,9 @@ export default function CombinedMap({ markers }: CombinedMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Leaflet needs the DOM: render a placeholder on the server, the map container after mount.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

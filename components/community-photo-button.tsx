@@ -36,6 +36,8 @@ export function CommunityPhotoButton({
   const siteKey = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY;
 
   useEffect(() => {
+    // After hydration on purpose: reading the URL during render would mismatch the server HTML.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (new URLSearchParams(window.location.search).get("photo") === "1") setOpen(true);
   }, []);
 
