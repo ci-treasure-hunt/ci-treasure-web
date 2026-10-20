@@ -27,8 +27,8 @@ import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@
 import { getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect, getVenueRingNeighbors, getPublishedVenueInvitePlatforms } from "@/lib/venues";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
-import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
-import { ogImage } from "@/lib/og-image";
+import { SITE_URL, buildEntityTitle } from "@/lib/site";
+import { ogImage, socialImageUrl } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
 import { RingSection } from "@/components/also-browse";
 import { getContinent } from "@/lib/entity-continents";
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: VenuePageProps): Promise<Meta
       card: "summary_large_image",
       title: venue.name,
       description,
-      images: [venue.imageUrl ?? SITE_OG_IMAGE],
+      images: [socialImageUrl(venue.imageUrl)],
     },
   };
 }

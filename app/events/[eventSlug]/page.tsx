@@ -4,8 +4,8 @@ import { EventDetailView } from "@/components/event-detail-view";
 import { getEventBySlug, parseEventSlug, stripMarkdown } from "@/lib/events";
 import { buildEventFallbackDescription, getCountryLabel } from "@/lib/event-display";
 import { getCountryPageLink } from "@/lib/country-pages";
-import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
-import { ogImage } from "@/lib/og-image";
+import { SITE_URL, buildEntityTitle } from "@/lib/site";
+import { ogImage, socialImageUrl } from "@/lib/og-image";
 
 // I-172: 24h, not 1h. This route is invalidated on write by the Supabase revalidate webhook
 // (app/api/revalidate/route.ts), so the timer is only a backstop, not the freshness mechanism.
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ eventSlug
       card: "summary_large_image",
       title: event.title,
       description,
-      images: [event.imageUrl ?? SITE_OG_IMAGE],
+      images: [socialImageUrl(event.imageUrl)],
     },
   };
 }

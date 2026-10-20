@@ -49,8 +49,8 @@ import {
 } from "@/lib/communities";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
-import { SITE_URL, SITE_OG_IMAGE, buildEntityTitle } from "@/lib/site";
-import { ogImage } from "@/lib/og-image";
+import { SITE_URL, buildEntityTitle } from "@/lib/site";
+import { ogImage, socialImageUrl } from "@/lib/og-image";
 import { ReportButton } from "@/components/report-button";
 import { SuggestEditButton } from "@/components/suggest-edit-button";
 import { CommunityPhotoButton } from "@/components/community-photo-button";
@@ -107,7 +107,7 @@ export async function generateMetadata({ params }: CommunityPageProps): Promise<
       card: "summary_large_image",
       title: community.name,
       description,
-      images: [community.image_url ?? SITE_OG_IMAGE],
+      images: [socialImageUrl(community.image_url)],
     },
   };
 }
