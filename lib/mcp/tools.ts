@@ -25,6 +25,7 @@ import {
   getUpcomingEvents,
   parseEventSlug,
 } from "@/lib/events";
+import { toCdnUrl } from "@/lib/image-url";
 import { SITE_URL } from "@/lib/site";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveRoles, getListedPeople, getTeacherBySlug, getTeacherEvents } from "@/lib/teachers";
@@ -120,6 +121,12 @@ function emptyHint(what: string, tips: string): string {
   return `No ${what} in this directory match these filters. ${tips} This means the directory has no listing, not that none exist; tell the user so instead of filling in ${what} from memory.`;
 }
 
+// Listing images go out through the Cloudflare CDN like on the site (infra-reference.md, "Storage
+// CDN"); a raw Supabase Storage URL would bill every agent's image fetch as Supabase egress.
+function imageLink(url: string | null | undefined): string | undefined {
+  return url ? toCdnUrl(url) : undefined;
+}
+
 function eventSummary(e: EventListItem & { isPast?: boolean }) {
   return {
     id: e.shortId,
@@ -138,7 +145,7 @@ function eventSummary(e: EventListItem & { isPast?: boolean }) {
     practices: e.discipline.map(disciplineLabel),
     cancelled: e.cancelled || undefined,
     ended: e.isPast || undefined,
-    imageUrl: e.imageUrl ?? undefined,
+    imageUrl: imageLink(e.imageUrl),
     url: siteUrl(getEventHref(e)),
   };
 }
@@ -424,7 +431,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         })),
         ...(event.seriesName && { series: event.seriesName }),
         description: truncate(event.description),
-        imageUrl: event.imageUrl ?? undefined,
+        imageUrl: imageLink(event.imageUrl),
         registration: event.primaryRegistrationUrl
           ? "Registration and contact details are linked on the event page."
           : "No registration link listed; see the event page for contact options.",
@@ -562,7 +569,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         venues: matches.slice(0, max).map((v) => ({
           name: v.name,
           slug: v.slug,
-          imageUrl: v.imageUrl ?? undefined,
+          imageUrl: imageLink(v.imageUrl),
           city: v.city,
           country: v.country,
           description: truncate(v.description, 300),
@@ -596,7 +603,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         address: venue.address,
         description: truncate(venue.description),
         website: venue.website,
-        imageUrl: venue.imageUrl ?? undefined,
+        imageUrl: imageLink(venue.imageUrl),
         upcomingEvents: upcoming.slice(0, MAX_NESTED_EVENTS).map(eventSummary),
         pastEventCount: past.length,
         url: siteUrl(`/venues/${venue.slug}`),
@@ -680,7 +687,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         activityLevel: community.activity_level,
         languages: (community.languages ?? []).map(communityLanguage),
         website: community.website,
-        imageUrl: community.image_url ?? undefined,
+        imageUrl: imageLink(community.image_url),
         hasGroupChat: community.has_invites || undefined,
         upcomingEvents: ownEvents.slice(0, MAX_NESTED_EVENTS).map(eventSummary),
         people: community.associatedPeople.slice(0, MAX_NESTED_EVENTS).map((p) => ({
