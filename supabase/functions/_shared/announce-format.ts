@@ -46,7 +46,21 @@ export const COUNTRY_NAME: Record<string, string> = {
   BE: 'Belgium', IE: 'Ireland', RO: 'Romania', BG: 'Bulgaria', SI: 'Slovenia', EE: 'Estonia',
   LV: 'Latvia', IS: 'Iceland', JP: 'Japan', IL: 'Israel', ZA: 'SouthAfrica', NZ: 'NewZealand',
   CO: 'Colombia', CL: 'Chile', UY: 'Uruguay', CR: 'CostaRica', EG: 'Egypt', MY: 'Malaysia',
-  TW: 'Taiwan', VN: 'Vietnam', RS: 'Serbia',
+  TW: 'Taiwan', VN: 'Vietnam', RS: 'Serbia', SG: 'Singapore', PH: 'Philippines', HK: 'HongKong',
+  NP: 'Nepal', LK: 'SriLanka', KH: 'Cambodia', CY: 'Cyprus', MT: 'Malta', LU: 'Luxembourg',
+  GE: 'Georgia', AM: 'Armenia', MA: 'Morocco', AE: 'UAE', BO: 'Bolivia', GT: 'Guatemala',
+}
+
+// Hashtag form of a country: the map above, else the English name from Intl with spaces and
+// punctuation dropped (SG once posted as "#SG", 2026-10-21), else the raw code.
+const intlRegionNames = new Intl.DisplayNames(['en'], { type: 'region' })
+export function countryHashtag(code: string): string {
+  if (COUNTRY_NAME[code]) return COUNTRY_NAME[code]
+  try {
+    const name = intlRegionNames.of(code)?.replace(/[^A-Za-z]/g, '')
+    if (name) return name
+  } catch { /* invalid code: fall through */ }
+  return code
 }
 
 // Primary teaching roles for the headline teacher line — excludes musician/guest/assistant,
@@ -278,7 +292,7 @@ export function buildRichCaption(event: RichCaptionEvent, teacherNames: string[]
   }
 
   const hashtags: string[] = [
-    `#${COUNTRY_NAME[event.country] ?? event.country}`,
+    `#${countryHashtag(event.country)}`,
   ]
   if (TYPE_HASHTAG[event.type]) hashtags.push(`#${TYPE_HASHTAG[event.type]}`)
   for (const d of (event.discipline ?? [])) {
