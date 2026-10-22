@@ -82,6 +82,7 @@ export function ProfileEditForm({
     is_teacher: profile.is_teacher || lockedRoles.teacher,
     is_musician: profile.is_musician || lockedRoles.musician,
     discipline: profile.discipline ?? [],
+    image_credit: profile.image_credit || "",
   });
 
   const allCountries = Object.values(CONTINENT_COUNTRIES).flat().sort((a, b) =>
@@ -185,13 +186,16 @@ export function ProfileEditForm({
 
   return (
     <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
       <PhotoUploadSection
         imageUrl={profile.image_url}
-        imageCredit={profile.image_credit}
         imageStatus={profile.image_status}
+        credit={form.image_credit}
+        onCreditChange={handleChange}
+        // A new photo usually comes from someone else than the old one, so its credit is cleared
+        // (the upload route stores no credit); the person adds the new one and saves the profile.
+        onUploaded={() => setForm((prev) => ({ ...prev, image_credit: "" }))}
       />
-
-      <form onSubmit={handleSubmit} className="space-y-6">
       <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Basic Info</h3>
         <div className="mt-4 space-y-4">
@@ -554,14 +558,20 @@ export function ProfileEditForm({
   );
 }
 
+// Lives inside the profile <form>: the photo uploads on its own as soon as it's chosen, while the
+// credit is an ordinary form field that saves with "Save profile".
 function PhotoUploadSection({
   imageUrl,
-  imageCredit,
   imageStatus,
+  credit,
+  onCreditChange,
+  onUploaded,
 }: {
   imageUrl: string | null;
-  imageCredit: string | null;
   imageStatus: string;
+  credit: string;
+  onCreditChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUploaded: () => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -569,7 +579,6 @@ function PhotoUploadSection({
   const [success, setSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [credit, setCredit] = useState(imageCredit || "");
   const [isCompressing, setIsCompressing] = useState(false);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -597,16 +606,18 @@ function PhotoUploadSection({
     }
     setSelectedFile(compressed);
     setPreviewUrl(URL.createObjectURL(compressed));
+    // Upload straight away. A separate "Upload photo" button lost photos: the preview made
+    // the photo look saved, people pressed the profile's Save button instead, and only the
+    // text was stored (reported 2026-10-22).
+    upload(compressed);
   }
 
-  function handleUpload() {
-    if (!selectedFile) return;
+  function upload(file: File) {
     setError(null);
     setSuccess(false);
 
     const formData = new FormData();
-    formData.set("file", selectedFile);
-    formData.set("credit", credit);
+    formData.set("file", file);
 
     startTransition(async () => {
       try {
@@ -616,12 +627,17 @@ function PhotoUploadSection({
           setSuccess(true);
           setSelectedFile(null);
           setPreviewUrl(null);
+          onUploaded();
           router.refresh();
         } else {
           setError(result.error || "Failed to upload photo");
+          setSelectedFile(null);
+          setPreviewUrl(null);
         }
       } catch {
         setError("Upload failed — please try again.");
+        setSelectedFile(null);
+        setPreviewUrl(null);
       }
     });
   }
@@ -655,23 +671,19 @@ function PhotoUploadSection({
               Your previous photo wasn&apos;t approved. Upload a new one to try again.
             </p>
           )}
-          <Field label="Upload a photo">
+          <Field label={displayUrl ? "Replace photo" : "Upload a photo"}>
             <input
               type="file"
               accept="image/*"
               onChange={handleFileChange}
+              disabled={isPending || isCompressing}
               className="w-full text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-(--color-ink) file:px-4 file:py-2 file:text-xs file:font-semibold file:text-(--color-mist)"
             />
-            <p className="mt-1 text-xs text-slate-500">JPEG, PNG, or WEBP. Resized automatically before upload.</p>
+            <p className="mt-1 text-xs text-slate-500">JPEG, PNG, or WEBP. Uploads as soon as you choose it.</p>
           </Field>
-          <Field label="Credit (optional)">
-            <input
-              value={credit}
-              onChange={(e) => setCredit(e.target.value)}
-              className={inputClassName}
-              placeholder="e.g. Photo by Jane Doe"
-            />
-          </Field>
+          {(isCompressing || isPending) && (
+            <p className="text-sm font-medium text-slate-600">{isCompressing ? "Processing..." : "Uploading..."}</p>
+          )}
           {error && (
             <p className="text-sm font-medium text-rose-600 bg-rose-50 p-3 rounded-2xl border border-rose-100">
               {error}
@@ -682,14 +694,18 @@ function PhotoUploadSection({
               Photo uploaded — it&apos;s now awaiting review.
             </p>
           )}
-          <button
-            type="button"
-            onClick={handleUpload}
-            disabled={!selectedFile || isPending || isCompressing}
-            className="rounded-full bg-(--color-ink) px-6 py-2.5 text-sm font-semibold text-(--color-mist) shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
-          >
-            {isPending ? "Uploading..." : isCompressing ? "Processing..." : "Upload photo"}
-          </button>
+          {imageUrl && (
+            <Field label="Photo credit (optional)">
+              <input
+                name="image_credit"
+                value={credit}
+                onChange={onCreditChange}
+                className={inputClassName}
+                placeholder="e.g. Photo by Jane Doe"
+              />
+              <p className="mt-1 text-xs text-slate-500">Saved with &ldquo;Save changes&rdquo; below.</p>
+            </Field>
+          )}
         </div>
       </div>
     </section>

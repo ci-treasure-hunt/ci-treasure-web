@@ -34,6 +34,9 @@ export type ProfileUpdateData = {
   is_teacher: boolean;
   is_musician: boolean;
   discipline: string[];
+  // Credit for the photo. The photo itself uploads on its own (app/api/dashboard/profile-photo),
+  // the credit is plain text and saves with the rest of the profile.
+  image_credit: string;
 };
 
 function normalizeInstagram(value: string): string {
@@ -135,6 +138,7 @@ export async function updateProfile(data: ProfileUpdateData) {
     is_teacher:   data.is_teacher || lockedTeacher,
     is_musician:  data.is_musician || lockedMusician,
     discipline:   validatedDiscipline.length ? validatedDiscipline : null,
+    image_credit: nullIfEmpty(data.image_credit ?? ""),
     updated_at:   new Date().toISOString(),
   };
 
