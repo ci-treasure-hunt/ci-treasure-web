@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
 import { EventCard } from "@/components/event-card";
+import { FbGroupLinks } from "@/components/fb-group-links";
+import { FB_INTERNATIONAL_GROUP, FB_REGIONAL_GROUPS, FB_REGION_PHRASE } from "@/lib/fb-groups";
 import { getEventsByType, mapAccent } from "@/lib/events";
 import type { EventTypePageConfig } from "@/lib/event-type-pages";
 
@@ -18,6 +20,19 @@ function getTodayDateKey() {
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }
+
+// I-189: which Facebook groups fit this type. Workshops run mostly 2-3 days (61% of listings since
+// Nov 2025), so they belong in the regional groups; festivals, intensives, retreats and long jams
+// are mostly 4+ days (96/92/83/67%), so the international group.
+const WORKSHOP_FB_GROUPS = {
+  lead: "Weekend workshops are also shared in our regional Facebook groups for",
+  // Region names only: three full group titles in one sentence would run to four lines.
+  groups: (["emea", "americas", "apac"] as const).map((r) => ({ ...FB_REGIONAL_GROUPS[r], name: FB_REGION_PHRASE[r] })),
+};
+const LONG_FORM_FB_GROUPS = {
+  lead: "Events of 4 days or more are also shared in our Facebook group:",
+  groups: [FB_INTERNATIONAL_GROUP],
+};
 
 export async function EventTypeListing({ config }: { config: EventTypePageConfig }) {
   const { events, error } = await getEventsByType(config.type, getTodayDateKey());
@@ -70,6 +85,8 @@ export async function EventTypeListing({ config }: { config: EventTypePageConfig
         </header>
 
         {error && <p className="mb-6 text-sm text-rose-600">{error}</p>}
+
+        <FbGroupLinks {...(config.type === "workshop" ? WORKSHOP_FB_GROUPS : LONG_FORM_FB_GROUPS)} className="mb-6" />
 
         {!error && events.length === 0 && (
           <p className="text-slate-600">

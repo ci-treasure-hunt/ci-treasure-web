@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminUser } from "@/lib/admin-auth";
 import { sendEmail } from "@/lib/email";
 import { buildEventSlug } from "@/lib/events";
+import { fbGroupsForEvent } from "@/lib/fb-groups";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SUPPORT_EMAIL_LINES } from "@/lib/support";
 
@@ -12,6 +13,18 @@ import { SUPPORT_EMAIL_LINES } from "@/lib/support";
 // likely to pass the link on, and every share brings dancers to the listing.
 const SHARE_EMAIL_LINE =
   "Share this link with your community, in your group chats and on social media, so more dancers find it.";
+
+// I-189: the Facebook groups this event fits (regional 2+ days, international 4+), as email lines.
+// Empty for 1-day events and anything outside the three regions, so the email stays as it was.
+function fbGroupEmailLines(event: { country: string | null; start_date: string; end_date: string | null }) {
+  const groups = fbGroupsForEvent({ country: event.country, startDate: event.start_date, endDate: event.end_date });
+  if (groups.length === 0) return [];
+  return [
+    `You can also post it in our Facebook ${groups.length > 1 ? "groups" : "group"}:`,
+    ...groups.map((g) => `${g.name}: ${g.url}`),
+    "",
+  ];
+}
 
 // Look up the submitter's email from the event's user_id.
 async function submitterEmail(admin: ReturnType<typeof createAdminClient>, userId: string | null) {
@@ -85,7 +98,7 @@ export async function approveEvent(eventId: string): Promise<{ success: boolean;
 
   const { data: event } = await admin
     .from("events")
-    .select("title, short_id, user_id")
+    .select("title, short_id, user_id, country, start_date, end_date")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -108,6 +121,7 @@ export async function approveEvent(eventId: string): Promise<{ success: boolean;
         "",
         SHARE_EMAIL_LINE,
         "",
+        ...fbGroupEmailLines(event),
         "You can edit it anytime from your dashboard: https://citreasurehunt.com/dashboard",
         "",
         ...SUPPORT_EMAIL_LINES,

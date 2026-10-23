@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 
 import { CountryCombinedMap } from "@/components/country-combined-map";
 import { EventCard } from "@/components/event-card";
+import { FbGroupLinks } from "@/components/fb-group-links";
+import { FB_REGIONAL_GROUPS, FB_REGION_PHRASE, getFbRegion } from "@/lib/fb-groups";
 import { ExpandableList } from "@/components/expandable-list";
 import { CompactCommunityRow, CompactTeacherRow } from "@/components/compact-entity-row";
 import { VenueCard } from "@/components/entity-cards";
@@ -126,6 +128,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
   const [summaryBody, summarySources] = splitSummarySources(summaryText);
   const flag = getCountryFlag(iso);
   const labelWithArticle = getCountryLabelWithArticle(iso);
+  const fbRegion = getFbRegion(iso);
 
   // Cross-links to other live country guides — same "comma-separated, 'and' before the last"
   // pattern as the homepage's own country-guide sentence (app/page.tsx), so it scales the same
@@ -329,6 +332,13 @@ export default async function CountryPage({ params }: CountryPageProps) {
                 <EventCard key={event.id} event={event} />
               ))}
             </div>
+            {fbRegion ? (
+              <FbGroupLinks
+                lead={`More CI events across ${FB_REGION_PHRASE[fbRegion]}, weekend workshops and longer, in our Facebook group:`}
+                groups={[FB_REGIONAL_GROUPS[fbRegion]]}
+                className="mt-4"
+              />
+            ) : null}
             <p className="mt-3 text-sm text-slate-500">
               Missing your event in {labelWithArticle}?{" "}
               <Link href="/events/new" className="font-medium text-(--color-pine) hover:underline">

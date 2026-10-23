@@ -5,6 +5,8 @@ import { isAdminEmail } from "@/lib/admin-auth";
 import { RemoveMeButton } from "@/components/organizer/remove-me-button";
 import { findClaimSuggestion, type ClaimSuggestion } from "@/lib/claim-suggestion";
 import { buildEventSlug } from "@/lib/events";
+import { fbGroupsForEvent, type FbGroup } from "@/lib/fb-groups";
+import { FbGroupLinks } from "@/components/fb-group-links";
 import { getManageableSeriesIds } from "@/lib/series-access";
 import { supportHref } from "@/lib/support";
 
@@ -112,6 +114,24 @@ export default async function DashboardPage({
     .select("role, events(title)")
     .eq("user_id", user.id)
     .eq("status", "pending");
+
+  // I-189: the Facebook groups this event fits (regional 2+ days, international 4+), shown with the
+  // share line. Live submissions only; pending ones get the same list in the approval email.
+  let submittedFbGroups: FbGroup[] = [];
+  if (submitted === "live" && submittedEventSlug) {
+    const { data: submittedEvent } = await supabase
+      .from("events")
+      .select("country, start_date, end_date")
+      .eq("short_id", submittedEventSlug.split("-")[0])
+      .maybeSingle();
+    if (submittedEvent) {
+      submittedFbGroups = fbGroupsForEvent({
+        country: submittedEvent.country,
+        startDate: submittedEvent.start_date,
+        endDate: submittedEvent.end_date,
+      });
+    }
+  }
 
   // Scope explicitly to events this user submitted or is linked to.
   let organizeEvents: DashboardEvent[] = [];
@@ -263,7 +283,7 @@ export default async function DashboardPage({
         ) : (
           <div className="flex flex-col gap-6">
             {submitted === "live" || submitted === "review" ? (
-              <SubmittedThanks live={submitted === "live"} eventSlug={submittedEventSlug} />
+              <SubmittedThanks live={submitted === "live"} eventSlug={submittedEventSlug} fbGroups={submittedFbGroups} />
             ) : null}
 
             {profileGaps.length && showProfileNudge ? <ProfileGaps gaps={profileGaps} /> : null}
@@ -389,7 +409,7 @@ export default async function DashboardPage({
 // I-173 option F: the support nudge sits here, right after a submission, because that is when
 // someone has just been helped. It leads with "free, and it stays free" so it cannot read as
 // paying for approval, and it only shows on the redirect, never on a normal dashboard visit.
-function SubmittedThanks({ live, eventSlug }: { live: boolean; eventSlug: string | null }) {
+function SubmittedThanks({ live, eventSlug, fbGroups }: { live: boolean; eventSlug: string | null; fbGroups: FbGroup[] }) {
   return (
     <section className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-6">
       <h2 className="font-serif text-xl text-slate-950">Thank you, your event is {live ? "live" : "in review"}!</h2>
@@ -407,6 +427,9 @@ function SubmittedThanks({ live, eventSlug }: { live: boolean; eventSlug: string
             citreasurehunt.com/events/{eventSlug}
           </Link>
         </p>
+      ) : null}
+      {live ? (
+        <FbGroupLinks lead={`You can also post it in our Facebook ${fbGroups.length > 1 ? "groups" : "group"}:`} groups={fbGroups} className="mt-3 text-slate-700" />
       ) : null}
       <p className="mt-3 text-sm leading-6 text-slate-700">
         Listing events here is free, and it stays free. I build and run CI Treasure Hunt on my own, so if it

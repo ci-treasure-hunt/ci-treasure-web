@@ -63,6 +63,9 @@ jobs:
       #
       # event-features.check.ts (I-184): the save rules that keep features and room types inside
       # the fixed vocabulary.
+      #
+      # fb-groups.check.ts (I-189): which Facebook groups an event is pointed to (regional 2+ days,
+      # international 4+).
       - name: Unit checks
         run: |
           npx --yes tsx tests/unit/url-safety.check.ts
@@ -71,3 +74,4 @@ jobs:
           npx --yes tsx tests/unit/place-case.check.ts
           npx --yes tsx tests/unit/venue-records.check.ts
           npx --yes tsx tests/unit/event-features.check.ts
+          npx --yes tsx tests/unit/fb-groups.check.ts

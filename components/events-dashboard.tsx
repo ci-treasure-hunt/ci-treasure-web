@@ -12,6 +12,8 @@ import { DURATION_BANDS, collapseRecurringSeries, disciplineLabel, matchesDurati
 import { TELEGRAM_URL } from "@/lib/site";
 import { CONTINENT_COUNTRIES, CONTINENT_LABELS } from "@/lib/continents";
 import { EVENT_FEATURES } from "@/lib/event-features";
+import { FB_REGIONAL_GROUPS, FB_REGION_PHRASE, type FbRegion } from "@/lib/fb-groups";
+import { FbGroupLinks } from "./fb-group-links";
 
 // Dynamically load the Map component without SSR to avoid 'window is not defined' errors
 const EventMap = dynamic(() => import("./map"), {
@@ -40,6 +42,8 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
 
   // Other filters live in the URL so the back button restores them
   const selectedCountry = searchParams.get("country") ?? "";
+  const continentKey = selectedCountry.startsWith("__continent_") ? selectedCountry.slice("__continent_".length) : "";
+  const selectedFbRegion = continentKey in FB_REGIONAL_GROUPS ? (continentKey as FbRegion) : null;
   const selectedType = searchParams.get("type") ?? "";
   const selectedMonth = searchParams.get("month") ?? "";
   const selectedDuration = searchParams.get("length") ?? "";
@@ -530,6 +534,15 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
               </button>
             )}
           </div>
+
+          {/* I-189: with a region selected, that region's Facebook group (events of 2+ days). */}
+          {selectedFbRegion && (
+            <FbGroupLinks
+              lead={`Weekend workshops and longer events across ${FB_REGION_PHRASE[selectedFbRegion]} are also shared in our Facebook group:`}
+              groups={[FB_REGIONAL_GROUPS[selectedFbRegion]]}
+              className="w-full border-t border-slate-50 pt-3 text-xs"
+            />
+          )}
 
           {/* Features (I-184): own full-width row under the dropdowns, so the count and
               "Clear all filters" stay on the dropdowns' line on desktop. */}
