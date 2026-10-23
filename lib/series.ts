@@ -16,6 +16,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getEntityEmail, setEntityEmail } from "@/lib/entity-email";
 import { getEntityPhoneContacts, setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { ISO_DATE, addDays, daysBetween } from "@/lib/date-list";
+import { sanitizeAccommodation, sanitizeFeatures } from "@/lib/event-features";
 
 export { parseDateList } from "@/lib/date-list";
 
@@ -297,10 +298,17 @@ export async function addSeriesDates(opts: {
         discipline: pick(series.default_discipline, template.discipline),
         language: pick(series.default_language, template.language),
         level: pick(series.default_level, template.level),
-        features: pick(series.default_features, template.features),
+        // I-184: same save rules as the organizer form, so an old template value never comes back.
+        features: sanitizeFeatures(
+          pick(series.default_features, template.features),
+          pick(series.default_type, template.type),
+        ),
         links: pick(series.default_links, template.links),
         price: pick(series.default_price, template.price),
-        accommodation_type: template.accommodation_type,
+        accommodation_type: sanitizeAccommodation(
+          template.accommodation_type,
+          pick(series.default_features, template.features),
+        ),
         capacity: template.capacity,
         user_id: template.user_id,
         source: opts.source ?? "series",

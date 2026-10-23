@@ -6,6 +6,7 @@ import { safeExternalUrl } from "@/lib/url-safety";
 import { getEntityEmail } from "@/lib/entity-email";
 import { getEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import type { PhoneContactInput } from "@/lib/phone-contacts";
+import { sanitizeAccommodation, sanitizeFeatures } from "@/lib/event-features";
 import {
   type EventListItem,
   type SegmentItem,
@@ -51,6 +52,8 @@ export type SupabaseEventRow = {
   discipline?: string[] | null;
   level?: string | null;
   language?: string[] | null;
+  features?: string[] | null;
+  accommodation_type?: string[] | null;
 };
 
 export type SeriesSibling = {
@@ -119,6 +122,10 @@ export type EventDetail = EventListItem & {
   contactPhones: PhoneContactInput[];
   level: string | null;
   language: string[];
+  // I-184: known values only, in vocabulary order (lib/event-features.ts). Room types are empty
+  // unless the event is residential.
+  features: string[];
+  accommodationType: string[];
   seriesName: string | null;
   seriesSiblings: SeriesSibling[];
   imageCredit: string | null;
@@ -514,7 +521,7 @@ function getTimezoneOffset(timezone: string, date: Date) {
 }
 
 const EVENT_DETAIL_COLUMNS =
-  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, image_credit, links, price, segments, venue_id, address, has_email, has_phone_contacts, series_id, series_order, status, level, language, discipline, event_series(title)";
+  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, image_credit, links, price, segments, venue_id, address, has_email, has_phone_contacts, series_id, series_order, status, level, language, discipline, features, accommodation_type, event_series(title)";
 
 // Shared by the public event page (RLS-gated client, RPC-scoped credits) and the admin
 // pending-event preview (service-role client, direct table reads) — same output shape either
@@ -625,6 +632,8 @@ async function buildEventDetail(
     contactPhones: [],
     level: row.level ?? null,
     language: row.language ?? [],
+    features: sanitizeFeatures(row.features, row.type) ?? [],
+    accommodationType: sanitizeAccommodation(row.accommodation_type, row.features) ?? [],
     primaryRegistrationUrl:
       linkItems.find((item) => item.type === "registration")?.url ?? linkItems[0]?.url ?? null,
     startDateIso: `${row.start_date}T${row.start_time ?? "00:00:00"}${getTimezoneOffset(

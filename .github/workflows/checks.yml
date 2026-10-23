@@ -60,6 +60,9 @@ jobs:
       #
       # venue-records.check.ts (I-181): the name matching that decides whether an event links to an
       # existing venue or creates a new one, and the Pin/Page/Listed mapping.
+      #
+      # event-features.check.ts (I-184): the save rules that keep features and room types inside
+      # the fixed vocabulary.
       - name: Unit checks
         run: |
           npx --yes tsx tests/unit/url-safety.check.ts
@@ -67,3 +70,4 @@ jobs:
           npx --yes tsx tests/unit/phone-contacts.check.ts
           npx --yes tsx tests/unit/place-case.check.ts
           npx --yes tsx tests/unit/venue-records.check.ts
+          npx --yes tsx tests/unit/event-features.check.ts

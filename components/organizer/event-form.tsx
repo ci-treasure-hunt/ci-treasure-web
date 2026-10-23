@@ -12,6 +12,7 @@ import { PersonPicker } from "@/components/organizer/person-picker";
 import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import { PHONE_CONTACTS_HINT } from "@/lib/phone-contacts";
 import { compressImageForUpload } from "@/lib/client-image-compress";
+import { ACCOMMODATION_TYPES, EVENT_FEATURES, FEATURE_GROUPS } from "@/lib/event-features";
 import {
   EVENT_TYPE_OPTIONS,
   LANGUAGE_OPTIONS,
@@ -129,6 +130,22 @@ export function OrganizerEventForm({
   // I-171 DEC-8: only a repeating class asks about drop-in. Jams are drop-in by nature.
   const askDropIn = mode === "create" && form.type === "class" && Boolean(form.repeat);
   const closedSeries = isClosedClassSeries(form);
+
+  function toggleFeature(slug: string) {
+    setForm((prev) => ({
+      ...prev,
+      features: prev.features.includes(slug) ? prev.features.filter((f) => f !== slug) : [...prev.features, slug],
+    }));
+  }
+
+  function toggleAccommodation(slug: string) {
+    setForm((prev) => ({
+      ...prev,
+      accommodationType: prev.accommodationType.includes(slug)
+        ? prev.accommodationType.filter((a) => a !== slug)
+        : [...prev.accommodationType, slug],
+    }));
+  }
 
   function toggleLanguage(code: string) {
     setForm((prev) => ({
@@ -357,9 +374,6 @@ export function OrganizerEventForm({
               placeholder="Other language(s), comma-separated"
             />
           </Field>
-          <Field label="Features">
-            <input value={form.features} onChange={(e) => set("features", e.target.value)} className={inputClassName} placeholder="live_music, nature, residential" />
-          </Field>
         </div>
       </section>
 
@@ -388,6 +402,46 @@ export function OrganizerEventForm({
               />
               {disciplineLabel(p)}
             </label>
+          ))}
+        </div>
+      </section>
+
+      {/* I-184: a closed list, no free text. Kept out of Field (a <label>) on purpose: nested
+          label-wrapped controls misbehave in WebKit (the 2026-10-07 picker bug). */}
+      <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Features</h3>
+        <p className="mt-1 text-sm text-slate-600">Check only what is part of the program.</p>
+        <div className="mt-4 space-y-5">
+          {FEATURE_GROUPS.map((group) => (
+            <div key={group.id}>
+              <p className="text-sm font-medium text-slate-700">{group.label}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {EVENT_FEATURES.filter((f) => f.group === group.id).map((f) => (
+                  <ChipCheckbox
+                    key={f.slug}
+                    label={f.label}
+                    title={f.hint}
+                    checked={form.features.includes(f.slug)}
+                    onChange={() => toggleFeature(f.slug)}
+                  />
+                ))}
+              </div>
+              {group.id === "stay" && form.features.includes("residential") ? (
+                <div className="mt-4 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-4">
+                  <p className="text-sm font-medium text-slate-700">Where people sleep</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {ACCOMMODATION_TYPES.map((a) => (
+                      <ChipCheckbox
+                        key={a.slug}
+                        label={a.label}
+                        checked={form.accommodationType.includes(a.slug)}
+                        onChange={() => toggleAccommodation(a.slug)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       </section>
@@ -682,6 +736,33 @@ function ArraySection<T>({
         )}
       </div>
     </section>
+  );
+}
+
+// Same pill style as the practice and language pickers.
+function ChipCheckbox({
+  label,
+  title,
+  checked,
+  onChange,
+}: {
+  label: string;
+  title?: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label
+      title={title}
+      className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+        checked
+          ? "border-(--color-pine) bg-(--color-pine)/10 text-(--color-pine)"
+          : "border-(--color-sand-strong) text-slate-700 hover:border-(--color-pine)"
+      }`}
+    >
+      <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
+      {label}
+    </label>
   );
 }
 

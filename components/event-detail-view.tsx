@@ -23,6 +23,7 @@ import {
   getOgImageStyle,
 } from "@/lib/events";
 import { toCdnUrl } from "@/lib/image-url";
+import { accommodationLabel, getFeature } from "@/lib/event-features";
 import { formatClassSeriesLabel, formatEventDateRange, getCountryLabel, getEventHref, getEventLocation, getTypeLabel } from "@/lib/event-display";
 import { SITE_URL } from "@/lib/site";
 
@@ -321,6 +322,31 @@ export function EventDetailView({
                   />
                 ) : null}
               </div>
+
+              {event.features.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {event.features.map((slug) => {
+                      const feature = getFeature(slug);
+                      return feature ? (
+                        <span
+                          key={slug}
+                          title={feature.hint}
+                          className="inline-flex items-center rounded-full border border-(--color-sand-strong) bg-(--color-mist) px-3 py-1 text-sm font-medium text-slate-700"
+                        >
+                          {feature.label}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                  {event.accommodationType.length > 0 ? (
+                    <p className="text-sm text-slate-700">
+                      <span className="font-semibold text-slate-900">Stay:</span>{" "}
+                      {event.accommodationType.map((a) => accommodationLabel(a)).join(" · ")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               {event.description ? (
                 <section className="space-y-3">

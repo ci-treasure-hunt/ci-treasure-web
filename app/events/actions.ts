@@ -14,7 +14,6 @@ import {
   isClosedClassSeries,
   normalizeCountry,
   normalizeJsonItems,
-  parseCsvArray,
   parseLanguages,
   parseLinkItems,
   parsePriceItems,
@@ -22,6 +21,7 @@ import {
   type OrganizerEventFormData,
 } from "@/lib/organizer-events";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeAccommodation, sanitizeFeatures } from "@/lib/event-features";
 import tzlookup from "tz-lookup";
 
 import { setEntityEmail } from "@/lib/entity-email";
@@ -62,6 +62,9 @@ function resolveEventPhoneContacts(data: OrganizerEventFormData) {
 }
 
 function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, timezone: string) {
+  // I-184: unknown values are dropped, "jams" is dropped on a jam/long jam, and room types are
+  // cleared when the event isn't residential (lib/event-features.ts).
+  const features = sanitizeFeatures(data.features, data.type);
   return {
     title: data.title.trim(),
     type: data.type,
@@ -76,7 +79,8 @@ function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, tim
     image_url: imageUrl,
     level: data.level || null,
     language: parseLanguages(data.languages, data.languagesOther),
-    features: parseCsvArray(data.features),
+    features,
+    accommodation_type: sanitizeAccommodation(data.accommodationType, features),
     // Real, user-controlled field (checkbox picker, validated non-empty) — safe to share
     // between create and edit, unlike a silent auto-default would be.
     discipline: data.discipline,

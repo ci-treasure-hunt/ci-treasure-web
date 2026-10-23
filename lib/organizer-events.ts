@@ -10,6 +10,7 @@ import { COUNTRIES } from "./countries";
 import { safeExternalUrl } from "./url-safety";
 import { isPhoneContactUrl, type PhoneContactInput } from "./phone-contacts";
 import { addDays, daysBetween, parseDateList } from "./date-list";
+import { sanitizeAccommodation, sanitizeFeatures } from "./event-features";
 
 export { EVENT_TYPE_OPTIONS, LINK_TYPE_OPTIONS, TEACHER_ROLE_OPTIONS } from "./admin-events";
 export type { AdminLinkItem, AdminPriceItem };
@@ -133,7 +134,10 @@ export type OrganizerEventFormData = {
   // not in that list (e.g. a language that hasn't come up in the DB yet).
   languages: string[];
   languagesOther: string;
-  features: string;
+  // I-184: closed checkbox lists from lib/event-features.ts, no free text. Room types only
+  // count when "residential" is ticked (sanitizeAccommodation clears them otherwise).
+  features: string[];
+  accommodationType: string[];
   // Multi-select checkboxes against known values only — no free text, so the
   // taxonomy only grows through admin/addevent-vetted additions (2026-07-05 decision).
   discipline: string[];
@@ -213,7 +217,8 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     level: "",
     languages: [],
     languagesOther: "",
-    features: "",
+    features: [],
+    accommodationType: [],
     teachers: [],
     organizers: [],
     repeat: "",
@@ -287,15 +292,6 @@ export function normalizeJsonItems<T>(items: T[]) {
   return items.length ? { items } : null;
 }
 
-// "en, de" → ["en","de"]; empty → null (so the column stays NULL, not []).
-export function parseCsvArray(value: string): string[] | null {
-  const parts = value
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return parts.length ? parts : null;
-}
-
 // languages is already ISO codes from the checkbox picker (LANGUAGE_OPTIONS) — this just merges
 // in the free-text "Other" field, comma-split and lowercased, without re-guessing anything the
 // picker already got right. Replaces the earlier name→code guess-map approach (2026-08-18):
@@ -331,6 +327,7 @@ type EventRowForForm = {
   level: string | null;
   language: string[] | null;
   features: string[] | null;
+  accommodation_type: string[] | null;
   discipline: string[] | null;
   cancelled: boolean | null;
   cancelled_text: string | null;
@@ -360,7 +357,10 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     level: row.level ?? "",
     languages: (row.language ?? []).filter((l) => KNOWN_LANGUAGE_CODES.has(l)),
     languagesOther: (row.language ?? []).filter((l) => !KNOWN_LANGUAGE_CODES.has(l)).join(", "),
-    features: (row.features ?? []).join(", "),
+    // Legacy free-text values outside the vocabulary are left out here, so saving the form
+    // drops them. sanitizeFeatures applies the same rule server-side.
+    features: sanitizeFeatures(row.features, row.type) ?? [],
+    accommodationType: sanitizeAccommodation(row.accommodation_type, row.features) ?? [],
     // Defensive fallback only — every real event has discipline set since the 2026-07-04
     // cleanup; a NULL here would mean a new insert path forgot to set it.
     discipline: row.discipline?.length ? row.discipline : ["contact_improvisation"],
