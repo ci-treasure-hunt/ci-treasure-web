@@ -46,6 +46,9 @@ export type AdminPriceItem = {
 export type AdminLinkItem = {
   type: string;
   url: string;
+  // Not editable in either form yet, but carried through a save so a label set on the DB side
+  // ("Workshop registration", "Accommodation Level 1") isn't silently dropped by an unrelated edit.
+  label?: string;
 };
 
 export type AdminPersonItem = {

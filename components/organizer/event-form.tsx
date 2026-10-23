@@ -84,11 +84,15 @@ export function OrganizerEventForm({
   initial,
   availablePractices,
   extraSections,
+  otherSeriesDates = 0,
 }: {
   mode: "create" | "edit";
   eventId?: string;
   initial?: OrganizerEventFormData;
   availablePractices: string[];
+  // Edit mode on one date of a series: how many other upcoming dates it has. Above zero, the save
+  // panel offers to copy this save's changes to them (I-185 follow-up).
+  otherSeriesDates?: number;
   // Rendered just above the save panel. Edit mode passes TeacherManager here: it writes
   // immediately via its own server actions rather than through this form's state, but it was
   // previously rendered by the page *after* this whole component, which put "Teachers" below
@@ -104,6 +108,7 @@ export function OrganizerEventForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [applyToSeries, setApplyToSeries] = useState(false);
   const [isSaving, startSaving] = useTransition();
 
   function set<K extends keyof OrganizerEventFormData>(key: K, value: OrganizerEventFormData[K]) {
@@ -162,7 +167,9 @@ export function OrganizerEventForm({
     setWarning(null);
     startSaving(async () => {
       const result =
-        mode === "create" ? await createEvent(form) : await updateEvent(eventId!, form);
+        mode === "create"
+          ? await createEvent(form)
+          : await updateEvent(eventId!, form, { applyToSeries: applyToSeries && otherSeriesDates > 0 });
       if (!result.success) {
         setError(result.error ?? "Could not save.");
         return;
@@ -180,7 +187,15 @@ export function OrganizerEventForm({
         router.refresh();
         return;
       }
-      setSuccess(mode === "create" ? "Event submitted." : "Saved.");
+      setSuccess(
+        mode === "create"
+          ? "Event submitted."
+          : result.seriesUpdated
+            ? `Saved. Your changes are on ${result.seriesUpdated} other ${result.seriesUpdated === 1 ? "date" : "dates"} too.`
+            : result.seriesUpdated === 0
+              ? "Saved. Nothing new to copy to the other dates."
+              : "Saved.",
+      );
       if (result.warning) setWarning(result.warning);
       router.refresh();
     });
@@ -674,6 +689,26 @@ export function OrganizerEventForm({
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
         {warning ? <p className="text-sm text-amber-700">{warning}</p> : null}
+        {mode === "edit" && otherSeriesDates > 0 ? (
+          <label className="mb-3 flex items-start gap-3 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={applyToSeries}
+              onChange={(e) => setApplyToSeries(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="font-semibold text-slate-900">
+                Also apply my changes to the other {otherSeriesDates} upcoming{" "}
+                {otherSeriesDates === 1 ? "date" : "dates"}
+              </span>
+              <span className="mt-1 block text-slate-600">
+                Only what you changed here is copied, for example the description, price or links. Each
+                date keeps its own date, teachers and anything you didn&apos;t touch.
+              </span>
+            </span>
+          </label>
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-3">
           <button
             type="button"

@@ -49,7 +49,8 @@ export default async function DashboardSeriesPage({ params }: { params: Promise<
           <h1 className="mt-2 font-serif text-3xl text-slate-950">{series.title}</h1>
           <p className="mt-2 text-sm text-slate-600">
             Every date is its own event, so you can still change the time, teachers or text of one date with
-            Edit. Past dates stay listed for the record.
+            Edit. To change the text, price or links of all upcoming dates at once, edit any one of them and
+            tick “Also apply my changes” next to Save. Past dates stay listed for the record.
           </p>
 
           <ul className="mt-5 divide-y divide-(--color-sand-strong)">

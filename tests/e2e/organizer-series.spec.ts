@@ -118,6 +118,89 @@ test.describe('I-171 organizer series dates (authenticated)', () => {
     expect(row.event_teachers.map((t) => t.profiles.name)).toEqual(['Sabrina Huth']);
   });
 
+  // I-185 follow-up: "Also apply my changes" copies only the fields this save changed to the other
+  // upcoming dates. A date's own title (its guest) and a link label nobody can edit in the form
+  // must survive; a past date must not be touched.
+  test('edit one date and apply the change to all upcoming dates', async ({ page, baseURL }) => {
+    const email = `hello+pwtest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@citreasurehunt.com`;
+    const { data: created, error: createError } = await admin!.auth.admin.createUser({ email, email_confirm: true });
+    if (createError || !created.user) throw createError ?? new Error('createUser failed');
+    const userId = created.user.id;
+    cleanup.userIds.push(userId);
+
+    const { error: profileError } = await admin!.from('profiles').insert({
+      name: 'Playwright Test Profile — safe to delete',
+      slug: `playwright-test-profile-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      user_id: userId,
+      visibility: 'public',
+      is_organizer: true,
+    });
+    if (profileError) throw profileError;
+
+    const { data: series, error: seriesError } = await admin!
+      .from('event_series')
+      .insert({ title: 'Playwright Test Jam', series_type: 'recurring', created_by: userId, description: 'Old text.' })
+      .select('id')
+      .single();
+    if (seriesError) throw seriesError;
+    cleanup.seriesIds.push(series.id);
+
+    // Pending, owned by the test account: editable by it, never public, never announced.
+    const base = {
+      type: 'jam',
+      timezone: 'Europe/Berlin',
+      city: 'Testville',
+      country: 'DE',
+      description: 'Old text.',
+      discipline: ['contact_improvisation'],
+      source: 'manual',
+      status: 'pending',
+      user_id: userId,
+      series_id: series.id,
+      links: { items: [{ type: 'registration', url: 'https://example.com/register', label: 'Workshop registration' }] },
+    };
+    const dates = { first: isoInDays(14), guest: isoInDays(21), plain: isoInDays(28), past: isoInDays(-7) };
+    const { data: rows, error: eventError } = await admin!
+      .from('events')
+      .insert([
+        { ...base, title: 'Playwright Test Jam', start_date: dates.first, end_date: dates.first },
+        { ...base, title: 'Playwright Test Jam with Guest', start_date: dates.guest, end_date: dates.guest },
+        { ...base, title: 'Playwright Test Jam', start_date: dates.plain, end_date: dates.plain },
+        { ...base, title: 'Playwright Test Jam', start_date: dates.past, end_date: dates.past },
+      ])
+      .select('short_id, start_date');
+    if (eventError) throw eventError;
+    const first = rows!.find((r) => r.start_date === dates.first)!;
+
+    const { data: link, error: linkError } = await admin!.auth.admin.generateLink({ type: 'magiclink', email });
+    if (linkError || !link) throw linkError ?? new Error('generateLink returned no data');
+    await page.goto(`${baseURL}/auth/confirm?token_hash=${link.properties.hashed_token}&type=magiclink&next=/dashboard`);
+    await page.getByRole('button', { name: 'Finish signing in' }).click();
+    await page.waitForURL((url) => url.pathname === '/dashboard', { timeout: 60_000 });
+
+    await page.goto(`/events/${first.short_id}-playwright-test-jam/edit`);
+    await page.getByLabel(/^Description/).fill('New text with the gate code.');
+    await page.getByLabel(/Also apply my changes to the other 2 upcoming dates/).check();
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Saved. Your changes are on 2 other dates too.')).toBeVisible({ timeout: 30_000 });
+
+    const { data: after } = await admin!
+      .from('events')
+      .select('title, description, start_date, links')
+      .eq('series_id', series.id)
+      .order('start_date');
+    const byDate = Object.fromEntries((after ?? []).map((r) => [r.start_date, r]));
+    for (const d of [dates.first, dates.guest, dates.plain]) {
+      expect(byDate[d].description).toBe('New text with the gate code.');
+      expect(byDate[d].links.items[0].label).toBe('Workshop registration');
+    }
+    expect(byDate[dates.guest].title).toBe('Playwright Test Jam with Guest');
+    expect(byDate[dates.past].description).toBe('Old text.');
+
+    const { data: seriesAfter } = await admin!.from('event_series').select('description').eq('id', series.id).single();
+    expect(seriesAfter!.description).toBe('New text with the gate code.');
+  });
+
   test('a series the user does not organize redirects to the dashboard', async ({ page, baseURL }) => {
     const email = `hello+pwtest-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@citreasurehunt.com`;
     const { data: created, error } = await admin!.auth.admin.createUser({ email, email_confirm: true });

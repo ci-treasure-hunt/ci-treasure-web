@@ -29,7 +29,58 @@ import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { uniqueProfileSlug } from "@/lib/profile-slug";
-type ActionResult = { success: boolean; error?: string; slug?: string; warning?: string; published?: boolean };
+type ActionResult = {
+  success: boolean;
+  error?: string;
+  slug?: string;
+  warning?: string;
+  published?: boolean;
+  // updateEvent with applyToSeries: how many other upcoming dates of the series took the changes.
+  seriesUpdated?: number;
+};
+
+// I-185 follow-up: columns a series-wide edit may copy to the other dates. Dates stay per date
+// (that's what makes them different dates), and so does cancelling: calling off one evening must
+// not cancel the season.
+const SERIES_PROPAGATED_COLUMNS = [
+  "title", "type", "start_time", "end_time", "timezone", "city", "country", "description",
+  "image_url", "level", "language", "features", "accommodation_type", "discipline", "price",
+  "links", "venue_id", "address", "lat", "lng",
+] as const;
+
+// Same value, ignoring object key order: jsonb hands keys back in its own order (shortest first),
+// not in the order the form built them, so a plain JSON.stringify would see every untouched price
+// or link list as changed and copy it over the other dates.
+function stableJson(value: unknown): string {
+  if (value === undefined || value === null) return "null";
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableJson(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// Tag-style columns are sets: the form rebuilds them in its own order (checked against all 273
+// upcoming events, 2026-10-23), so order alone must not count as a change.
+const SET_COLUMNS = new Set(["language", "features", "accommodation_type", "discipline"]);
+
+// Older price rows keep their note under "note"; the form writes "notes" (buildPrice). Same text is
+// the same price.
+function normalizeForCompare(key: string, value: unknown): unknown {
+  if (SET_COLUMNS.has(key) && Array.isArray(value)) return [...value].sort();
+  if (key === "price" && value && typeof value === "object") {
+    const { note, notes, ...rest } = value as Record<string, unknown>;
+    return { ...rest, notes: notes ?? note };
+  }
+  return value;
+}
+
+function sameValue(key: string, a: unknown, b: unknown) {
+  return stableJson(normalizeForCompare(key, a)) === stableJson(normalizeForCompare(key, b));
+}
 
 // Columns written from the organizer form. Status is handled separately so an
 // organizer can never set it directly. imageUrl is resolved separately (see
@@ -301,6 +352,7 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
 export async function updateEvent(
   eventId: string,
   data: OrganizerEventFormData,
+  options: { applyToSeries?: boolean } = {},
 ): Promise<ActionResult> {
   const validationError = validateOrganizerEvent(data);
   if (validationError) {
@@ -323,9 +375,16 @@ export async function updateEvent(
 
   const { data: current } = await supabase
     .from("events")
-    .select("lat, lng, venue_id, image_url, address")
+    .select(`series_id, ${SERIES_PROPAGATED_COLUMNS.join(", ")}`)
     .eq("id", eventId)
-    .maybeSingle();
+    .maybeSingle<Record<string, unknown> & {
+      series_id: string | null;
+      lat: number | null;
+      lng: number | null;
+      venue_id: string | null;
+      image_url: string | null;
+      address: unknown;
+    }>();
   const { venue_id, address, lat, lng } = await resolveVenueLocation(
     supabase,
     data.venueId,
@@ -345,17 +404,18 @@ export async function updateEvent(
     };
   }
 
+  const columns: Record<string, unknown> = {
+    ...eventColumns(data, imageUrl, timezone),
+    venue_id,
+    address,
+    ...(lat != null && lng != null ? { lat, lng } : {}),
+  };
+
   // RLS (events_update) enforces that the user owns or is linked to this event.
   // Status is intentionally not touched — published stays published.
   const { data: updated, error } = await supabase
     .from("events")
-    .update({
-      ...eventColumns(data, imageUrl, timezone),
-      venue_id,
-      address,
-      ...(lat != null && lng != null ? { lat, lng } : {}),
-      updated_by: user.id,
-    })
+    .update({ ...columns, updated_by: user.id })
     .eq("id", eventId)
     .select("id, short_id, title")
     .maybeSingle();
@@ -367,8 +427,68 @@ export async function updateEvent(
     return { success: false, error: "You don't have permission to edit this event." };
   }
 
+  // I-185 follow-up (Michał's Wednesday jam, 2026-10-23): "apply to all upcoming dates". Only the
+  // fields this save actually changed are copied, so a date with its own guest teacher in the title
+  // or a different price keeps it unless the organizer changed that very field. The update goes
+  // through the user's own client, so RLS limits it to dates they may edit anyway.
+  let seriesUpdated: number | undefined;
+  if (options.applyToSeries && current?.series_id) {
+    const changed: Record<string, unknown> = {};
+    for (const key of SERIES_PROPAGATED_COLUMNS) {
+      if (!(key in columns)) continue;
+      const before = current[key];
+      const after = columns[key];
+      const isTime = key === "start_time" || key === "end_time";
+      const same = isTime
+        ? String(before ?? "").slice(0, 5) === String(after ?? "").slice(0, 5)
+        : sameValue(key, before, after);
+      if (!same) changed[key] = after;
+    }
+    // Same linked venue: the form always resolves it to address null and the venue's own pin, so a
+    // stored address or slightly different pin is not a change the organizer made.
+    if (columns.venue_id && columns.venue_id === current.venue_id) {
+      delete changed.address;
+      delete changed.lat;
+      delete changed.lng;
+    } else if (("venue_id" in changed || "address" in changed) && lat != null && lng != null) {
+      // A moved venue moves the map pin with it.
+      changed.lat = lat;
+      changed.lng = lng;
+    }
+
+    if (Object.keys(changed).length) {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: siblings, error: siblingsError } = await supabase
+        .from("events")
+        .update({ ...changed, updated_by: user.id })
+        .eq("series_id", current.series_id)
+        .neq("id", eventId)
+        .gte("end_date", today)
+        .in("status", ["published", "pending"])
+        .select("short_id, title");
+      if (siblingsError) {
+        return { success: false, error: `This date was saved, but the other dates were not: ${siblingsError.message}` };
+      }
+      seriesUpdated = siblings?.length ?? 0;
+      for (const s of siblings ?? []) revalidatePath(`/events/${buildEventSlug(s.short_id, s.title)}`);
+
+      // New dates added later start from the series' own title and description (lib/series.ts
+      // addSeriesDates), so keep those in step. The organizer's right to this series was just
+      // proven by the RLS-guarded update above.
+      const seriesPatch: Record<string, unknown> = {};
+      if ("title" in changed) seriesPatch.title = changed.title;
+      if ("description" in changed) seriesPatch.description = changed.description;
+      if (Object.keys(seriesPatch).length) {
+        await createAdminClient().from("event_series").update(seriesPatch).eq("id", current.series_id);
+      }
+    } else {
+      seriesUpdated = 0;
+    }
+  }
+
   // I-122: a replaced or removed image's files go once nothing else shows them. Only reached after
-  // the RLS-guarded update matched, so the caller could edit this event.
+  // the RLS-guarded update matched, so the caller could edit this event. Runs after the series
+  // copy above, so an image the other dates still showed is only removed once they've moved on.
   await removeImageIfUnused(current?.image_url, imageUrl);
 
   // I-165 F3. Only reached when the RLS-guarded update above actually matched a row, so the
@@ -382,7 +502,7 @@ export async function updateEvent(
   // immediately, same as the admin edit API route.
   revalidatePath("/");
   revalidatePath(`/events/${buildEventSlug(updated.short_id, updated.title)}`);
-  return { success: true, slug: buildEventSlug(updated.short_id, updated.title), warning };
+  return { success: true, slug: buildEventSlug(updated.short_id, updated.title), warning, seriesUpdated };
 }
 
 export type SimilarProfileMatch = { id: string; name: string; bioSnippet: string | null };

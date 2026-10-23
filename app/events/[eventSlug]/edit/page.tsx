@@ -136,6 +136,19 @@ export default async function EditEventPage({
   const segments = (event.segments?.items ?? event.segments ?? []) as SegmentDisplay[];
   const hasSegments = Array.isArray(segments) && segments.length > 0;
 
+  // The other upcoming dates a series-wide save would reach (same filter as updateEvent's copy).
+  let otherSeriesDates = 0;
+  if (event.series_id) {
+    const { count } = await createAdminClient()
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("series_id", event.series_id)
+      .neq("id", event.id)
+      .gte("end_date", new Date().toISOString().slice(0, 10))
+      .in("status", ["published", "pending"]);
+    otherSeriesDates = count ?? 0;
+  }
+
   return (
     <main className="min-h-screen bg-(--color-mist) px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-3xl">
@@ -151,7 +164,8 @@ export default async function EditEventPage({
           </p>
           {event.series_id ? (
             <p className="mt-3 rounded-2xl border border-(--color-sand-strong) bg-white/80 px-4 py-3 text-sm text-slate-700">
-              This is one date of a repeating event. Changes here apply to this date only.{" "}
+              This is one date of a repeating event. Changes here apply to this date only
+              {otherSeriesDates > 0 ? ", unless you tick “Also apply my changes” next to Save" : ""}.{" "}
               <Link href={`/dashboard/series/${event.series_id}`} className="font-semibold text-(--color-pine) underline">
                 See all dates or add more
               </Link>
@@ -165,6 +179,7 @@ export default async function EditEventPage({
             eventId={event.id}
             initial={initial}
             availablePractices={availablePractices}
+            otherSeriesDates={otherSeriesDates}
             extraSections={
               <>
                 <TeacherManager eventId={event.id} initialTeachers={initialTeachers} />

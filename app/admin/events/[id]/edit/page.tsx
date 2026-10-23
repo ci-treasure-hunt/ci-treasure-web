@@ -70,9 +70,10 @@ export default async function AdminEditEventPage({
       : [];
   const linkItems =
     typeof event.links === "object" && event.links && "items" in event.links && Array.isArray((event.links as { items?: unknown[] }).items)
-      ? ((event.links as { items: Array<{ type?: string; url?: string }> }).items ?? []).map((item) => ({
+      ? ((event.links as { items: Array<{ type?: string; url?: string; label?: string }> }).items ?? []).map((item) => ({
           type: item.type ?? "website",
           url: item.url ?? "",
+          ...(item.label ? { label: item.label } : {}),
         }))
       : [];
 

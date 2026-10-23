@@ -278,7 +278,11 @@ export const BARE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function parseLinkItems(items: AdminLinkItem[]) {
   return items
-    .map((item) => ({ type: item.type.trim() || "website", url: item.url.trim() }))
+    .map((item) => ({
+      type: item.type.trim() || "website",
+      url: item.url.trim(),
+      ...(item.label?.trim() ? { label: item.label.trim() } : {}),
+    }))
     .filter((item) => item.url && !BARE_EMAIL.test(item.url))
     // Same reasoning as BARE_EMAIL: a wa.me / t.me/+<digits> / signal.me / tel: link carries a phone
     // number, and `links` is public. resolvePhoneContacts() in the save action moves it into the gated
@@ -288,7 +292,7 @@ export function parseLinkItems(items: AdminLinkItem[]) {
     // address is still routed to contact_email by extractBareEmailFromLinks rather than being
     // dropped here as an unparseable link.
     .map((item) => ({ ...item, url: safeExternalUrl(item.url) }))
-    .filter((item): item is { type: string; url: string } => item.url !== null);
+    .filter((item): item is { type: string; url: string; label?: string } => item.url !== null);
 }
 
 export function normalizeJsonItems<T>(items: T[]) {
@@ -344,7 +348,7 @@ type EventRowForForm = {
   cancelled: boolean | null;
   cancelled_text: string | null;
   price: { items?: Array<{ amount?: number | null; currency?: string; description?: string }>; notes?: string; note?: string } | null;
-  links: { items?: Array<{ type?: string; url?: string }> } | null;
+  links: { items?: Array<{ type?: string; url?: string; label?: string }> } | null;
 };
 
 export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData {
@@ -388,6 +392,7 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
     linkItems: (row.links?.items ?? []).map((l) => ({
       type: l.type ?? "website",
       url: l.url ?? "",
+      ...(l.label ? { label: l.label } : {}),
     })),
     // Edit mode manages teachers live via TeacherManager, not this field — see its comment
     // on OrganizerEventFormData.

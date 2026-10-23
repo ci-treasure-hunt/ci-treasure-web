@@ -26,11 +26,13 @@ function parsePriceItems(items: Array<{ amount: string; currency: string; descri
     .filter((item) => item.amount !== null || item.description || item.currency);
 }
 
-function parseLinkItems(items: Array<{ type: string; url: string }>) {
+function parseLinkItems(items: Array<{ type: string; url: string; label?: string }>) {
   return items
     .map((item) => ({
       type: item.type.trim() || "website",
       url: item.url.trim(),
+      // Carried through unedited (lib/admin-events.ts AdminLinkItem.label).
+      ...(item.label?.trim() ? { label: item.label.trim() } : {}),
     }))
     .filter((item) => item.url)
     // A phone-number link never goes in public `links`; resolvePhoneContacts moves it into the gated
