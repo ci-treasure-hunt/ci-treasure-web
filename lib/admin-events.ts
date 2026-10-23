@@ -84,6 +84,8 @@ export type AdminEventFormData = {
   cancelledText: string;
   hide: boolean;
   priceItems: AdminPriceItem[];
+  // price.notes, see buildPrice() in lib/organizer-events.ts.
+  priceNotes: string;
   linkItems: AdminLinkItem[];
   // Gated phone/WhatsApp contacts (entity_phone_contacts), not a column on events.
   phoneContacts: PhoneContactInput[];
@@ -115,6 +117,7 @@ export function createEmptyEventFormData(): AdminEventFormData {
     cancelledText: "",
     hide: false,
     priceItems: [],
+    priceNotes: "",
     linkItems: [],
     phoneContacts: [],
     teachers: [],

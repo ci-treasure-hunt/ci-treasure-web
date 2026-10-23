@@ -10,6 +10,7 @@ import { removeImageIfUnused } from "@/lib/upload-action";
 import { resolveVenueLocation } from "@/lib/geocode";
 import {
   BARE_EMAIL,
+  buildPrice,
   computeRepeatDates,
   isClosedClassSeries,
   normalizeCountry,
@@ -86,7 +87,7 @@ function eventColumns(data: OrganizerEventFormData, imageUrl: string | null, tim
     discipline: data.discipline,
     cancelled: data.cancelled,
     cancelled_text: data.cancelled ? data.cancelledText.trim() || "" : null,
-    price: normalizeJsonItems(parsePriceItems(data.priceItems ?? [])),
+    price: buildPrice(parsePriceItems(data.priceItems ?? []), data.priceNotes),
     links: normalizeJsonItems(parseLinkItems(data.linkItems ?? [])),
     // venue_id/address/lat/lng are resolved by the caller (createEvent/updateEvent) — a
     // linked venue takes its coordinates from the venues table and skips both the free-text

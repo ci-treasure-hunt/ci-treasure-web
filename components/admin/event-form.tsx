@@ -348,6 +348,17 @@ export function EventForm({
             />
           </div>
         )}
+        footer={
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-slate-700">Price notes</span>
+            <textarea
+              value={form.priceNotes}
+              onChange={(event) => setForm({ ...form, priceNotes: event.target.value })}
+              className={`${inputClassName} min-h-20`}
+              placeholder="What's included, sleeping/meal costs, discounts"
+            />
+          </label>
+        }
       />
 
       <JsonListSection
@@ -445,6 +456,7 @@ function JsonListSection<T>({
   onAdd,
   onRemove,
   renderItem,
+  footer,
 }: {
   title: string;
   description: string;
@@ -452,6 +464,7 @@ function JsonListSection<T>({
   onAdd: () => void;
   onRemove: (index: number) => void;
   renderItem: (item: T, index: number) => React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
@@ -482,6 +495,7 @@ function JsonListSection<T>({
           <p className="text-sm text-slate-500">No rows yet.</p>
         )}
       </div>
+      {footer ? <div className="mt-4 flex flex-col">{footer}</div> : null}
     </section>
   );
 }

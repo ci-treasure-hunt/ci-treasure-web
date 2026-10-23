@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { requireAdminRequestUser } from "@/lib/admin-api";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildPrice } from "@/lib/organizer-events";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { resolveVenueLocation } from "@/lib/geocode";
 
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
         venue_id,
         address,
         ...(lat != null && lng != null ? { lat, lng } : {}),
-        price: normalizeJsonItems(parsePriceItems(payload.priceItems ?? [])),
+        price: buildPrice(parsePriceItems(payload.priceItems ?? []), payload.priceNotes),
         links: normalizeJsonItems(parseLinkItems(payload.linkItems ?? [])),
         source: "manual",
         user_id: user.id,

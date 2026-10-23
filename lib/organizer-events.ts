@@ -144,6 +144,8 @@ export type OrganizerEventFormData = {
   cancelled: boolean;
   cancelledText: string;
   priceItems: AdminPriceItem[];
+  // price.notes, see buildPrice().
+  priceNotes: string;
   linkItems: AdminLinkItem[];
   // Gated phone/WhatsApp contacts (entity_phone_contacts). Not on the events row, so eventRowToFormData
   // leaves this empty and the edit page fills it via getEntityPhoneContacts, like the contact email.
@@ -229,6 +231,7 @@ export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
     cancelled: false,
     cancelledText: "",
     priceItems: [],
+    priceNotes: "",
     linkItems: [],
     phoneContacts: [],
   };
@@ -292,6 +295,15 @@ export function normalizeJsonItems<T>(items: T[]) {
   return items.length ? { items } : null;
 }
 
+// events.price: {items, notes}. The free-text note ("meals self-catered", "€10/night to sleep in the
+// studio") was dropped by every form save until 2026-10-23, since all three save paths wrote only
+// {items}. Shared by the organizer action and both admin routes so none of them can drop it again.
+export function buildPrice<T>(items: T[], notes: string | null | undefined) {
+  const note = (notes ?? "").trim();
+  if (!items.length && !note) return null;
+  return { ...(items.length > 0 && { items }), ...(note && { notes: note }) };
+}
+
 // languages is already ISO codes from the checkbox picker (LANGUAGE_OPTIONS) — this just merges
 // in the free-text "Other" field, comma-split and lowercased, without re-guessing anything the
 // picker already got right. Replaces the earlier name→code guess-map approach (2026-08-18):
@@ -331,7 +343,7 @@ type EventRowForForm = {
   discipline: string[] | null;
   cancelled: boolean | null;
   cancelled_text: string | null;
-  price: { items?: Array<{ amount?: number | null; currency?: string; description?: string }> } | null;
+  price: { items?: Array<{ amount?: number | null; currency?: string; description?: string }>; notes?: string; note?: string } | null;
   links: { items?: Array<{ type?: string; url?: string }> } | null;
 };
 
@@ -372,6 +384,7 @@ export function eventRowToFormData(row: EventRowForForm): OrganizerEventFormData
       currency: p.currency ?? "EUR",
       description: p.description ?? "",
     })),
+    priceNotes: row.price?.notes ?? row.price?.note ?? "",
     linkItems: (row.links?.items ?? []).map((l) => ({
       type: l.type ?? "website",
       url: l.url ?? "",

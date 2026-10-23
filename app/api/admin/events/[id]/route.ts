@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdminRequestUser } from "@/lib/admin-api";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildPrice } from "@/lib/organizer-events";
 import { resolveExternalEventImage } from "@/lib/rehost-image";
 import { removeImageIfUnused } from "@/lib/upload-action";
 import { resolveVenueLocation } from "@/lib/geocode";
@@ -109,7 +110,7 @@ export async function PUT(
         venue_id,
         address,
         ...(lat != null && lng != null ? { lat, lng } : {}),
-        price: normalizeJsonItems(parsePriceItems(payload.priceItems ?? [])),
+        price: buildPrice(parsePriceItems(payload.priceItems ?? []), payload.priceNotes),
         links: normalizeJsonItems(parseLinkItems(payload.linkItems ?? [])),
         updated_by: user.id,
       })

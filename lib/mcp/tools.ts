@@ -442,6 +442,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
           price: formatPriceLabel(p),
           ...(p.description && { description: p.description }),
         })),
+        ...(event.priceNotes && { priceNotes: event.priceNotes }),
         teachers: event.teachers.map((p) => credit(p, true)),
         organizers: event.organizers.map((p) => credit(p, false)),
         organizingCommunities: event.organizingCommunities.map((c) => ({

@@ -317,6 +317,13 @@ export default async function CountryPage({ params }: CountryPageProps) {
         {events.length > 0 && (
           <section id="events" className="mb-8 scroll-mt-6">
             <h2 className="mb-3 font-serif text-xl text-slate-900">Upcoming events</h2>
+            {/* I-184 follow-up: no second filter UI here (this page is a plain, crawlable list);
+                the homepage already filters by country plus length, month and features. */}
+            <p className="mb-4 text-sm text-slate-600">
+              <Link href={`/?country=${iso}`} className="font-medium text-(--color-pine) hover:underline">
+                Filter these events by length, month or features →
+              </Link>
+            </p>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
                 <EventCard key={event.id} event={event} />

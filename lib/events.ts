@@ -96,6 +96,9 @@ export type EventDetail = EventListItem & {
   cancelledText: string | null;
   linkItems: LinkItem[];
   priceItems: PriceItem[];
+  // Free-text note under the price list (price.notes; "note" on two older rows): what's
+  // included, sleeping/meal costs, discounts. Stored on ~60 events but never shown until 2026-10-23.
+  priceNotes: string | null;
   segments: SegmentsData | null;
   teachers: Array<{ name: string; role?: string | null; slug?: string | null }>;
   organizers: Array<{ name: string; role?: string | null; slug?: string | null }>;
@@ -280,6 +283,13 @@ function normalizeLinkItems(payload: unknown): LinkItem[] {
     })
     .filter((item): item is LinkItem => Boolean(item))
     .sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));
+}
+
+function normalizePriceNotes(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const { notes, note } = payload as { notes?: unknown; note?: unknown };
+  const text = typeof notes === "string" ? notes : typeof note === "string" ? note : "";
+  return text.trim() || null;
 }
 
 function normalizePriceItems(payload: unknown): PriceItem[] {
@@ -614,6 +624,7 @@ async function buildEventDetail(
     cancelledText: row.cancelled_text,
     linkItems,
     priceItems: normalizePriceItems(row.price),
+    priceNotes: normalizePriceNotes(row.price),
     segments: normalizeSegments(row.segments),
     teachers: normalizePeopleFlat(creditedPeople.filter((p) => p.kind === "teacher")),
     organizers: normalizePeopleFlat(creditedPeople.filter((p) => p.kind === "organizer")),

@@ -7,6 +7,7 @@
  * Same shape as url-safety.check.ts, and run by the same "Unit checks" step in checks.yml.
  */
 import { EVENT_FEATURES, sanitizeAccommodation, sanitizeFeatures } from "@/lib/event-features";
+import { buildPrice } from "@/lib/organizer-events";
 
 let failed = 0;
 function check(label: string, actual: unknown, expected: unknown) {
@@ -44,6 +45,15 @@ check("kept when residential, list order", sanitizeAccommodation(["private_room"
 ]);
 check("drops unknown room types", sanitizeAccommodation(["dorm", "commuter", "yurt"], ["residential"]), ["yurt"]);
 check("residential with no room types", sanitizeAccommodation([], ["residential"]), null);
+
+// Same release (2026-10-23): every form save used to drop price.notes. buildPrice keeps it.
+console.log("--- buildPrice ---");
+const item = { amount: 15000, currency: "EUR", description: "Regular" };
+check("items + notes kept", buildPrice([item], " Meals included "), { items: [item], notes: "Meals included" });
+check("notes only", buildPrice([], "By donation"), { notes: "By donation" });
+check("items only", buildPrice([item], ""), { items: [item] });
+check("nothing → null", buildPrice([], "  "), null);
+check("undefined notes", buildPrice([item], undefined), { items: [item] });
 
 console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILURE(S)`);
 process.exit(failed === 0 ? 0 : 1);

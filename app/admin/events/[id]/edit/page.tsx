@@ -101,6 +101,10 @@ export default async function AdminEditEventPage({
     cancelledText: event.cancelled_text ?? "",
     hide: event.hide,
     priceItems,
+    priceNotes: (() => {
+      const p = event.price as { notes?: unknown; note?: unknown } | null;
+      return typeof p?.notes === "string" ? p.notes : typeof p?.note === "string" ? p.note : "";
+    })(),
     linkItems,
     phoneContacts: await getEntityPhoneContacts("event", event.id),
     teachers: teacherRows.map((item) => ({

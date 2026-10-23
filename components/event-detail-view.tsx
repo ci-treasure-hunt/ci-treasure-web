@@ -508,20 +508,25 @@ export function EventDetailView({
                 </div>
               </section>
 
-              {event.priceItems.length ? (
+              {event.priceItems.length || event.priceNotes ? (
                 <section className="rounded-[1.75rem] border border-(--color-sand-strong) bg-white p-5">
                   <h2 className="font-serif text-2xl text-slate-950">Pricing</h2>
-                  <div className="mt-4 space-y-3">
-                    {event.priceItems.map((item, index) => (
-                      <div
-                        key={`${item.currency}-${item.amount}-${index}`}
-                        className="rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) px-4 py-3"
-                      >
-                        <p className="text-lg font-semibold text-slate-950">{formatPriceLabel(item)}</p>
-                        {item.description ? <p className="mt-1 text-sm text-slate-600">{item.description}</p> : null}
-                      </div>
-                    ))}
-                  </div>
+                  {event.priceItems.length ? (
+                    <div className="mt-4 space-y-3">
+                      {event.priceItems.map((item, index) => (
+                        <div
+                          key={`${item.currency}-${item.amount}-${index}`}
+                          className="rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) px-4 py-3"
+                        >
+                          <p className="text-lg font-semibold text-slate-950">{formatPriceLabel(item)}</p>
+                          {item.description ? <p className="mt-1 text-sm text-slate-600">{item.description}</p> : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {event.priceNotes ? (
+                    <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-600">{event.priceNotes}</p>
+                  ) : null}
                 </section>
               ) : null}
             </aside>

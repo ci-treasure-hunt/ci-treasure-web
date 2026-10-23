@@ -599,6 +599,16 @@ export function OrganizerEventForm({
             <input value={item.description} onChange={(e) => set("priceItems", patch(form.priceItems, i, { description: e.target.value }))} className={inputClassName} placeholder="e.g. Early bird (a tier name, not a price)" />
           </div>
         )}
+        footer={
+          <Field label="Price notes">
+            <textarea
+              value={form.priceNotes}
+              onChange={(e) => set("priceNotes", e.target.value)}
+              className={`${inputClassName} min-h-20`}
+              placeholder="e.g. Meals included. Sleeping in the studio 10 EUR per night, bring a mat."
+            />
+          </Field>
+        }
       />
 
       <ArraySection
@@ -702,6 +712,7 @@ function ArraySection<T>({
   onAdd,
   onRemove,
   render,
+  footer,
 }: {
   title: string;
   description: string;
@@ -709,6 +720,7 @@ function ArraySection<T>({
   onAdd: () => void;
   onRemove: (index: number) => void;
   render: (item: T, index: number) => React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
@@ -735,6 +747,7 @@ function ArraySection<T>({
           <p className="text-sm text-slate-500">No rows yet.</p>
         )}
       </div>
+      {footer ? <div className="mt-4 flex flex-col">{footer}</div> : null}
     </section>
   );
 }

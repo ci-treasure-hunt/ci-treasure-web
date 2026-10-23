@@ -23,6 +23,14 @@ export const TYPE_HASHTAG: Record<string, string> = {
   lab: 'Lab', underscore: 'Underscore', cdp: 'CDP', performance: 'Performance', lecture: 'Lecture',
 }
 
+// I-184: a deliberately small subset of events.features (lib/event-features.ts in the web app)
+// gets a hashtag, the facts that decide whether someone can go at all. Not all 32 values: posts
+// already carry country/type/practice tags. Mirrored in ci-treasure-hunt/scripts/edit_announcement.py.
+export const FEATURE_HASHTAG: Record<string, string> = {
+  residential: 'Residential', work_exchange: 'WorkExchange', scholarships: 'Scholarships',
+  childcare: 'Childcare', live_music: 'LiveMusic',
+}
+
 // Every discipline present gets a hashtag, including CI (as #CI) — see the note at the call site
 // for why #CI isn't skipped as a "baseline" tag.
 export const DISCIPLINE_HASHTAG: Record<string, string> = {
@@ -255,6 +263,7 @@ export type RichCaptionEvent = {
   price: { items?: PriceItem[] } | null
   level: string | null
   discipline: string[] | null
+  features?: string[] | null
   segments?: { items?: Array<{ start_date?: string }> } | null
 }
 
@@ -297,6 +306,11 @@ export function buildRichCaption(event: RichCaptionEvent, teacherNames: string[]
   if (TYPE_HASHTAG[event.type]) hashtags.push(`#${TYPE_HASHTAG[event.type]}`)
   for (const d of (event.discipline ?? [])) {
     if (DISCIPLINE_HASHTAG[d]) hashtags.push(`#${DISCIPLINE_HASHTAG[d]}`)
+  }
+  // In FEATURE_HASHTAG's order, so posts read consistently whatever order the array is stored in.
+  const features = event.features ?? []
+  for (const [slug, tag] of Object.entries(FEATURE_HASHTAG)) {
+    if (features.includes(slug)) hashtags.push(`#${tag}`)
   }
 
   return `${lines.join('\n')}\n\n${hashtags.join(' ')}`
