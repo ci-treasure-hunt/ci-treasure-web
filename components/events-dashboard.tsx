@@ -47,6 +47,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const selectedType = searchParams.get("type") ?? "";
   const selectedMonth = searchParams.get("month") ?? "";
   const selectedDuration = searchParams.get("length") ?? "";
+  const selectedLanguage = searchParams.get("lang") ?? "";
   const soonOnly = searchParams.get("soon") === "1";
 
   function setParam(key: string, value: string) {
@@ -61,6 +62,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const setSelectedType = (v: string) => setParam("type", v);
   const setSelectedMonth = (v: string) => setParam("month", v);
   const setSelectedDuration = (v: string) => setParam("length", v);
+  const setSelectedLanguage = (v: string) => setParam("lang", v);
   const setSoonOnly = (v: boolean) => setParam("soon", v ? "1" : "");
 
   // Keep sessionStorage in sync so the smart back button can return here with filters intact
@@ -145,7 +147,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   const [prevFilteredEvents, setPrevFilteredEvents] = useState<EventListItem[] | null>(null);
 
   const activeFilterCount =
-    [selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly ? "1" : ""].filter(Boolean).length +
+    [selectedCountry, selectedType, selectedDuration, selectedMonth, selectedLanguage, soonOnly ? "1" : ""].filter(Boolean).length +
     selectedFeatures.length;
 
   // Reset all filters
@@ -229,6 +231,27 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
     );
   }, [events, selectedFeatures]);
 
+  // Language options (I-073, built 2026-10-23): the teaching languages present in the loaded
+  // events, most frequent first, so English and the big local languages lead. Labels via
+  // Intl.DisplayNames, the same source as getLanguageLabel() in lib/events.ts (server-only module,
+  // so not importable here). A code it can't name falls back to upper case.
+  const languageOptions = useMemo(() => {
+    const names = new Intl.DisplayNames(["en"], { type: "language" });
+    const label = (code: string) => {
+      try {
+        const name = names.of(code);
+        return name && name.toLowerCase() !== code.toLowerCase() ? name : code.toUpperCase();
+      } catch {
+        return code.toUpperCase();
+      }
+    };
+    const counts: Record<string, number> = {};
+    events.forEach((e) => e.language.forEach((l) => { counts[l] = (counts[l] ?? 0) + 1; }));
+    return Object.keys(counts)
+      .sort((a, b) => counts[b] - counts[a] || label(a).localeCompare(label(b)))
+      .map((code) => ({ value: code, label: label(code) }));
+  }, [events]);
+
   // Extract unique months from events for the month filter
   const monthOptions = useMemo(() => {
     const months = Array.from(new Set(events.map((e) => e.startDate.substring(0, 7))));
@@ -298,9 +321,14 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
         return false;
       }
 
+      // 7. Language (I-073): taught in the selected language (among others)
+      if (selectedLanguage && !event.language.includes(selectedLanguage)) {
+        return false;
+      }
+
       return true;
     }));
-  }, [events, searchQuery, selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines, selectedFeatures]);
+  }, [events, searchQuery, selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines, selectedFeatures, selectedLanguage]);
 
   const totalListed = useMemo(() => collapseRecurringSeries(events).length, [events]);
 
@@ -494,6 +522,21 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
               ))}
             </select>
 
+            {/* Language Selector (I-073) */}
+            <select
+              aria-label="Filter by language"
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:w-44"
+            >
+              <option value="">Any Language</option>
+              {languageOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
             {/* Month Selector */}
             <select
               aria-label="Filter by month"
@@ -525,7 +568,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
             <span>
               {filteredEvents.length} of {totalListed} events
             </span>
-            {(searchQuery || selectedCountry || selectedType || selectedDuration || selectedMonth || soonOnly || selectedFeatures.length > 0) && (
+            {(searchQuery || selectedCountry || selectedType || selectedDuration || selectedMonth || selectedLanguage || soonOnly || selectedFeatures.length > 0) && (
               <button
                 onClick={resetFilters}
                 className="text-violet-600 hover:text-violet-800 transition"

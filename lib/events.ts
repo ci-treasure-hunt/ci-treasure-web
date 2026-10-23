@@ -207,6 +207,7 @@ export function mapEventRow(row: SupabaseEventRow): EventListItem {
     lng: row.lng,
     discipline: row.discipline ?? [],
     features: sanitizeFeatures(row.features, row.type) ?? [],
+    language: row.language ?? [],
     cancelled: row.cancelled,
     // Only when the query embedded event_series(series_type), i.e. the list queries below.
     recurringSeriesId: row.event_series?.series_type === "recurring" ? row.series_id ?? null : null,
@@ -224,7 +225,7 @@ export function mapEventRow(row: SupabaseEventRow): EventListItem {
 // read for class series (DEC-8): mapEventRow() reduces it to a small summary, so the full
 // program never reaches the client (~25 KB across all upcoming events, 2026-10-17).
 const EVENT_LIST_COLUMNS =
-  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, features, cancelled, segments, series_id, event_series(series_type)";
+  "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, features, language, cancelled, segments, series_id, event_series(series_type)";
 
 export const LINK_CANONICAL_ORDER: Record<string, number> = {
   // Event link order (unchanged from original)
