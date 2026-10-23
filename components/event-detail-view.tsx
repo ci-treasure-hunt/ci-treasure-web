@@ -328,15 +328,24 @@ export function EventDetailView({
                   <div className="flex flex-wrap gap-2">
                     {event.features.map((slug) => {
                       const feature = getFeature(slug);
-                      return feature ? (
-                        <span
-                          key={slug}
-                          title={feature.hint}
-                          className="inline-flex items-center rounded-full border border-(--color-sand-strong) bg-(--color-mist) px-3 py-1 text-sm font-medium text-slate-700"
-                        >
+                      if (!feature) return null;
+                      const chipClass =
+                        "inline-flex items-center rounded-full border border-(--color-sand-strong) bg-(--color-mist) px-3 py-1 text-sm font-medium text-slate-700";
+                      // Links to the homepage filtered by this feature, like the practice badges.
+                      return preview ? (
+                        <span key={slug} title={feature.hint} className={chipClass}>
                           {feature.label}
                         </span>
-                      ) : null;
+                      ) : (
+                        <Link
+                          key={slug}
+                          href={`/?features=${slug}`}
+                          title={feature.hint}
+                          className={`${chipClass} transition hover:border-(--color-pine) hover:text-(--color-pine)`}
+                        >
+                          {feature.label}
+                        </Link>
+                      );
                     })}
                   </div>
                   {event.accommodationType.length > 0 ? (

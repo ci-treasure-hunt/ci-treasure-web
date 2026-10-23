@@ -9,7 +9,7 @@ import { MCP_INSTRUCTIONS, registerCiTreasureHuntTools } from "@/lib/mcp/tools";
 export const maxDuration = 60;
 
 const handler = createMcpHandler(registerCiTreasureHuntTools, {
-  serverInfo: { name: "ci-treasure-hunt", version: "1.2.0" },
+  serverInfo: { name: "ci-treasure-hunt", version: "1.3.0" },
   instructions: MCP_INSTRUCTIONS,
   // The tool list is fixed per deploy, so there is nothing to announce. Advertising listChanged
   // made 2026-07-28 clients open a `subscriptions/listen` SSE stream that a serverless function

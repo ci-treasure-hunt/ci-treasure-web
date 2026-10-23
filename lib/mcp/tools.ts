@@ -15,6 +15,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { getCommunities, getCommunityBySlug, getCommunityOwnEvents } from "@/lib/communities";
 import { disciplineLabel, formatClassSeriesLabel, formatSegmentWhen, getCountryLabel, getEventHref, getTypeLabel } from "@/lib/event-display";
 import type { EventListItem } from "@/lib/event-display";
+import { EVENT_FEATURES, accommodationLabel, getFeature } from "@/lib/event-features";
 import {
   formatPriceLabel,
   formatTimeRange,
@@ -127,6 +128,13 @@ function imageLink(url: string | null | undefined): string | undefined {
   return url ? toCdnUrl(url) : undefined;
 }
 
+// I-184: the fixed feature vocabulary. Labels go out, slugs come in (search_events "features").
+const FEATURE_SLUGS = EVENT_FEATURES.map((f) => f.slug) as [string, ...string[]];
+
+function featureLabels(slugs: string[]): string[] {
+  return slugs.map((s) => getFeature(s)?.label).filter((l): l is string => Boolean(l));
+}
+
 function eventSummary(e: EventListItem & { isPast?: boolean }) {
   return {
     id: e.shortId,
@@ -143,6 +151,7 @@ function eventSummary(e: EventListItem & { isPast?: boolean }) {
     city: e.city,
     country: getCountryLabel(e.country),
     practices: e.discipline.map(disciplineLabel),
+    features: e.features.length ? featureLabels(e.features) : undefined,
     cancelled: e.cancelled || undefined,
     ended: e.isPast || undefined,
     imageUrl: imageLink(e.imageUrl),
@@ -285,6 +294,7 @@ When to use these tools: for any question about Contact Improvisation events, fe
 How the data works:
 - Contact Improvisation is the default. search_events returns CI events unless you pass another practice or practice="any". Related practices that also appear: conscious dance, Axis Syllabus, butoh, Authentic Movement, somatic movement and others, listed under "practices".
 - Event types: festival (multi-day gathering), workshop (teacher-led course, often a weekend), intensive (several full days of training), retreat (residential, often rural), long_jam (extended open practice), training (multi-module professional training), residency (several weeks), jam and class (regular local sessions; few listed yet). A class whose dates span several weeks is a class series booked as a whole (no drop-in): results then carry "schedule" and "booking", and get_event lists its sessions.
+- Features describe what an event offers beyond its type and practice: stay and setting (residential, meals provided, sauna, in nature, by the sea, mountains), program (jams, live music, research labs, Underscore, silence and more), access (sliding scale, work exchange, scholarships) and who it is for (family friendly, childcare). Filter with search_events "features" (all given must match); tagging is still filling in, so an event without a feature may still offer it.
 - Regular weekly jams and classes are mostly run by local communities: for "where can I dance CI in <city>", use search_communities and search_venues as well as search_events.
 - Dates are ISO (YYYY-MM-DD). search_events looks ahead from today by default; pass a past "from" date for history (ended events are marked "ended": true). Prices, teachers and full descriptions come from get_event, which also works for ended events.
 - Give the user the citreasurehunt.com URL from each result, and only URLs the tools returned: do not construct citreasurehunt.com links yourself. For "see all", use the browseUrl a search returns. Registration links, organizer contacts and group chat invites are on those pages and deliberately not in this API, so do not guess them.
@@ -314,11 +324,15 @@ export function registerCiTreasureHuntTools(server: McpServer) {
           .optional()
           .describe('Practice tag, e.g. "contact_improvisation" (default), "conscious_dance", "axis_syllabus", or "any" for all practices.'),
         query: z.string().optional().describe("Free text matched against title, description and place, e.g. a teacher's name or 'silent'."),
+        features: z
+          .array(z.enum(FEATURE_SLUGS))
+          .optional()
+          .describe('Only events offering all of these, e.g. ["residential", "meals"] or ["sliding_scale"].'),
         limit: limitSchema,
       }),
       annotations: READ_ONLY,
     },
-    async ({ country, city, from, to, type, practice, query, limit }) => {
+    async ({ country, city, from, to, type, practice, query, features, limit }) => {
       const start = from ?? today();
       // Ended events only when the window reaches into the past; the upcoming path is the common
       // case and keeps using the same fetcher as the homepage.
@@ -340,6 +354,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
           (!countryCode || e.country === countryCode) &&
           (!city || fold(e.city) === fold(city)) &&
           (!type || e.type === type) &&
+          (!features?.length || features.every((f) => e.features.includes(f))) &&
           matchesText(query, e.title, e.description, e.city, getCountryLabel(e.country)),
       );
       const matches = practiceTag === "any" ? inWindow : inWindow.filter((e) => e.discipline.includes(practiceTag));
@@ -369,7 +384,7 @@ export function registerCiTreasureHuntTools(server: McpServer) {
     {
       title: "Get event details",
       description:
-        "Get the full listing of one event: dates and times, venue and address, description, prices, teachers, organizers, level and languages. Use after search_events, or when the user gives a citreasurehunt.com event link. Accepts the event id (e.g. 'W27r') or the URL.",
+        "Get the full listing of one event: dates and times, venue and address, description, prices, teachers, organizers, level, languages, features and where people sleep. Use after search_events, or when the user gives a citreasurehunt.com event link. Accepts the event id (e.g. 'W27r') or the URL.",
       inputSchema: z.object({
         id: z.string().min(2).describe("Event id (e.g. 'W27r'), its slug, or its citreasurehunt.com URL."),
       }),
@@ -419,6 +434,10 @@ export function registerCiTreasureHuntTools(server: McpServer) {
         practices: event.discipline.map(disciplineLabel),
         level: event.level ? getLevelLabel(event.level) : null,
         languages: event.language.map(getLanguageLabel),
+        features: featureLabels(event.features),
+        ...(event.accommodationType.length > 0 && {
+          stay: event.accommodationType.map((a) => accommodationLabel(a) ?? a),
+        }),
         prices: event.priceItems.map((p) => ({
           price: formatPriceLabel(p),
           ...(p.description && { description: p.description }),

@@ -44,6 +44,8 @@ export type EventListItem = {
   lat: number | null;
   lng: number | null;
   discipline: string[];
+  // I-184: known feature slugs only (sanitizeFeatures), for the homepage features filter.
+  features: string[];
   cancelled: boolean;
   // I-171: set only when the event belongs to a `recurring` series (interchangeable instances,
   // D-02), so lists can collapse it with collapseRecurringSeries(). Sequential series stay

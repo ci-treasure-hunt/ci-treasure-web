@@ -11,6 +11,7 @@ import { Button } from "./ui/button";
 import { DURATION_BANDS, collapseRecurringSeries, disciplineLabel, matchesDurationBand, getCountryLabel, getTypeLabel, type EventListItem } from "@/lib/event-display";
 import { TELEGRAM_URL } from "@/lib/site";
 import { CONTINENT_COUNTRIES, CONTINENT_LABELS } from "@/lib/continents";
+import { EVENT_FEATURES } from "@/lib/event-features";
 
 // Dynamically load the Map component without SSR to avoid 'window is not defined' errors
 const EventMap = dynamic(() => import("./map"), {
@@ -87,6 +88,18 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
     setParam("discipline", next.length === 0 ? "all" : next.join(","));
   }
 
+  // Features (I-184): a narrowing filter, so AND ("residential and meals provided"), unlike the
+  // practice chips' OR: features narrow, practices widen.
+  const featuresParam = searchParams.get("features") ?? "";
+  const selectedFeatures = useMemo(() => featuresParam.split(",").filter(Boolean), [featuresParam]);
+
+  function toggleFeature(slug: string) {
+    const next = selectedFeatures.includes(slug)
+      ? selectedFeatures.filter((f) => f !== slug)
+      : [...selectedFeatures, slug];
+    setParam("features", next.join(","));
+  }
+
   // Interaction state
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
 
@@ -127,7 +140,9 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
   // effect, so the reset lands in the same commit instead of costing an extra render pass.
   const [prevFilteredEvents, setPrevFilteredEvents] = useState<EventListItem[] | null>(null);
 
-  const activeFilterCount = [selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly ? "1" : ""].filter(Boolean).length;
+  const activeFilterCount =
+    [selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly ? "1" : ""].filter(Boolean).length +
+    selectedFeatures.length;
 
   // Reset all filters
   const resetFilters = () => {
@@ -197,6 +212,19 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
     return "contact_improvisation" in counts ? ["contact_improvisation", ...rest] : rest;
   }, [events]);
 
+  // Feature chip options (I-184): only values on at least MIN_FEATURE_COUNT loaded events, in
+  // vocabulary order. A chip with one or two results hides more than it finds while tagging is
+  // still filling in (decided 2026-10-23). A selected value always stays visible so it can be
+  // unticked, even if it came in through a shared link and is below the threshold.
+  const MIN_FEATURE_COUNT = 3;
+  const featureOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    events.forEach((e) => e.features.forEach((f) => { counts[f] = (counts[f] ?? 0) + 1; }));
+    return EVENT_FEATURES.filter(
+      (f) => (counts[f.slug] ?? 0) >= MIN_FEATURE_COUNT || selectedFeatures.includes(f.slug),
+    );
+  }, [events, selectedFeatures]);
+
   // Extract unique months from events for the month filter
   const monthOptions = useMemo(() => {
     const months = Array.from(new Set(events.map((e) => e.startDate.substring(0, 7))));
@@ -261,9 +289,14 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
         return false;
       }
 
+      // 6. Features (I-184): every selected feature must be present
+      if (selectedFeatures.length > 0 && !selectedFeatures.every((f) => event.features.includes(f))) {
+        return false;
+      }
+
       return true;
     }));
-  }, [events, searchQuery, selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines]);
+  }, [events, searchQuery, selectedCountry, selectedType, selectedDuration, selectedMonth, soonOnly, selectedDisciplines, showAllDisciplines, selectedFeatures]);
 
   const totalListed = useMemo(() => collapseRecurringSeries(events).length, [events]);
 
@@ -488,7 +521,7 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
             <span>
               {filteredEvents.length} of {totalListed} events
             </span>
-            {(searchQuery || selectedCountry || selectedType || selectedDuration || selectedMonth || soonOnly) && (
+            {(searchQuery || selectedCountry || selectedType || selectedDuration || selectedMonth || soonOnly || selectedFeatures.length > 0) && (
               <button
                 onClick={resetFilters}
                 className="text-violet-600 hover:text-violet-800 transition"
@@ -497,6 +530,33 @@ export function EventsDashboard({ events }: EventsDashboardProps) {
               </button>
             )}
           </div>
+
+          {/* Features (I-184): own full-width row under the dropdowns, so the count and
+              "Clear all filters" stay on the dropdowns' line on desktop. */}
+          {featureOptions.length > 0 && (
+            <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-slate-50 pt-3">
+              <span className="mr-1 text-xs font-semibold text-slate-500">Features</span>
+              {featureOptions.map((f) => {
+                const active = selectedFeatures.includes(f.slug);
+                return (
+                  <button
+                    key={f.slug}
+                    type="button"
+                    title={f.hint}
+                    aria-pressed={active}
+                    onClick={() => toggleFeature(f.slug)}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                      active
+                        ? "border-violet-300 bg-violet-100 text-violet-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
