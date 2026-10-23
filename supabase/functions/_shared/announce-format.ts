@@ -26,9 +26,11 @@ export const TYPE_HASHTAG: Record<string, string> = {
 // I-184: a deliberately small subset of events.features (lib/event-features.ts in the web app)
 // gets a hashtag, the facts that decide whether someone can go at all. Not all 32 values: posts
 // already carry country/type/practice tags. Mirrored in ci-treasure-hunt/scripts/edit_announcement.py.
+// #Underscore and #CDP match the old event-type hashtags in TYPE_HASHTAG, so older posts stay findable.
 export const FEATURE_HASHTAG: Record<string, string> = {
   residential: 'Residential', work_exchange: 'WorkExchange', scholarships: 'Scholarships',
-  childcare: 'Childcare', live_music: 'LiveMusic',
+  childcare: 'Childcare', family_friendly: 'FamilyFriendly', live_music: 'LiveMusic',
+  underscore: 'Underscore', contemplative_dance: 'CDP', sauna: 'Sauna',
 }
 
 // Every discipline present gets a hashtag, including CI (as #CI) — see the note at the call site
