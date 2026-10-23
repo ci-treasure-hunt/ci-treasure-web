@@ -4,6 +4,7 @@
 // its own (LinkedIn, Mastodon, a company site). Edited in /dashboard/profile/edit, rendered on
 // /teachers/[slug]. Shared by both so the allowed types and limits can't drift apart.
 
+import { invitePlatformOf } from "./community-links";
 import { isPhoneContactUrl } from "./phone-contacts";
 import { safeExternalUrl } from "./url-safety";
 
@@ -59,13 +60,14 @@ export function readProfileLinks(raw: unknown): ProfileLinkItem[] {
 }
 
 // Write side: the editor rows → the jsonb value, or null when empty. Phone links (wa.me, t.me/+…)
-// are left out here because `links` is public; the caller passes them to resolvePhoneContacts so
-// the number lands in the gated entity_phone_contacts instead, as with the single social fields.
+// and group invites (chat.whatsapp.com, t.me/+abc, …) are left out here because `links` is public;
+// the caller passes them to resolvePhoneContacts / resolveProfileInvites so they land in the gated
+// entity_phone_contacts / profile_invites instead, as with the single social fields.
 export function parseProfileLinks(rows: ProfileLinkInput[]): { items: ProfileLinkItem[] } | null {
   const items = rows.slice(0, MAX_PROFILE_LINKS).flatMap((row) => {
     const type = isProfileLinkType(row.type) ? row.type : "other";
     const raw = expandHandle(type, row.url.trim());
-    if (!raw || isPhoneContactUrl(raw)) return [];
+    if (!raw || isPhoneContactUrl(raw) || invitePlatformOf(raw)) return [];
     const url = safeExternalUrl(raw);
     if (!url) return [];
     const label = row.label.trim().slice(0, MAX_LABEL_LENGTH);

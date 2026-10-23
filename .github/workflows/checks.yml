@@ -66,6 +66,9 @@ jobs:
       #
       # fb-groups.check.ts (I-189): which Facebook groups an event is pointed to (regional 2+ days,
       # international 4+).
+      #
+      # profile-invites.check.ts: a person's chat-group invites stay out of public profile links and
+      # columns and go to the gated profile_invites. Same privacy reason as community-links.
       - name: Unit checks
         run: |
           npx --yes tsx tests/unit/url-safety.check.ts
@@ -75,3 +78,4 @@ jobs:
           npx --yes tsx tests/unit/venue-records.check.ts
           npx --yes tsx tests/unit/event-features.check.ts
           npx --yes tsx tests/unit/fb-groups.check.ts
+          npx --yes tsx tests/unit/profile-invites.check.ts

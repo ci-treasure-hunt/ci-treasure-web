@@ -13,7 +13,8 @@ type InviteResult = { links: InviteLinks } | { error: string };
 // Both reveals share one rate limit: the log counts rows per ip_hash whichever kind they are.
 type RevealTarget =
   | { kind: "community"; id: string }
-  | { kind: "venue"; id: string };
+  | { kind: "venue"; id: string }
+  | { kind: "profile"; id: string };
 
 export async function getInviteLinks(communityId: string, token: string): Promise<InviteResult> {
   return revealInviteLinks({ kind: "community", id: communityId }, token);
@@ -21,6 +22,10 @@ export async function getInviteLinks(communityId: string, token: string): Promis
 
 export async function getVenueInviteLinks(venueId: string, token: string): Promise<InviteResult> {
   return revealInviteLinks({ kind: "venue", id: venueId }, token);
+}
+
+export async function getProfileInviteLinks(profileId: string, token: string): Promise<InviteResult> {
+  return revealInviteLinks({ kind: "profile", id: profileId }, token);
 }
 
 async function revealInviteLinks(target: RevealTarget, token: string): Promise<InviteResult> {
@@ -66,7 +71,7 @@ async function revealInviteLinks(target: RevealTarget, token: string): Promise<I
   }
 
   // The parent must be live before revealing its invites: an active (not soft-deleted) community,
-  // or a venue with a public page.
+  // or a venue or profile with a public page.
   const parent =
     target.kind === "community"
       ? await supabase
@@ -76,7 +81,7 @@ async function revealInviteLinks(target: RevealTarget, token: string): Promise<I
           .is("deleted_at", null)
           .maybeSingle()
       : await supabase
-          .from("venues")
+          .from(target.kind === "venue" ? "venues" : "profiles")
           .select("id")
           .eq("id", target.id)
           .eq("visibility", "public")
@@ -94,11 +99,17 @@ async function revealInviteLinks(target: RevealTarget, token: string): Promise<I
           .eq("community_id", target.id)
           .eq("published", true)
           .is("broken_since", null)
-      : await supabase
-          .from("venue_invites")
-          .select("platform, url")
-          .eq("venue_id", target.id)
-          .eq("published", true);
+      : target.kind === "venue"
+        ? await supabase
+            .from("venue_invites")
+            .select("platform, url")
+            .eq("venue_id", target.id)
+            .eq("published", true)
+        : await supabase
+            .from("profile_invites")
+            .select("platform, url")
+            .eq("profile_id", target.id)
+            .eq("published", true);
 
   if (error) {
     return { error: "lookup_failed" };
@@ -113,7 +124,9 @@ async function revealInviteLinks(target: RevealTarget, token: string): Promise<I
     .insert(
       target.kind === "community"
         ? { ip_hash: ipHash, community_id: target.id }
-        : { ip_hash: ipHash, venue_id: target.id }
+        : target.kind === "venue"
+          ? { ip_hash: ipHash, venue_id: target.id }
+          : { ip_hash: ipHash, profile_id: target.id }
     );
 
   const rows = data as { platform: string; url: string }[];

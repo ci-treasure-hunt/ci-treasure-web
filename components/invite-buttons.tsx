@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
-import { getInviteLinks, getVenueInviteLinks } from "@/lib/invite-links-action";
+import { getInviteLinks, getProfileInviteLinks, getVenueInviteLinks } from "@/lib/invite-links-action";
 import { TELEGRAM_URL } from "@/lib/site";
 
 type Platform = "telegram" | "whatsapp" | "signal" | "line";
@@ -53,9 +53,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 type InviteButtonsProps = {
-  // A community's or a venue's invites; both go through the same gate and rate limit. The cache key
-  // is the bare id either way, which is safe because ids are UUIDs.
-  entity: { kind: "community" | "venue"; id: string };
+  // A community's, a venue's or a profile's invites; all go through the same gate and rate limit.
+  // The cache key is the bare id either way, which is safe because ids are UUIDs.
+  entity: { kind: "community" | "venue" | "profile"; id: string };
   platforms: Partial<Record<Platform, boolean>>;
 };
 
@@ -91,7 +91,9 @@ export function InviteButtons({ entity, platforms }: InviteButtonsProps) {
       const result =
         entity.kind === "venue"
           ? await getVenueInviteLinks(entityId, token)
-          : await getInviteLinks(entityId, token);
+          : entity.kind === "profile"
+            ? await getProfileInviteLinks(entityId, token)
+            : await getInviteLinks(entityId, token);
       setShowWidget(false);
       setVerifying(false);
 

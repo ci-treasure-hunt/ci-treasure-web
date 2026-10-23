@@ -14,6 +14,8 @@ import {
   resolvePhoneContacts,
   type PhoneContactInput,
 } from "@/lib/phone-contacts";
+import { invitePlatformOf } from "@/lib/community-links";
+import { profileInvitesErrorMessage, resolveProfileInvites, setProfileInvites } from "@/lib/profile-invites";
 export type ProfileUpdateData = {
   bio: string;
   city: string;
@@ -30,6 +32,9 @@ export type ProfileUpdateData = {
   public_email: string;
   // Gated (entity_phone_contacts), not a profiles column. See lib/phone-contacts.ts.
   phone_contacts: PhoneContactInput[];
+  // Gated (profile_invites), not a profiles column: the person's own chat groups, revealed behind
+  // Turnstile on the profile page. See lib/profile-invites.ts.
+  invites: { url: string }[];
   is_organizer: boolean;
   is_teacher: boolean;
   is_musician: boolean;
@@ -76,7 +81,13 @@ export async function updateProfile(data: ProfileUpdateData) {
   if (phoneContacts.invalid.length) {
     return { success: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
   }
-  const notPhoneLink = (v: string) => (isPhoneContactUrl(v) ? "" : v);
+  // Same for a group invite (chat.whatsapp.com, t.me/+abc, …) pasted into a public field: it moves
+  // to the gated profile_invites and the field is cleared, since anyone holding it can join.
+  const invites = resolveProfileInvites(data.invites, socialFields);
+  if (invites.invalid.length) {
+    return { success: false, error: profileInvitesErrorMessage(invites.invalid) };
+  }
+  const notPhoneLink = (v: string) => (isPhoneContactUrl(v) || invitePlatformOf(v) ? "" : v);
 
   const { data: ownProfile } = await supabase
     .from("profiles")
@@ -159,6 +170,7 @@ export async function updateProfile(data: ProfileUpdateData) {
   await setEntityEmail("profile", updated.id, data.public_email);
   // Same scoping as the address above: the update matched only the caller's own profile.
   await setEntityPhoneContacts("profile", updated.id, phoneContacts.contacts);
+  await setProfileInvites(updated.id, invites.invites);
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile/edit");

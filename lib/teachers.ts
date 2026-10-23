@@ -6,6 +6,8 @@ import { getContinent, getContinentCountries } from "./entity-continents";
 import { getCountryLabel } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { InvitePlatform } from "./communities";
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -260,6 +262,32 @@ export async function getTeacherBySlug(slug: string): Promise<TeacherProfile | n
 // I-153: associated communities (community_profiles) and venues (venue_profiles, e.g. a resident
 // teacher). Kept as a separate call rather than folded into getTeacherBySlug's select("*") — other
 // callers of TeacherProfile don't need this, and junction embeds don't mix with "*".
+// Which chat-group invite platforms are published for a profile, same contract as
+// getPublishedVenueInvitePlatforms: profile_invites is service-role-only, and only published rows
+// count, so the page never offers a reveal that would come back empty.
+export async function getPublishedProfileInvitePlatforms(
+  profileId: string,
+): Promise<Partial<Record<InvitePlatform, boolean>>> {
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("profile_invites")
+      .select("platform")
+      .eq("profile_id", profileId)
+      .eq("published", true);
+    const result: Partial<Record<InvitePlatform, boolean>> = {};
+    for (const row of data ?? []) {
+      const platform = row.platform as string;
+      if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
+        result[platform] = true;
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 export async function getProfileAssociations(profileId: string): Promise<{
   communities: { slug: string; name: string; type: string | null; city: string | null; description: string | null }[];
   venues: { slug: string; name: string; role: string | null; city: string | null; description: string | null; imageUrl: string | null }[];

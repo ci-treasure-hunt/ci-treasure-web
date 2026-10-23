@@ -17,6 +17,7 @@ import {
   getTeacherEvents,
   resolveTeacherSlugRedirect,
   getProfileAssociations,
+  getPublishedProfileInvitePlatforms,
   getTeacherRingNeighbors,
   deriveRoles,
 } from "@/lib/teachers";
@@ -29,6 +30,8 @@ import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { SocialLink } from "@/components/social-link";
 import { RevealEmail } from "@/components/reveal-email";
 import { RevealPhoneContacts } from "@/components/reveal-phone-contacts";
+import { InviteButtons } from "@/components/invite-buttons";
+import { invitePlatformOf } from "@/lib/community-links";
 import { EntityEventCard } from "@/components/entity-event-card";
 import { EntityImage } from "@/components/entity-image";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
@@ -114,11 +117,12 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
     notFound();
   }
 
-  const [{ upcoming, past }, countryLink, associations, ring] = await Promise.all([
+  const [{ upcoming, past }, countryLink, associations, ring, invitePlatforms] = await Promise.all([
     getTeacherEvents(teacher.id),
     getCountryPageLink(teacher.country),
     getProfileAssociations(teacher.id),
     getTeacherRingNeighbors(teacher.slug, teacher.country),
+    getPublishedProfileInvitePlatforms(teacher.id),
   ]);
   const ringHeading = ringSectionHeading(
     "teachers",
@@ -146,9 +150,11 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
   // real URL, which is a display concern, not a safety one.
   type LinkRow = { type: string; href: string; label: string; icon: React.ReactNode };
   const teacherLinks: LinkRow[] = [];
+  // A group invite stored in a public field (data from before profile_invites) is never shown
+  // here: it belongs behind the gated "Join ...'s group" section, see lib/profile-invites.ts.
   const pushLink = (type: string, raw: string | null, label: string, icon: React.ReactNode) => {
     const href = safeExternalUrl(raw);
-    if (href) teacherLinks.push({ type, href, label, icon });
+    if (href && !invitePlatformOf(href)) teacherLinks.push({ type, href, label, icon });
   };
   pushLink("website", teacher.website, getLinkLabel("website"), <Globe className="h-4 w-4" />);
   pushLink("facebook", teacher.facebook, getLinkLabel("facebook"), <Facebook className="h-4 w-4" />);
@@ -367,6 +373,18 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                     {teacher.has_phone_contacts && (
                       <RevealPhoneContacts entityType="profile" entityId={teacher.id} />
                     )}
+                  </div>
+                </section>
+              )}
+
+              {Object.keys(invitePlatforms).length > 0 && (
+                <section id="invite" className="scroll-mt-6 rounded-[1.75rem] border border-(--color-pine)/20 bg-(--color-pine)/5 p-6">
+                  <h2 className="font-serif text-xl text-slate-950">Join {teacher.name}&apos;s group</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Invite links to chat groups are shared here after a quick verification to reduce spam.
+                  </p>
+                  <div className="mt-4">
+                    <InviteButtons entity={{ kind: "profile", id: teacher.id }} platforms={invitePlatforms} />
                   </div>
                 </section>
               )}

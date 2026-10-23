@@ -10,6 +10,7 @@ import { compressImageForUpload } from "@/lib/client-image-compress";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/upload-limits";
 import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import { ProfileLinksEditor } from "@/components/shared/profile-links-editor";
+import { GroupInvitesEditor } from "@/components/shared/group-invites-editor";
 import { PHONE_CONTACTS_HINT, type PhoneContactInput } from "@/lib/phone-contacts";
 import { readProfileLinks } from "@/lib/profile-links";
 
@@ -32,6 +33,7 @@ type ProfileRow = {
   links: unknown;
   public_email: string | null;
   phone_contacts: PhoneContactInput[];
+  invites: { url: string }[];
   image_url: string | null;
   image_credit: string | null;
   image_status: string;
@@ -78,6 +80,7 @@ export function ProfileEditForm({
     links: readProfileLinks(profile.links).map((l) => ({ type: l.type, url: l.url, label: l.label ?? "" })),
     public_email: profile.public_email || "",
     phone_contacts: profile.phone_contacts ?? [],
+    invites: profile.invites ?? [],
     is_organizer: profile.is_organizer || lockedRoles.organizer,
     is_teacher: profile.is_teacher || lockedRoles.teacher,
     is_musician: profile.is_musician || lockedRoles.musician,
@@ -445,6 +448,24 @@ export function ProfileEditForm({
               }}
               inputClassName={inputClassName}
               labelPlaceholder="Label (optional)"
+            />
+          </div>
+        </div>
+        <div className="mt-6">
+          <p className="text-sm font-medium text-slate-700">Your group chats</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Invite links to your own WhatsApp, Telegram, Signal or LINE group, for example for your classes. They
+            appear on your profile behind a quick verification, so bots can&apos;t collect them.
+          </p>
+          <div className="mt-3">
+            <GroupInvitesEditor
+              value={form.invites}
+              onChange={(invites) => {
+                setForm((prev) => ({ ...prev, invites }));
+                setSuccess(false);
+                setError(null);
+              }}
+              inputClassName={inputClassName}
             />
           </div>
         </div>
