@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { countryName } from "./countries";
 import { mapEventRow, type SupabaseEventRow } from "./events";
@@ -317,23 +319,54 @@ export async function getCommunityCountries(): Promise<{ count: number; countrie
   }
 }
 
-export async function getCommunities(): Promise<CommunitiesResponse> {
-  try {
+const COMMUNITY_LIST_COLUMNS =
+  "id,name,slug,type,city,country,continent,address_for_map,lat,lng,description,website,instagram,facebook_group,facebook_page,telegram_group,telegram_channel,whatsapp_channel,youtube,calendar,newsletter,other_resource,has_invites,has_telegram_invite,has_whatsapp_invite,has_signal_invite,has_line_invite";
+
+// I-175: cached snapshot tagged `communities` (lib/cache-tags.ts), shared by /communities, the
+// country pages and the MCP search_communities tool. Throws on a query error so a failure is not
+// cached.
+const loadCommunityList = unstable_cache(
+  async (): Promise<Community[]> => {
     // Static (cookie-free) client — see getUpcomingEvents() in lib/events.ts
     // for why: this public listing has no auth-dependent RLS branch, and the
     // cookie-aware client would force dynamic rendering on every request.
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from("communities")
-      .select(
-        "id,name,slug,type,city,country,continent,address_for_map,lat,lng,description,website,instagram,facebook_group,facebook_page,telegram_group,telegram_channel,whatsapp_channel,youtube,calendar,newsletter,other_resource,has_invites,has_telegram_invite,has_whatsapp_invite,has_signal_invite,has_line_invite",
-      )
+      .select(COMMUNITY_LIST_COLUMNS)
       .is("deleted_at", null)
       .order("name");
-
     if (error) throw new Error(error.message);
+    return sortCommunities((data as unknown as CommunityRow[]).map(toCommunity));
+  },
+  ["community-list-v1"],
+  { tags: [CACHE_TAGS.communities], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+);
 
-    const communities = sortCommunities((data as unknown as CommunityRow[]).map(toCommunity));
+// I-175: the country pages' communities, queried for that one country rather than read from the
+// snapshot above. A page refresh (revalidatePath) makes every cached read in its next render
+// reload, and the webhook refreshes a country page on every event/profile/venue/community write
+// there, so reading the snapshot would reload all communities (~310 KB) each time. Uncached: the
+// country page is ISR itself, so this runs once per page refresh. Empty on error, as the country
+// page got from getCommunities() before.
+export async function getCommunitiesInCountry(countryIso: string): Promise<Community[]> {
+  const supabase = createStaticClient();
+  const { data, error } = await supabase
+    .from("communities")
+    .select(COMMUNITY_LIST_COLUMNS)
+    .eq("country", countryIso)
+    .is("deleted_at", null)
+    .order("name");
+  if (error) {
+    console.error("Error fetching communities for country page:", error);
+    return [];
+  }
+  return sortCommunities((data as unknown as CommunityRow[]).map(toCommunity));
+}
+
+export async function getCommunities(): Promise<CommunitiesResponse> {
+  try {
+    const communities = await loadCommunityList();
 
     // ISO code as value (matches the events page convention), display label from Intl.DisplayNames.
     // Communities with no country ("Worldwide / several") are excluded here — they get their own

@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { mapEventRow, SupabaseEventRow, LinkItem, getLinkLabel, linkSortKey } from "./events";
 import { upcomingClassSeriesFilter } from "./event-display";
@@ -321,8 +323,10 @@ export async function getVenueCountries(): Promise<{ count: number; countries: s
   }
 }
 
-export async function getVenues(): Promise<VenuesResponse> {
-  try {
+// I-175: cached snapshot tagged `venues` (lib/cache-tags.ts), shared by /venues, the country
+// pages and the MCP search_venues tool. Throws on a query error so a failure is not cached.
+const loadVenueList = unstable_cache(
+  async (): Promise<VenueListItem[]> => {
     // Static (cookie-free) client — see getUpcomingEvents() in lib/events.ts
     // for why: this public listing has no auth-dependent RLS branch, and the
     // cookie-aware client would force dynamic rendering on every request.
@@ -334,10 +338,16 @@ export async function getVenues(): Promise<VenuesResponse> {
       .eq("show_in_list", true)
       .order("country")
       .order("name");
-
     if (error) throw new Error(error.message);
+    return (data as unknown as VenueListRow[]).map(toVenueListItem);
+  },
+  ["venue-list-v1"],
+  { tags: [CACHE_TAGS.venues], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+);
 
-    const venues = (data as unknown as VenueListRow[]).map(toVenueListItem);
+export async function getVenues(): Promise<VenuesResponse> {
+  try {
+    const venues = await loadVenueList();
 
     const isoToLabel = new Map<string, string>();
     for (const v of venues) isoToLabel.set(v.countryIso, v.country);

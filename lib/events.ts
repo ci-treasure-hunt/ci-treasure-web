@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -391,15 +393,13 @@ function normalizePeopleFlat(rows: SupabaseProfileJoinFlat[] | null | undefined)
   );
 }
 
-export async function getUpcomingEvents(today: string): Promise<{ events: EventListItem[]; error: string | null }> {
-  if (!hasSupabaseEnv()) {
-    return {
-      events: [],
-      error: "Supabase environment variables are missing, so the public calendar cannot load yet.",
-    };
-  }
-
-  try {
+// I-175: the upcoming-events snapshot, cached and tagged `events` (lib/cache-tags.ts). `today` is
+// part of the cache key, so the daily rollover needs no invalidation. Every MCP search_events call
+// used to reload all of these rows with descriptions (the 2026-10-19 sweep: 805 searches, roughly
+// 0.3-0.5 GB of Supabase egress in an hour); now it filters this in memory. Throws on a query
+// error so a failure is not cached, same as lib/og-image.ts.
+const loadUpcomingEvents = unstable_cache(
+  async (today: string): Promise<EventListItem[]> => {
     // Static (cookie-free) client: this is a public, single-purpose homepage
     // query with no auth-dependent RLS branch, and calling next/headers'
     // cookies() (via the default createClient()) would force this route to
@@ -413,17 +413,27 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
       .or(upcomingClassSeriesFilter(today))
       .order("start_date", { ascending: true });
 
-    if (error) {
-      return { events: [], error: `Could not load public events: ${error.message}` };
-    }
+    if (error) throw new Error(error.message);
 
     // Every instance of a recurring series is returned, not collapsed: the homepage filters by
     // month on the client and collapses after that (collapseRecurringSeries), and the MCP tool
     // and the crawlable index want every date.
+    return ((data ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow);
+  },
+  ["upcoming-events-v1"],
+  { tags: [CACHE_TAGS.events], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+);
+
+export async function getUpcomingEvents(today: string): Promise<{ events: EventListItem[]; error: string | null }> {
+  if (!hasSupabaseEnv()) {
     return {
-      events: ((data ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow),
-      error: null,
+      events: [],
+      error: "Supabase environment variables are missing, so the public calendar cannot load yet.",
     };
+  }
+
+  try {
+    return { events: await loadUpcomingEvents(today), error: null };
   } catch (error) {
     return {
       events: [],
@@ -440,6 +450,31 @@ export async function getUpcomingEvents(today: string): Promise<{ events: EventL
 // archived events, with the same public-visibility rule as getVenueEvents (published, or archived
 // and not hidden). Window semantics: the event is still running on or after `from`, and starts on
 // or before `to`.
+//
+// I-175: cached per window (from, to are the cache key), tagged `events` like the upcoming list.
+const loadPublicEventsInRange = unstable_cache(
+  async (from: string, to: string | null): Promise<Array<EventListItem & { isPast: boolean }>> => {
+    const supabase = createStaticClient();
+    let query = supabase
+      .from("events")
+      .select(`${EVENT_LIST_COLUMNS}, status`)
+      .in("status", ["published", "archived"])
+      .eq("hide", false)
+      .gte("end_date", from)
+      .order("start_date", { ascending: true });
+    if (to) query = query.lte("start_date", to);
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as unknown as Array<SupabaseEventRow & { status: string }>).map((row) => ({
+      ...mapEventRow(row),
+      isPast: row.status === "archived",
+    }));
+  },
+  ["public-events-in-range-v1"],
+  { tags: [CACHE_TAGS.events], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+);
+
 export async function getPublicEventsInRange(
   from: string,
   to: string | null,
@@ -448,27 +483,14 @@ export async function getPublicEventsInRange(
     return { events: [], error: "Supabase environment variables are missing." };
   }
 
-  const supabase = createStaticClient();
-  let query = supabase
-    .from("events")
-    .select(`${EVENT_LIST_COLUMNS}, status`)
-    .in("status", ["published", "archived"])
-    .eq("hide", false)
-    .gte("end_date", from)
-    .order("start_date", { ascending: true });
-  if (to) query = query.lte("start_date", to);
-
-  const { data, error } = await query;
-  if (error) {
-    return { events: [], error: `Could not load events: ${error.message}` };
+  try {
+    return { events: await loadPublicEventsInRange(from, to), error: null };
+  } catch (error) {
+    return {
+      events: [],
+      error: `Could not load events: ${error instanceof Error ? error.message : "unknown error"}`,
+    };
   }
-  return {
-    events: ((data ?? []) as unknown as Array<SupabaseEventRow & { status: string }>).map((row) => ({
-      ...mapEventRow(row),
-      isPast: row.status === "archived",
-    })),
-    error: null,
-  };
 }
 
 // I-167: one row per type-listing page (/festivals, /workshops, /retreats, /intensives,

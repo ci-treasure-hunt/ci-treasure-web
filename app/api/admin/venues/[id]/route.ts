@@ -127,11 +127,11 @@ export async function PUT(
       if (inviteResult.error) throw new Error(inviteResult.error);
     }
 
-    // Cached ISR pages (the /venues directory, this venue's own detail page, and any event
-    // page linking to it) won't otherwise pick up an admin edit for up to an hour.
+    // The /venues directory refreshes right away for the admin. This venue's own page and the
+    // event/community/teacher pages that show it are refreshed by the revalidate webhook the
+    // venue write fires (I-175); the path-pattern calls that used to be here invalidated every
+    // venue and every event page on any single edit.
     revalidatePath("/venues");
-    revalidatePath("/venues/[slug]", "page");
-    revalidatePath("/events/[eventSlug]", "page");
 
     return NextResponse.json({ ok: true });
   } catch (error) {

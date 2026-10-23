@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { type SupabaseEventRow, mapEventRow } from "./events";
@@ -141,90 +143,107 @@ const LISTED_EVENT_STATUSES = ["published", "archived"];
 
 export async function getListedPeople(): Promise<ListedPerson[]> {
   if (!hasSupabaseEnv()) return [];
-  const supabase = createStaticClient();
-
-  const [profileRes, teacherLinkRes, organizerLinkRes] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, slug, name, city, country, bio, discipline, is_nomadic, is_teacher, is_organizer, is_musician, image_url, image_status, website, instagram, facebook, user_id")
-      .eq("visibility", "public")
-      .limit(5000),
-    // published AND archived: an event is archived when it ends, not deleted (past events stay
-    // online as an evergreen record). Filtering to published alone dropped 178 people whose
-    // events have simply finished, which is exactly the audience a teacher directory is for.
-    // role is fetched (not just teacher_id) so deriveRoles can tell a teaching credit from a
-    // musician one, same distinction the detail page has made since I-115.
-    supabase.from("event_teachers").select("teacher_id, role, events!inner(status)").in("events.status", LISTED_EVENT_STATUSES).limit(20000),
-    supabase.from("event_organizers").select("organizer_id, events!inner(status)").in("events.status", LISTED_EVENT_STATUSES).limit(20000),
-  ]);
-
-  if (profileRes.error || !profileRes.data) return [];
-
-  const teacherCredit = new Map<string, { teacher: boolean; musician: boolean }>();
-  for (const row of (teacherLinkRes.data ?? []) as { teacher_id: string; role: string | null }[]) {
-    const entry = teacherCredit.get(row.teacher_id) ?? { teacher: false, musician: false };
-    if (row.role === "musician") entry.musician = true;
-    else entry.teacher = true;
-    teacherCredit.set(row.teacher_id, entry);
+  try {
+    return await loadListedPeople();
+  } catch {
+    return [];
   }
-  const organizerCredited = new Set<string>();
-  for (const row of (organizerLinkRes.data ?? []) as { organizer_id: string }[]) {
-    organizerCredited.add(row.organizer_id);
-  }
-
-  const credited = new Set<string>([...teacherCredit.keys(), ...organizerCredited]);
-
-  // Admission is credit-based for organizer/musician (those roles only mean something relative to
-  // a specific event), but NOT for teacher: "I teach CI" is a standing identity, not something that
-  // requires a submitted event to be true. Requiring a credit here excluded real teachers who only
-  // run local classes/jams that never became a listed event (Moti Zemelman, Tadeo San Martin) and
-  // undermined manually-added teachers meant to round out a country page (2026-08-26 decision) —
-  // is_teacher + a confirmed contact_improvisation discipline tag is itself a deliberate, researched
-  // fact, not something that happens by accident, so it's a sufficient bar on its own.
-  const isConfirmedTeacher = (p: { is_teacher: boolean; discipline: string[] | null }) =>
-    p.is_teacher && (p.discipline?.includes("contact_improvisation") ?? false);
-
-  return profileRes.data
-    .filter((p) => credited.has(p.id) || isConfirmedTeacher(p))
-    .flatMap((p) => {
-      const credit = teacherCredit.get(p.id) ?? { teacher: false, musician: false };
-      const { isTeacher, isOrganizer, isMusician } = deriveRoles(
-        { is_teacher: p.is_teacher, is_musician: p.is_musician, is_organizer: p.is_organizer, discipline: p.discipline },
-        {
-          hasTeacherCredit: credit.teacher,
-          hasMusicianCredit: credit.musician,
-          hasOrganizerCredit: organizerCredited.has(p.id),
-        },
-      );
-      const roles = [
-        isTeacher ? "teacher" : null,
-        isOrganizer ? "organizer" : null,
-        isMusician ? "musician" : null,
-      ].filter(Boolean) as string[];
-      // A credited-as-teacher-only profile whose practice isn't (yet) tagged as CI loses the
-      // teacher role entirely (see deriveRoles) and so has no role left to be listed under.
-      if (roles.length === 0) return [];
-      return [{
-        slug: p.slug,
-        name: p.name,
-        city: p.city,
-        country: p.country,
-        countryLabel: p.country ? getCountryLabel(p.country) : null,
-        isNomadic: Boolean(p.is_nomadic),
-        roles,
-        // Pending photos must not appear publicly — the privacy policy states this outright, so
-        // presence of image_url is not a sufficient check.
-        imageUrl: p.image_status === "approved" ? p.image_url : null,
-        linkUrl: safeExternalUrl(p.website ?? p.instagram ?? p.facebook),
-        bioSnippet: bioSnippet(p.bio),
-        isClaimed: Boolean(p.user_id),
-      }];
-    })
-    .sort((a, b) => {
-      if (a.isClaimed !== b.isClaimed) return a.isClaimed ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
 }
+
+// I-175: cached snapshot tagged `profiles` (lib/cache-tags.ts), shared by /teachers, the site
+// stats and the MCP search_teachers tool. Throws on any query error so a failure, or a list
+// silently missing everyone whose credit query failed, is never cached.
+const loadListedPeople = unstable_cache(
+  async (): Promise<ListedPerson[]> => {
+    const supabase = createStaticClient();
+
+    const [profileRes, teacherLinkRes, organizerLinkRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, slug, name, city, country, bio, discipline, is_nomadic, is_teacher, is_organizer, is_musician, image_url, image_status, website, instagram, facebook, user_id")
+        .eq("visibility", "public")
+        .limit(5000),
+      // published AND archived: an event is archived when it ends, not deleted (past events stay
+      // online as an evergreen record). Filtering to published alone dropped 178 people whose
+      // events have simply finished, which is exactly the audience a teacher directory is for.
+      // role is fetched (not just teacher_id) so deriveRoles can tell a teaching credit from a
+      // musician one, same distinction the detail page has made since I-115.
+      supabase.from("event_teachers").select("teacher_id, role, events!inner(status)").in("events.status", LISTED_EVENT_STATUSES).limit(20000),
+      supabase.from("event_organizers").select("organizer_id, events!inner(status)").in("events.status", LISTED_EVENT_STATUSES).limit(20000),
+    ]);
+
+    if (profileRes.error) throw new Error(profileRes.error.message);
+    if (teacherLinkRes.error) throw new Error(teacherLinkRes.error.message);
+    if (organizerLinkRes.error) throw new Error(organizerLinkRes.error.message);
+
+    const teacherCredit = new Map<string, { teacher: boolean; musician: boolean }>();
+    for (const row of (teacherLinkRes.data ?? []) as { teacher_id: string; role: string | null }[]) {
+      const entry = teacherCredit.get(row.teacher_id) ?? { teacher: false, musician: false };
+      if (row.role === "musician") entry.musician = true;
+      else entry.teacher = true;
+      teacherCredit.set(row.teacher_id, entry);
+    }
+    const organizerCredited = new Set<string>();
+    for (const row of (organizerLinkRes.data ?? []) as { organizer_id: string }[]) {
+      organizerCredited.add(row.organizer_id);
+    }
+
+    const credited = new Set<string>([...teacherCredit.keys(), ...organizerCredited]);
+
+    // Admission is credit-based for organizer/musician (those roles only mean something relative to
+    // a specific event), but NOT for teacher: "I teach CI" is a standing identity, not something that
+    // requires a submitted event to be true. Requiring a credit here excluded real teachers who only
+    // run local classes/jams that never became a listed event (Moti Zemelman, Tadeo San Martin) and
+    // undermined manually-added teachers meant to round out a country page (2026-08-26 decision) —
+    // is_teacher + a confirmed contact_improvisation discipline tag is itself a deliberate, researched
+    // fact, not something that happens by accident, so it's a sufficient bar on its own.
+    const isConfirmedTeacher = (p: { is_teacher: boolean; discipline: string[] | null }) =>
+      p.is_teacher && (p.discipline?.includes("contact_improvisation") ?? false);
+
+    return profileRes.data
+      .filter((p) => credited.has(p.id) || isConfirmedTeacher(p))
+      .flatMap((p) => {
+        const credit = teacherCredit.get(p.id) ?? { teacher: false, musician: false };
+        const { isTeacher, isOrganizer, isMusician } = deriveRoles(
+          { is_teacher: p.is_teacher, is_musician: p.is_musician, is_organizer: p.is_organizer, discipline: p.discipline },
+          {
+            hasTeacherCredit: credit.teacher,
+            hasMusicianCredit: credit.musician,
+            hasOrganizerCredit: organizerCredited.has(p.id),
+          },
+        );
+        const roles = [
+          isTeacher ? "teacher" : null,
+          isOrganizer ? "organizer" : null,
+          isMusician ? "musician" : null,
+        ].filter(Boolean) as string[];
+        // A credited-as-teacher-only profile whose practice isn't (yet) tagged as CI loses the
+        // teacher role entirely (see deriveRoles) and so has no role left to be listed under.
+        if (roles.length === 0) return [];
+        return [{
+          slug: p.slug,
+          name: p.name,
+          city: p.city,
+          country: p.country,
+          countryLabel: p.country ? getCountryLabel(p.country) : null,
+          isNomadic: Boolean(p.is_nomadic),
+          roles,
+          // Pending photos must not appear publicly — the privacy policy states this outright, so
+          // presence of image_url is not a sufficient check.
+          imageUrl: p.image_status === "approved" ? p.image_url : null,
+          linkUrl: safeExternalUrl(p.website ?? p.instagram ?? p.facebook),
+          bioSnippet: bioSnippet(p.bio),
+          isClaimed: Boolean(p.user_id),
+        }];
+      })
+      .sort((a, b) => {
+        if (a.isClaimed !== b.isClaimed) return a.isClaimed ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+  },
+  ["listed-people-v1"],
+  { tags: [CACHE_TAGS.profiles], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+);
 
 // getAllPublicTeachersForIndex() removed 2026-09-19: the /teachers crawlable EntityIndex now
 // maps getListedPeople() instead, so the browsable list and the index cannot disagree. It was

@@ -1,7 +1,7 @@
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { getCountryLabel, upcomingClassSeriesFilter, type EventListItem } from "@/lib/event-display";
 import { mapEventRow, slugify, type SupabaseEventRow } from "@/lib/events";
-import { getCommunities, type Community } from "@/lib/communities";
+import { getCommunitiesInCountry, type Community } from "@/lib/communities";
 import { safeExternalUrl } from "@/lib/url-safety";
 
 function hasSupabaseEnv() {
@@ -149,12 +149,11 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
   const EVENT_COLS =
     "id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, cancelled";
 
-  const [{ communities: allSiteCommunities }, { data: teacherRows }, { data: eventRows }, { data: venueRows }] =
+  const [allCommunities, { data: teacherRows }, { data: eventRows }, { data: venueRows }] =
     await Promise.all([
-      // Reuses the same fully-normalized Community shape (and CommunityCard UI) as /communities,
-      // instead of a stripped-down id/name/slug/city/website select — one fetch of all
-      // communities, filtered in-memory by country below, rather than a duplicate query.
-      getCommunities(),
+      // Same fully-normalized Community shape (and CommunityCard UI) as /communities, queried for
+      // this country only (I-175: see getCommunitiesInCountry for why not the cached snapshot).
+      getCommunitiesInCountry(summary.iso),
       supabase
         .from("profiles")
         .select("id, name, slug, city, bio, image_url, image_status, website, instagram, facebook")
@@ -182,8 +181,6 @@ export async function getCountryPageData(slug: string): Promise<CountryPageData 
         .eq("show_in_list", true)
         .order("name"),
     ]);
-
-  const allCommunities = allSiteCommunities.filter((c) => c.countryIso === summary.iso);
 
   // National community spotlight, shown separately above the general list — see I-132 spec's
   // "Canada/Switzerland/Dutch communities have their own site" case. Curated via

@@ -166,12 +166,11 @@ export async function PUT(
       }
     }
 
-    // Cached ISR pages (homepage list, this event's own detail page) won't
-    // otherwise pick up an admin edit for up to an hour — revalidate both
-    // immediately. Path-pattern form revalidates every slug variant of the
-    // dynamic route without needing to know this event's current slug.
+    // The homepage list refreshes right away for the admin. This event's own page, and the
+    // teacher/venue/community pages that list it, are refreshed by the revalidate webhook the
+    // event and link-table writes above fire (I-175). The old path-pattern call here invalidated
+    // every event page on any single edit, which defeats caching them.
     revalidatePath("/");
-    revalidatePath("/events/[eventSlug]", "page");
 
     return NextResponse.json({ ok: true });
   } catch (error) {
