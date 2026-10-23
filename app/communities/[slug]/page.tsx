@@ -25,6 +25,7 @@ import { VenueCard } from "@/components/entity-cards";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import {
   formatEventDateRange,
+  formatMoreDates,
   GENERIC_ACCENT_GRADIENT,
   getCountryLabel,
   getCountryLabelWithArticle,
@@ -411,6 +412,8 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
 }
 
 function EventListItem({ event }: { event: EventListItemType }) {
+  // I-171: later dates of a collapsed recurring series, see collapseRecurringSeries().
+  const moreDates = formatMoreDates(event.moreDates ?? []);
   return (
     <Link
       href={getEventHref(event)}
@@ -439,6 +442,7 @@ function EventListItem({ event }: { event: EventListItemType }) {
             {getEventLocation(event)}
           </p>
         </div>
+        {moreDates ? <p className="text-xs text-(--color-pine)">{moreDates}</p> : null}
       </div>
       <div className="text-violet-600 opacity-0 transition group-hover:opacity-100 sm:block hidden">
         <ArrowLeft className="h-5 w-5 rotate-180" />

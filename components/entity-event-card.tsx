@@ -7,6 +7,7 @@ import {
   formatCardTimeRange,
   formatClassSeriesLabel,
   formatEventDateRange,
+  formatMoreDates,
   getEventHref,
   getEventLocation,
   getTypeLabel,
@@ -16,6 +17,8 @@ import { getCountryFlag } from "@/lib/utils";
 export function EntityEventCard({ event }: { event: EventListItem }) {
   const timeRange = formatCardTimeRange(event);
   const seriesLabel = event.classSeries ? formatClassSeriesLabel(event.classSeries) : "";
+  // I-171: later dates of a collapsed recurring series, see collapseRecurringSeries().
+  const moreDates = formatMoreDates(event.moreDates ?? []);
   return (
     <Link
       href={getEventHref(event)}
@@ -51,6 +54,7 @@ export function EntityEventCard({ event }: { event: EventListItem }) {
             {getEventLocation(event)}
           </p>
         </div>
+        {moreDates ? <p className="text-xs text-(--color-pine)">{moreDates}</p> : null}
       </div>
       <div className="text-violet-600 opacity-0 transition group-hover:opacity-100 sm:block hidden">
         <ArrowLeft className="h-5 w-5 rotate-180" />

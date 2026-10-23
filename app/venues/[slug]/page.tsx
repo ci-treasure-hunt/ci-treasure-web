@@ -23,7 +23,7 @@ import { CommunitySpotlightCard, VenueCard } from "@/components/entity-cards";
 import { CompactTeacherRow } from "@/components/compact-entity-row";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import { safeExternalUrl } from "@/lib/url-safety";
-import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
+import { collapseRecurringSeries, GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
 import { getVenueBySlug, getVenueEvents, getVenueAssociations, resolveVenueSlugRedirect, getVenueRingNeighbors, getPublishedVenueInvitePlatforms } from "@/lib/venues";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
@@ -227,7 +227,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
                     </h3>
                     {upcoming.length > 0 ? (
                       <div className="grid gap-4">
-                        {upcoming.map((event) => (
+                        {collapseRecurringSeries(upcoming).map((event) => (
                           <EntityEventCard key={event.id} event={event} />
                         ))}
                       </div>

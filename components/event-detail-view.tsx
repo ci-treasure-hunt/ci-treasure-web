@@ -574,11 +574,23 @@ function SeriesSection({
   siblings: SeriesSibling[];
   currentEventId: string;
 }) {
+  // A weekly jam can list 25+ dates, so beyond SERIES_VISIBLE only that many cards show (the current
+  // date always among them) and the rest fold into a compact "Show more dates" list.
+  const collapse = siblings.length > SERIES_VISIBLE + 1;
+  const currentIndex = siblings.findIndex((s) => s.id === currentEventId);
+  const visible = !collapse
+    ? siblings
+    : currentIndex < SERIES_VISIBLE
+      ? siblings.slice(0, SERIES_VISIBLE)
+      : [...siblings.slice(0, SERIES_VISIBLE - 1), siblings[currentIndex]];
+  const visibleIds = new Set(visible.map((s) => s.id));
+  const folded = siblings.filter((s) => !visibleIds.has(s.id));
+
   return (
     <section className="space-y-5">
       <h2 className="font-serif text-2xl text-slate-950">{seriesName}</h2>
       <div className="grid gap-4">
-        {siblings.map((sibling) => {
+        {visible.map((sibling) => {
           const isCurrent = sibling.id === currentEventId;
           const content = (
             <div
@@ -616,6 +628,34 @@ function SeriesSection({
           );
         })}
       </div>
+      {folded.length > 0 ? (
+        <details className="group">
+          <summary className="cursor-pointer list-none text-sm font-semibold text-(--color-pine) [&::-webkit-details-marker]:hidden">
+            <span className="group-open:hidden">Show {folded.length} more dates</span>
+            <span className="hidden group-open:inline">Hide more dates</span>
+          </summary>
+          <ul className="mt-3 divide-y divide-(--color-sand-strong) rounded-[1.5rem] border border-(--color-sand-strong) bg-white">
+            {folded.map((sibling) => (
+              <li key={sibling.id}>
+                <Link
+                  href={getEventHref(sibling)}
+                  className="flex items-center justify-between gap-4 px-5 py-3 text-sm transition hover:bg-slate-50"
+                >
+                  <span className="font-semibold text-(--color-pine)">
+                    {formatEventDateRange({ startDate: sibling.startDate, endDate: sibling.endDate })}
+                  </span>
+                  {sibling.title !== seriesName ? (
+                    <span className="truncate text-slate-600">{sibling.title}</span>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </section>
   );
 }
+
+// Full cards shown in a series section before the remaining dates fold away (see SeriesSection).
+const SERIES_VISIBLE = 4;

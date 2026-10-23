@@ -34,7 +34,7 @@ import { EntityImage } from "@/components/entity-image";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
 import { safeExternalUrl } from "@/lib/url-safety";
 import { profileLinkLabel, readProfileLinks } from "@/lib/profile-links";
-import { GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
+import { collapseRecurringSeries, GENERIC_ACCENT_GRADIENT, getCountryLabel, padShortDescription } from "@/lib/event-display";
 import { PracticeBadge, practicesToDisplay } from "@/components/shared/practice-badge";
 import { getCountryPageLink } from "@/lib/country-pages";
 import { getCountryFlag } from "@/lib/utils";
@@ -303,7 +303,7 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                     </h3>
                     {upcoming.length > 0 ? (
                       <div className="grid gap-4">
-                        {upcoming.map((event) => (
+                        {collapseRecurringSeries(upcoming).map((event) => (
                           <EntityEventCard key={event.id} event={event} />
                         ))}
                       </div>

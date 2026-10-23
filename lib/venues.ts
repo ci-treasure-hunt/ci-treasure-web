@@ -182,7 +182,7 @@ export async function getVenueEvents(venueId: string) {
   const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, discipline";
+  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, discipline, series_id, event_series(series_type)";
 
   const { data: upcoming, error: upcomingError } = await supabase
     .from("events")
@@ -209,8 +209,8 @@ export async function getVenueEvents(venueId: string) {
   if (pastError) console.error("Error fetching past venue events:", pastError);
 
   return {
-    upcoming: ((upcoming ?? []) as SupabaseEventRow[]).map(mapEventRow),
-    past: ((past ?? []) as SupabaseEventRow[]).map(mapEventRow),
+    upcoming: ((upcoming ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow),
+    past: ((past ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow),
   };
 }
 

@@ -4,7 +4,7 @@ import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { countryName } from "./countries";
 import { mapEventRow, type SupabaseEventRow } from "./events";
 import { getContinent, getContinentCountries } from "./entity-continents";
-import { getCountryLabel, isUpcomingListing, upcomingClassSeriesFilter } from "./event-display";
+import { collapseRecurringSeries, getCountryLabel, isUpcomingListing, upcomingClassSeriesFilter } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
 
@@ -545,7 +545,7 @@ export async function getCommunityOwnEvents(communityId: string) {
   const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, status";
+  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, status, series_id, event_series(series_type)";
 
   const { data, error } = await supabase
     .from("event_organizers")
@@ -558,7 +558,7 @@ export async function getCommunityOwnEvents(communityId: string) {
   }
 
   type Row = { events: (SupabaseEventRow & { status: string }) | (SupabaseEventRow & { status: string })[] | null };
-  const events = (data as Row[])
+  const events = (data as unknown as Row[])
     .map((row) => (Array.isArray(row.events) ? row.events[0] : row.events))
     .filter(
       (e): e is SupabaseEventRow & { status: string } =>
@@ -568,7 +568,7 @@ export async function getCommunityOwnEvents(communityId: string) {
     )
     .sort((a, b) => a.start_date.localeCompare(b.start_date));
 
-  return events.map(mapEventRow);
+  return collapseRecurringSeries(events.map(mapEventRow));
 }
 
 export async function getCommunityEventsByCountry(countryIso: string | null) {
@@ -577,7 +577,7 @@ export async function getCommunityEventsByCountry(countryIso: string | null) {
   const supabase = createStaticClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng";
+  const EVENT_COLS = "id, short_id, title, description, type, start_date, end_date, start_time, end_time, timezone, city, country, cancelled, cancelled_text, image_url, links, price, segments, venue_id, lat, lng, series_id, event_series(series_type)";
 
   const { data, error } = await supabase
     .from("events")
@@ -587,12 +587,15 @@ export async function getCommunityEventsByCountry(countryIso: string | null) {
     .gte("end_date", today)
     .or(upcomingClassSeriesFilter(today))
     .order("start_date", { ascending: true })
-    .limit(COMMUNITY_RELATED_EVENTS_LIMIT);
+    // Over-fetch, then collapse recurring series (I-171) and cut to the limit: a weekly jam's dates
+    // would otherwise fill all five slots on their own, and a short fetch would undercount the
+    // "and N more dates" line. 300 rows covers a country with a few half-year weekly series.
+    .limit(300);
 
   if (error) {
     console.error("Error fetching community events by country:", error);
     return [];
   }
 
-  return (data as SupabaseEventRow[]).map(mapEventRow);
+  return collapseRecurringSeries((data as unknown as SupabaseEventRow[]).map(mapEventRow)).slice(0, COMMUNITY_RELATED_EVENTS_LIMIT);
 }
