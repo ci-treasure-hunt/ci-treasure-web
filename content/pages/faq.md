@@ -168,6 +168,10 @@ completely fine. Over time, we would love more organizers to add their own event
 Events where people come together to dance contact improvisation: festivals, intensives, retreats,
 weekend workshops and one-day workshops, regular jams and classes, and class series.
 
+We also list events in related movement practices: dance improvisation, Body-Mind Centering,
+Axis Syllabus, Authentic Movement, butoh, somatic movement and conscious dance. The calendar shows
+contact improvisation by default, and the practice filter shows the others.
+
 How a schedule is listed follows how people book it. A jam or class you can drop into on any
 date is listed date by date. A class series with one booking for the whole run, a few hours a week
 across several weeks or months, is one listing with its sessions, shown until the first session,
