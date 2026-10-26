@@ -48,8 +48,8 @@ export async function generateMetadata({
   return {
     title: meta.title,
     description: meta.description,
-    // robots.ts already disallows /auth for "*", so this is belt and braces rather than the
-    // mechanism: it only matters if a fetcher with its own allow group also indexes.
+    // This is the mechanism, not a backup: robots.ts stopped disallowing /auth on 2026-09-21 so
+    // link previews of auth-gated URLs work (see the note there).
     robots: { index: false, follow: false },
     openGraph: {
       title: meta.title,

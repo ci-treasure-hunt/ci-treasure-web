@@ -411,12 +411,16 @@ export function EventDetailView({
                 </section>
               )}
 
+              {/* Claim links point at /dashboard/claim-event, not /auth?next=..., on purpose. The
+                  proxy sends a signed-out visitor to /auth with the same next anyway, but a direct
+                  /auth link gave crawlers one unique sign-in URL per event (~950 noindex pages in
+                  the 2026-10-05 Ahrefs crawl, I-150), while /dashboard is disallowed in robots.ts. */}
               {!preview &&
                 (event.hasNoOrganizer ? (
                   <div className="rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) px-4 py-3 text-sm text-slate-700">
                     No organizer is listed for this event yet. Were you involved as an organizer or teacher?{" "}
                     <Link
-                      href={`/auth?next=${encodeURIComponent(`/dashboard/claim-event?event=${event.id}`)}`}
+                      href={`/dashboard/claim-event?event=${event.id}`}
                       className="font-semibold text-(--color-pine) underline"
                     >
                       Claim it
@@ -435,7 +439,7 @@ export function EventDetailView({
                   <p className="text-sm text-slate-400">
                     Were you also involved in this event?{" "}
                     <Link
-                      href={`/auth?next=${encodeURIComponent(`/dashboard/claim-event?event=${event.id}`)}`}
+                      href={`/dashboard/claim-event?event=${event.id}`}
                       className="underline hover:text-slate-600"
                     >
                       Let us know
