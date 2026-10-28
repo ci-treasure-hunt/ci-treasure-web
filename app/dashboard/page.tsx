@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin-auth";
 import { RemoveMeButton } from "@/components/organizer/remove-me-button";
 import { findClaimSuggestion, type ClaimSuggestion } from "@/lib/claim-suggestion";
 import { buildEventSlug } from "@/lib/events";
+import { formatEventDateRange, getCountryLabel } from "@/lib/event-display";
 import { fbGroupsForEvent, type FbGroup } from "@/lib/fb-groups";
 import { FbGroupLinks } from "@/components/fb-group-links";
 import { getManageableSeriesIds } from "@/lib/series-access";
@@ -20,6 +21,9 @@ type DashboardEvent = {
   title: string;
   start_date: string | null;
   end_date: string | null;
+  city: string | null;
+  country: string | null;
+  cancelled: boolean | null;
   status: string;
   admin_notes: string | null;
 };
@@ -151,7 +155,7 @@ export default async function DashboardPage({
       : `user_id.eq.${user.id}`;
     const { data: orgRows } = await supabase
       .from("events")
-      .select("id, short_id, title, start_date, end_date, status, admin_notes")
+      .select("id, short_id, title, start_date, end_date, city, country, cancelled, status, admin_notes")
       .or(orgOrFilter)
       .order("start_date", { ascending: true });
     organizeEvents = (orgRows ?? []) as DashboardEvent[];
@@ -177,7 +181,7 @@ export default async function DashboardPage({
     if (teachIds.length > 0) {
       const { data: teachRows } = await supabase
         .from("events")
-        .select("id, short_id, title, start_date, end_date, status, admin_notes")
+        .select("id, short_id, title, start_date, end_date, city, country, cancelled, status, admin_notes")
         .in("id", teachIds)
         .order("start_date", { ascending: true });
       teachEvents = (teachRows ?? []) as DashboardEvent[];
@@ -193,7 +197,7 @@ export default async function DashboardPage({
     if (musicIds.length > 0) {
       const { data: musicRows } = await supabase
         .from("events")
-        .select("id, short_id, title, start_date, end_date, status, admin_notes")
+        .select("id, short_id, title, start_date, end_date, city, country, cancelled, status, admin_notes")
         .in("id", musicIds)
         .order("start_date", { ascending: true });
       musicEvents = (musicRows ?? []) as DashboardEvent[];
@@ -474,9 +478,16 @@ function EventList({ events, teacherId }: { events: DashboardEvent[]; teacherId?
         <li key={event.id} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-semibold text-slate-950">{event.title}</p>
+            {/* Readable date plus place: an organizer with several dates of the same title (two
+                series in two countries, Eric's feedback 2026-10-28) tells them apart here. */}
             <p className="text-sm text-slate-600">
-              {event.start_date ?? "—"}
-              {event.end_date && event.end_date !== event.start_date ? ` – ${event.end_date}` : ""}
+              {event.start_date
+                ? formatEventDateRange({ startDate: event.start_date, endDate: event.end_date ?? event.start_date })
+                : "—"}
+              {event.city || event.country
+                ? ` · ${[event.city, event.country ? getCountryLabel(event.country) : null].filter(Boolean).join(", ")}`
+                : ""}
+              {event.cancelled ? <span className="ml-2 font-semibold text-rose-700">Cancelled</span> : null}
             </p>
             {event.status === "rejected" && event.admin_notes ? (
               <p className="mt-1 text-sm text-rose-700">Note: {event.admin_notes}</p>
