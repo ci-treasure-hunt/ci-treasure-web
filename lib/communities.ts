@@ -428,7 +428,7 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
       youtube, calendar, newsletter, other_resource, other_resource_label,
       has_invites, has_telegram_invite, has_whatsapp_invite, has_signal_invite, has_line_invite,
       has_email, has_phone_contacts, image_url, image_credit,
-      community_venues ( venue:venue_id ( slug, name, city, description, image_url ) ),
+      community_venues ( venue:venue_id ( slug, name, city, description, image_url, visibility ) ),
       community_profiles ( profile:profile_id ( slug, name, city, bio, image_url, website, instagram, facebook ) )
     `)
     .eq("slug", slug)
@@ -448,7 +448,7 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
     facebook: string | null;
   };
 
-  type AssociatedVenueRow = { slug: string; name: string; city: string | null; description: string | null; image_url: string | null };
+  type AssociatedVenueRow = { slug: string; name: string; city: string | null; description: string | null; image_url: string | null; visibility: string };
 
   const { community_venues, community_profiles, ...rest } = data as typeof data & {
     community_venues: { venue: AssociatedVenueRow | AssociatedVenueRow[] | null }[];
@@ -471,7 +471,9 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
     other_resource: safeExternalUrl(rest.other_resource),
     associatedVenues: (community_venues ?? [])
       .map((row) => (Array.isArray(row.venue) ? row.venue[0] : row.venue))
-      .filter((v): v is AssociatedVenueRow => Boolean(v))
+      // Public only: anon can read hidden venues (event pages show their name), but they have no
+      // page, so a card here linked to a 404 (I-150, la-tombuctu).
+      .filter((v): v is AssociatedVenueRow => v?.visibility === "public")
       .map((v) => ({ slug: v.slug, name: v.name, city: v.city, description: v.description, imageUrl: v.image_url })),
     associatedPeople: (community_profiles ?? [])
       .map((row) => (Array.isArray(row.profile) ? row.profile[0] : row.profile))

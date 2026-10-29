@@ -321,12 +321,12 @@ export async function getProfileAssociations(profileId: string): Promise<{
       .eq("profile_id", profileId),
     supabase
       .from("venue_profiles")
-      .select("role, venue:venue_id ( slug, name, city, description, image_url )")
+      .select("role, venue:venue_id ( slug, name, city, description, image_url, visibility )")
       .eq("profile_id", profileId),
   ]);
 
   type CommunityRowShape = { slug: string; name: string; type: string | null; city: string | null; description: string | null; deleted_at: string | null };
-  type VenueRowShape = { slug: string; name: string; city: string | null; description: string | null; image_url: string | null };
+  type VenueRowShape = { slug: string; name: string; city: string | null; description: string | null; image_url: string | null; visibility: string };
   type CommunityRow = { community: CommunityRowShape | CommunityRowShape[] | null };
   type VenueRow = { role: string | null; venue: VenueRowShape | VenueRowShape[] | null };
 
@@ -337,7 +337,9 @@ export async function getProfileAssociations(profileId: string): Promise<{
 
   const venues = ((venueRows ?? []) as VenueRow[])
     .map((row) => ({ role: row.role, venue: Array.isArray(row.venue) ? row.venue[0] : row.venue }))
-    .filter((row): row is { role: string | null; venue: VenueRowShape } => Boolean(row.venue))
+    // Public only: anon can read hidden venues (event pages show their name), but they have no
+    // page, so a card here linked to a 404 (I-150, la-tombuctu).
+    .filter((row): row is { role: string | null; venue: VenueRowShape } => row.venue?.visibility === "public")
     .map(({ role, venue }) => ({ slug: venue.slug, name: venue.name, role, city: venue.city, description: venue.description, imageUrl: venue.image_url }));
 
   return { communities, venues };
