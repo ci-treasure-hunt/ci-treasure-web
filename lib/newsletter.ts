@@ -23,27 +23,73 @@ export type NewsletterResult = "pending" | "already" | "invalid" | "error";
 // the account nudges, like support_clicks does for the support link.
 export type NewsletterSource = "website" | "signup" | "dashboard";
 
+// A contact as EmailOctopus has it, "missing" when it is not on the list, null when the lookup failed.
+export type ContactStatus =
+  | { status: "pending" | "subscribed" | "unsubscribed"; createdAt: Date }
+  | "missing"
+  | null;
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // A pending contact younger than this is a double click or an impatient retry, not a lost email:
 // keep it, so a second submit does not fire a second confirmation right after the first.
-const RESEND_AFTER_MS = 10 * 60_000;
+export const RESEND_AFTER_MS = 10 * 60_000;
+
+function api() {
+  const apiKey = process.env.EMAILOCTOPUS_API_KEY;
+  const listId = process.env.EMAILOCTOPUS_LIST_ID;
+  if (!apiKey || !listId) {
+    console.error("newsletter: EMAILOCTOPUS_API_KEY or EMAILOCTOPUS_LIST_ID missing");
+    return null;
+  }
+  return {
+    contacts: `https://api.emailoctopus.com/lists/${listId}/contacts`,
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+  };
+}
+
+// EmailOctopus accepts the MD5 of the lowercased address as the contact id.
+function contactUrl(contacts: string, address: string) {
+  return `${contacts}/${createHash("md5").update(address.trim().toLowerCase()).digest("hex")}`;
+}
+
+export async function contactStatus(email: string): Promise<ContactStatus> {
+  const eo = api();
+  if (!eo) return null;
+  try {
+    const res = await fetch(contactUrl(eo.contacts, email), { headers: eo.headers });
+    if (res.status === 404) return "missing";
+    if (!res.ok) return null;
+    const { status, created_at } = (await res.json()) as { status?: string; created_at?: string };
+    if (status !== "pending" && status !== "subscribed" && status !== "unsubscribed") return null;
+    return { status, createdAt: new Date(created_at ?? 0) };
+  } catch (error) {
+    console.error("newsletter: status lookup failed", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+// Removes a contact that never confirmed. Refuses anything else: a subscribed or unsubscribed
+// contact carries EmailOctopus's consent record and stays.
+export async function removePendingContact(email: string): Promise<void> {
+  const eo = api();
+  const current = await contactStatus(email);
+  if (!eo || current === null || current === "missing" || current.status !== "pending") return;
+  await fetch(contactUrl(eo.contacts, email), { method: "DELETE", headers: eo.headers });
+}
 
 export async function subscribeToNewsletter(email: string, source: NewsletterSource): Promise<NewsletterResult> {
   const address = email.trim();
   if (!EMAIL.test(address) || address.length > 254) return "invalid";
 
-  const apiKey = process.env.EMAILOCTOPUS_API_KEY;
-  const listId = process.env.EMAILOCTOPUS_LIST_ID;
-  if (!apiKey || !listId) {
-    console.error("newsletter: EMAILOCTOPUS_API_KEY or EMAILOCTOPUS_LIST_ID missing");
-    return "error";
-  }
-
-  const contacts = `https://api.emailoctopus.com/lists/${listId}/contacts`;
-  const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
+  const eo = api();
+  if (!eo) return "error";
   const create = () =>
-    fetch(contacts, { method: "POST", headers, body: JSON.stringify({ email_address: address, tags: [source] }) });
+    fetch(eo.contacts, {
+      method: "POST",
+      headers: eo.headers,
+      body: JSON.stringify({ email_address: address, tags: [source] }),
+    });
 
   try {
     const res = await create();
@@ -57,15 +103,11 @@ export async function subscribeToNewsletter(email: string, source: NewsletterSou
     // Already on the list. Subscribed stays as is, and we do not re-subscribe someone who
     // unsubscribed (that needs fresh consent through EmailOctopus's own flow). Only an old pending
     // contact is re-created, so EmailOctopus sends a new confirmation email.
-    // EmailOctopus accepts the MD5 of the lowercased address as the contact id.
-    const contact = `${contacts}/${createHash("md5").update(address.toLowerCase()).digest("hex")}`;
-    const existing = await fetch(contact, { headers });
-    if (!existing.ok) return "already";
-    const { status, created_at } = (await existing.json()) as { status?: string; created_at?: string };
-    const age = created_at ? Date.now() - Date.parse(created_at) : 0;
-    if (status !== "pending" || !(age > RESEND_AFTER_MS)) return "already";
+    const existing = await contactStatus(address);
+    if (existing === null || existing === "missing" || existing.status !== "pending") return "already";
+    if (!(Date.now() - existing.createdAt.getTime() > RESEND_AFTER_MS)) return "already";
 
-    const removed = await fetch(contact, { method: "DELETE", headers });
+    const removed = await fetch(contactUrl(eo.contacts, address), { method: "DELETE", headers: eo.headers });
     if (removed.status !== 204) {
       console.error("newsletter: deleting pending contact failed", removed.status);
       return "already";

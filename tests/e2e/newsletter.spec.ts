@@ -115,6 +115,19 @@ test.describe('I-160 newsletter', () => {
     expect(await contactStatus(email)).toBe('pending');
   });
 
+  // The reminder itself needs a pending contact older than 10 minutes, too slow for a test run; it
+  // was checked by hand on 2026-11-01. This covers the settling: an account marked subscribed whose
+  // contact is not on the list shows no reminder, has its state cleared, and gets the offer again.
+  test('live: a subscribed account missing from the list gets the offer again', async ({ page, baseURL }) => {
+    test.skip(!liveNewsletter, 'set E2E_NEWSLETTER=1 to call EmailOctopus');
+    const { userId } = await signIn(page, baseURL!, { newsletter: 'subscribed' });
+    await expect(page.getByText('Please confirm your newsletter subscription')).toHaveCount(0);
+    const { data } = await admin!.auth.admin.getUserById(userId);
+    expect(data.user?.user_metadata?.newsletter ?? null).toBeNull();
+    await page.reload();
+    await expect(page.getByText('Get the monthly newsletter?')).toBeVisible();
+  });
+
   test('live: the /newsletter form subscribes', async ({ page }) => {
     test.skip(!liveNewsletter, 'set E2E_NEWSLETTER=1 to create real EmailOctopus contacts');
     const email = testEmail();

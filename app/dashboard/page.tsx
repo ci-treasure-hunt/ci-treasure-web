@@ -11,8 +11,9 @@ import { FbGroupLinks } from "@/components/fb-group-links";
 import { getManageableSeriesIds } from "@/lib/series-access";
 import { supportHref } from "@/lib/support";
 
-import { completeSignupOptin, newsletterState } from "./newsletter";
+import { completeSignupOptin, needsNewsletterConfirmation, newsletterState } from "./newsletter";
 import { NewsletterOffer } from "./newsletter-offer";
+import { NewsletterReminder } from "./newsletter-reminder";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardEvent = {
@@ -76,6 +77,8 @@ export default async function DashboardPage({
   const signupNewsletter = await completeSignupOptin(user);
   const showNewsletterOffer =
     !submitted && Boolean(user.email) && !newsletterState(user) && signupNewsletter === null;
+  // Subscribed but never confirmed with EmailOctopus: remind on the site instead of by email.
+  const showNewsletterReminder = !submitted && signupNewsletter === null && (await needsNewsletterConfirmation(user));
 
   // Profile this user owns (claim approved, or self-created).
   const { data: profile } = await supabase
@@ -99,7 +102,8 @@ export default async function DashboardPage({
           "a website or social link",
       ].filter((g): g is string => Boolean(g))
     : [];
-  const showProfileNudge = !submitted && !showNewsletterOffer && signupNewsletter !== "pending";
+  const showProfileNudge =
+    !submitted && !showNewsletterOffer && !showNewsletterReminder && signupNewsletter !== "pending";
 
   // Middle state: a claim submitted but not yet approved by an admin.
   const { data: pendingClaim } = await supabase
@@ -250,6 +254,7 @@ export default async function DashboardPage({
           </p>
         ) : null}
         {showNewsletterOffer ? <NewsletterOffer email={user.email!} /> : null}
+        {showNewsletterReminder ? <NewsletterReminder email={user.email!} /> : null}
 
         {!profile && pendingClaim ? (
           <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-8 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
