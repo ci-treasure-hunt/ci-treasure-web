@@ -8,6 +8,14 @@
 // consent record. Verified against the live list 2026-10-15 (contact came back pending, the
 // confirmation email arrived 16s later). Never send status "subscribed" from here: that would
 // silently turn the list into single opt-in.
+//
+// A contact stuck at "pending" (confirmation email lost or deleted with the spam folder) used to be
+// locked out: signing up again only got "already exists", and EmailOctopus has no resend. Now a
+// repeat signup deletes the pending contact and creates it again, which makes EmailOctopus send a
+// fresh confirmation (verified 2026-11-01: second email arrived 5s after the re-create). It only
+// ever happens because the person asked again, and never touches subscribed or unsubscribed contacts.
+
+import { createHash } from "crypto";
 
 export type NewsletterResult = "pending" | "already" | "invalid" | "error";
 
@@ -16,6 +24,10 @@ export type NewsletterResult = "pending" | "already" | "invalid" | "error";
 export type NewsletterSource = "website" | "signup" | "dashboard";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// A pending contact younger than this is a double click or an impatient retry, not a lost email:
+// keep it, so a second submit does not fire a second confirmation right after the first.
+const RESEND_AFTER_MS = 10 * 60_000;
 
 export async function subscribeToNewsletter(email: string, source: NewsletterSource): Promise<NewsletterResult> {
   const address = email.trim();
@@ -28,18 +40,39 @@ export async function subscribeToNewsletter(email: string, source: NewsletterSou
     return "error";
   }
 
+  const contacts = `https://api.emailoctopus.com/lists/${listId}/contacts`;
+  const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
+  const create = () =>
+    fetch(contacts, { method: "POST", headers, body: JSON.stringify({ email_address: address, tags: [source] }) });
+
   try {
-    const res = await fetch(`https://api.emailoctopus.com/lists/${listId}/contacts`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ email_address: address, tags: [source] }),
-    });
+    const res = await create();
     if (res.status === 201) return "pending";
-    // Already on the list: subscribed, pending or unsubscribed. We do not re-subscribe someone who
-    // unsubscribed; that needs fresh consent through EmailOctopus's own flow.
-    if (res.status === 409) return "already";
     if (res.status === 422) return "invalid";
-    console.error("newsletter: EmailOctopus answered", res.status, await res.text());
+    if (res.status !== 409) {
+      console.error("newsletter: EmailOctopus answered", res.status, await res.text());
+      return "error";
+    }
+
+    // Already on the list. Subscribed stays as is, and we do not re-subscribe someone who
+    // unsubscribed (that needs fresh consent through EmailOctopus's own flow). Only an old pending
+    // contact is re-created, so EmailOctopus sends a new confirmation email.
+    // EmailOctopus accepts the MD5 of the lowercased address as the contact id.
+    const contact = `${contacts}/${createHash("md5").update(address.toLowerCase()).digest("hex")}`;
+    const existing = await fetch(contact, { headers });
+    if (!existing.ok) return "already";
+    const { status, created_at } = (await existing.json()) as { status?: string; created_at?: string };
+    const age = created_at ? Date.now() - Date.parse(created_at) : 0;
+    if (status !== "pending" || !(age > RESEND_AFTER_MS)) return "already";
+
+    const removed = await fetch(contact, { method: "DELETE", headers });
+    if (removed.status !== 204) {
+      console.error("newsletter: deleting pending contact failed", removed.status);
+      return "already";
+    }
+    const again = await create();
+    if (again.status === 201) return "pending";
+    console.error("newsletter: re-creating pending contact failed", again.status, await again.text());
     return "error";
   } catch (error) {
     console.error("newsletter: request failed", error instanceof Error ? error.message : error);
