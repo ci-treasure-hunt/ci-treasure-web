@@ -1,11 +1,13 @@
 "use server";
 
-// I-181: /venues/new, for signed-in users. A venue (studio, retreat centre, dance house) that
-// isn't listed yet, typically one with no event with us so far.
+// I-181: /venues/new. A venue (studio, retreat centre, dance house) that isn't listed yet,
+// typically one with no event with us so far.
 //
-// Account required, not Turnstile: we want to know whom to ask, and it is the natural basis if
-// venue claiming ever comes (Phase 3). Venue submitters are organizers and space holders, who have
-// accounts or get one with one click. Capped per user per day instead of per IP.
+// I-192 stage 2 (2026-11-04): open to everyone. Signed in: as before, capped per account per day.
+// Signed out: Turnstile instead of the account, a global cap on anonymous Pins per day, and the
+// submitter's own email (optional) goes into the internal admin_notes. Nothing a signed-out
+// submission writes is public: a Pin has no page, and a venue's links, description and photo only
+// show once an admin gives it one (checked 2026-11-04), so that promotion stays the review.
 //
 // Lands as a Pin (hidden, off the list) via lib/venue-records.ts, exactly like a venue created from
 // the event form. A page and the /venues list stay a manual call in /admin/venues. If the place is
@@ -13,6 +15,7 @@
 // is left alone and the submitter is pointed to it.
 
 import { setEntityEmail } from "@/lib/entity-email";
+import { verifyTurnstile } from "@/lib/turnstile";
 import { geocodeEventLocation } from "@/lib/geocode";
 import { normalizePlaceCase } from "@/lib/place-case";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,6 +25,8 @@ import { createVenuePhotoTicket } from "@/lib/venue-photo-ticket";
 import { createPinVenue, findMatchingVenue, notifyNewVenue } from "@/lib/venue-records";
 
 const PER_USER_PER_DAY = 5;
+// Signed-out submissions, all submitters together (Jan, 2026-11-04).
+const ANONYMOUS_PER_DAY = 20;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type VenueSubmitInput = {
@@ -36,6 +41,10 @@ export type VenueSubmitInput = {
   email: string;
   /** "I run this space, or I've checked it's fine to list it." Required. */
   consent: boolean;
+  /** Signed out only: the submitter's own address, for questions. Internal, never shown. */
+  submitterEmail?: string;
+  /** Signed out only. */
+  turnstileToken?: string;
 };
 
 export type VenueSubmitResult =
@@ -59,16 +68,34 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Please sign in to add a venue." };
 
   const admin = createAdminClient();
-  const { count } = await admin
-    .from("venues")
-    .select("id", { count: "exact", head: true })
-    .eq("created_by", user.id)
-    .gte("created_at", new Date(Date.now() - 86400_000).toISOString());
-  if ((count ?? 0) >= PER_USER_PER_DAY) {
-    return { ok: false, error: "You've added several venues today. Please try again tomorrow." };
+  const since = new Date(Date.now() - 86400_000).toISOString();
+  if (user) {
+    const { count } = await admin
+      .from("venues")
+      .select("id", { count: "exact", head: true })
+      .eq("created_by", user.id)
+      .gte("created_at", since);
+    if ((count ?? 0) >= PER_USER_PER_DAY) {
+      return { ok: false, error: "You've added several venues today. Please try again tomorrow." };
+    }
+  } else {
+    if (!(await verifyTurnstile(input.turnstileToken))) {
+      return { ok: false, error: "The spam check didn't go through. Please try again." };
+    }
+    const { count } = await admin
+      .from("venues")
+      .select("id", { count: "exact", head: true })
+      .eq("source", "venue_form")
+      .is("created_by", null)
+      .gte("created_at", since);
+    if ((count ?? 0) >= ANONYMOUS_PER_DAY) {
+      return {
+        ok: false,
+        error: "We've had a lot of new venues today. Please try again tomorrow, or write to hello@citreasurehunt.com.",
+      };
+    }
   }
 
   // ---- Validate ---------------------------------------------------------------------------------
@@ -79,6 +106,7 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
   const country = clip(input.country, 2).toUpperCase();
   const description = clip(input.description, 2000);
   const email = clip(input.email, 200);
+  const submitterEmail = user ? "" : clip(input.submitterEmail, 200);
 
   const fieldErrors: Record<string, string> = {};
   if (!name) fieldErrors.name = "Please give the venue's name.";
@@ -86,6 +114,9 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
   if (!city) fieldErrors.city = "Please give the city.";
   if (!/^[A-Z]{2}$/.test(country)) fieldErrors.country = "Please pick a country.";
   if (email && !EMAIL_RE.test(email)) fieldErrors.email = "This doesn't look like an email address.";
+  if (submitterEmail && !EMAIL_RE.test(submitterEmail)) {
+    fieldErrors.submitterEmail = "This doesn't look like an email address.";
+  }
   if (!input.consent) fieldErrors.consent = "Please confirm that this venue may be listed.";
 
   const links: Record<"website" | "instagram" | "facebook", string | null> = {
@@ -122,22 +153,35 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
     return { ok: true, outcome: "listed", venueName: existing.name, venueSlug: existing.slug, venueId: null, photoTicket: null };
   }
   if (existing) {
-    // A Pin: fill in what it lacks, never overwrite what's there.
+    // A Pin: fill in what it lacks, never overwrite what's there. Values that differ from what it
+    // has (another name, other links) are kept as suggestions for the admin (I-192, 2026-11-04):
+    // the submitter may know the correct or newer name, or better links.
     const { data: row } = await admin
       .from("venues")
-      .select("website, instagram, facebook, description")
+      .select("name, website, instagram, facebook, description, admin_notes")
       .eq("id", existing.id)
       .single();
     const current = (row ?? {}) as Record<string, string | null>;
     const patch: Record<string, string> = {};
+    const suggestions: string[] = [];
+    if (name.toLowerCase() !== (current.name ?? "").trim().toLowerCase()) suggestions.push(`name: ${name}`);
     for (const [key, value] of Object.entries({ ...links, description: description || null })) {
-      if (value && !current[key]) patch[key] = value;
+      if (!value) continue;
+      if (!current[key]) patch[key] = value;
+      else if (value !== current[key]) {
+        suggestions.push(key === "description" ? `description: ${value.slice(0, 300)}` : `${key}: ${value}`);
+      }
     }
+    const note = submissionNote(suggestions, submitterEmail, Boolean(user));
+    if (note) patch.admin_notes = current.admin_notes ? `${current.admin_notes}\n\n${note}` : note;
     if (Object.keys(patch).length > 0) {
       await admin.from("venues").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", existing.id);
     }
     if (email) await fillEmailIfMissing(existing.id, email);
-    await notifyNewVenue({ name: existing.name, city, country }, "venue_form");
+    await notifyNewVenue({ name: existing.name, city, country }, "venue_form", {
+      signedIn: Boolean(user),
+      suggestions: suggestions.map((x) => (x.startsWith("description:") ? "description: a different one" : x)),
+    });
     return {
       ok: true,
       outcome: "updated",
@@ -154,13 +198,15 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
     venue = await createPinVenue(
       { name, address, city, country, lat: coords.lat, lng: coords.lng, ...links, description: description || null },
       "venue_form",
-      user.id,
+      user?.id ?? null,
     );
   } catch {
     return { ok: false, error: "Something went wrong saving the venue. Please try again." };
   }
   if (email) await setEntityEmail("venue", venue.id, email);
-  await notifyNewVenue({ name, city, country }, "venue_form");
+  const note = submissionNote([], submitterEmail, Boolean(user));
+  if (note) await admin.from("venues").update({ admin_notes: note }).eq("id", venue.id);
+  await notifyNewVenue({ name, city, country }, "venue_form", { signedIn: Boolean(user), suggestions: [] });
 
   return {
     ok: true,
@@ -170,6 +216,17 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
     venueId: venue.id,
     photoTicket: createVenuePhotoTicket(venue.id),
   };
+}
+
+// Internal note on the venue (admin_notes has no public grant): what a submission offered that
+// differs from the venue, and a signed-out submitter's own address. Null when there is nothing.
+function submissionNote(suggestions: string[], submitterEmail: string, signedIn: boolean): string | null {
+  if (suggestions.length === 0 && !submitterEmail) return null;
+  const day = new Date().toISOString().slice(0, 10);
+  const lines = [`${day}, venue form (${signedIn ? "signed in" : "signed out"}):`];
+  if (suggestions.length > 0) lines.push(`Suggested: ${suggestions.join("; ")}`);
+  if (submitterEmail) lines.push(`Submitter: ${submitterEmail}`);
+  return lines.join("\n");
 }
 
 async function fillEmailIfMissing(venueId: string, email: string) {

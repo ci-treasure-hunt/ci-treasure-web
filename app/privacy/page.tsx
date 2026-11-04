@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <main className="mx-auto min-h-screen max-w-3xl px-5 py-14 sm:px-8">
       <h1 className="font-serif text-4xl text-slate-950">Privacy Policy</h1>
       <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-        <p className="text-sm text-slate-500">Last updated: October 2026</p>
+        <p className="text-sm text-slate-500">Last updated: November 2026</p>
         <section>
           <h2 className="font-semibold text-slate-950">1. Controller</h2>
           <p>
@@ -424,15 +424,18 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-semibold text-slate-950">17. Venue submissions</h2>
           <p>
-            Signed-in users can add a venue through the &quot;Add a venue&quot; form, and a place entered with its
-            street address in the event form is saved as a venue as well, so that others can select it. We store what
-            you enter about the venue: its name, address, links, description, an optional contact email address
-            (shown only behind the check described in section 14) and an optional photo with the photographer credit
-            you give, on the same terms as community photos in section 16. We also record which account added the
-            venue. That link is never shown on the site; we use it to ask about a submission and to limit how many
-            venues one account can add per day. A venue gets its own public page only after we have reviewed it.
-            Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in running a directory of places that people can
-            add to, and in being able to ask about a submission.
+            Anyone can add a venue through the &quot;Add a venue&quot; form, with or without an account, and a place
+            entered with its street address in the event form is saved as a venue as well, so that others can select
+            it. We store what you enter about the venue: its name, address, links, description, an optional contact
+            email address (shown only behind the check described in section 14) and an optional photo with the
+            photographer credit you give, on the same terms as community photos in section 16. If you are signed in,
+            we also record which account added the venue, and use it to limit how many venues one account can add per
+            day. If you are not signed in, the form is protected by the Turnstile check described in section 14, we do
+            not store your IP address, and you can leave your own email address, which is optional and only for us in
+            case we have a question. Neither the account link nor your own email address is ever shown on the site.
+            We keep them for as long as the venue exists, and delete your email address on request. A venue gets its
+            own public page only after we have reviewed it. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest
+            in running a directory of places that people can add to, and in being able to ask about a submission.
           </p>
         </section>
         <section>

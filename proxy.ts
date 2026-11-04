@@ -59,8 +59,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── Organizer area: require any authenticated user ───────────────────────
-  // /dashboard, /events/new, /events/[slug]/edit, /venues/new. No admin/forbidden gate —
+  // /dashboard, /events/new, /events/[slug]/edit. No admin/forbidden gate —
   // any signed-in user may manage their own claimed events.
+  // /venues/new left this list with I-192 stage 2 (2026-11-04): open without sign-in, like
+  // /communities/new.
   if (!user) {
     const loginUrl = new URL("/auth", request.url);
     // Include the search string, not just pathname — /dashboard/claim?profile=<id>
@@ -73,5 +75,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*", "/events/new", "/events/:eventSlug/edit", "/venues/new"],
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/events/new", "/events/:eventSlug/edit"],
 };

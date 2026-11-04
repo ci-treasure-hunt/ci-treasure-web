@@ -140,15 +140,24 @@ export async function createPinVenue(
 }
 
 /** Admin ping for a venue that didn't come from an admin. Name and place only (I-159). */
-export async function notifyNewVenue(venue: { name: string; city: string; country: string }, source: VenueSource) {
+export async function notifyNewVenue(
+  venue: { name: string; city: string; country: string },
+  source: VenueSource,
+  // I-192: venue form only. Whether the submitter was signed in, and what they offered that differs
+  // from an existing Pin. Never the submitter's email (I-159: no addresses in Telegram pings).
+  form?: { signedIn: boolean; suggestions: string[] },
+) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
   const threadId = process.env.TELEGRAM_REPORT_THREAD_ID;
   if (!token || !chatId) return;
 
   const text = [
-    source === "venue_form" ? "📍 New venue submitted" : "📍 New venue from an event",
+    source === "venue_form"
+      ? `📍 New venue submitted${form ? (form.signedIn ? " (signed in)" : " (signed out)") : ""}`
+      : "📍 New venue from an event",
     `${venue.name} · ${venue.city}, ${venue.country}`,
+    ...(form && form.suggestions.length > 0 ? [`Offered, differs from ours: ${form.suggestions.join("; ")}`] : []),
     "→ https://citreasurehunt.com/admin/venues?new=1",
   ].join("\n");
 

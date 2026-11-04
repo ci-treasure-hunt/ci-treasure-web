@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 import { CountryPicker } from "@/components/shared/country-picker";
 import { compressImageForUpload } from "@/lib/client-image-compress";
@@ -11,7 +12,8 @@ import { submitVenue, type VenueSubmitResult } from "@/lib/venue-submit-action";
 
 type Done = Extract<VenueSubmitResult, { ok: true }> & { photoFailed: boolean };
 
-export function VenueSubmitForm() {
+// I-192 stage 2: signed out, the form adds a Turnstile check and an optional "your email" field.
+export function VenueSubmitForm({ signedIn }: { signedIn: boolean }) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -22,6 +24,10 @@ export function VenueSubmitForm() {
   const [description, setDescription] = useState("");
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
+  const [submitterEmail, setSubmitterEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const siteKey = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY;
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoCredit, setPhotoCredit] = useState("");
   const [photoConsent, setPhotoConsent] = useState(false);
@@ -75,6 +81,8 @@ export function VenueSubmitForm() {
         description,
         email,
         consent,
+        submitterEmail: signedIn ? undefined : submitterEmail,
+        turnstileToken: signedIn ? undefined : token,
       });
       if (result.ok) {
         const photoOk = result.venueId && result.photoTicket ? await uploadPhoto(result.venueId, result.photoTicket) : true;
@@ -83,6 +91,11 @@ export function VenueSubmitForm() {
       }
       setError(result.error);
       setFieldErrors(result.fieldErrors ?? {});
+      if (!signedIn) {
+        // A Turnstile token is single-use; get a fresh one for the next attempt.
+        setToken("");
+        setTurnstileKey((k) => k + 1);
+      }
     });
   }
 
@@ -232,10 +245,33 @@ export function VenueSubmitForm() {
           </span>
         </label>
         {err("consent")}
+        {!signedIn ? (
+          <>
+            <Field label="Your email (optional)">
+              <input
+                type="email"
+                value={submitterEmail}
+                onChange={(e) => setSubmitterEmail(e.target.value)}
+                className={inputClassName}
+                maxLength={200}
+              />
+              <p className="text-xs text-slate-500">Only in case we have a question about this venue. Never shown.</p>
+              {err("submitterEmail")}
+            </Field>
+            <Turnstile
+              key={turnstileKey}
+              siteKey={siteKey ?? ""}
+              onSuccess={setToken}
+              onExpire={() => setToken("")}
+              onError={() => setToken("")}
+              options={{ theme: "light" }}
+            />
+          </>
+        ) : null}
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || (!signedIn && !token)}
           className="rounded-full bg-(--color-ink) px-6 py-3 text-sm font-semibold text-(--color-mist) disabled:opacity-60"
         >
           {isSubmitting ? "Sending..." : "Add venue"}
