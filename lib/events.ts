@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
-import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
+import { CACHE_TAGS, DETAIL_REVALIDATE_SECONDS, SNAPSHOT_REVALIDATE_SECONDS, eventTag } from "@/lib/cache-tags";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -578,7 +578,7 @@ async function buildEventDetail(
 
   let seriesSiblings: SeriesSibling[] = [];
   if (row.series_id) {
-    const { data: siblingsData } = await supabase
+    const { data: siblingsData, error: siblingsError } = await supabase
       .from("events")
       .select("id, short_id, title, type, start_date, end_date, series_order")
       .eq("series_id", row.series_id)
@@ -589,6 +589,7 @@ async function buildEventDetail(
       .order("series_order", { ascending: true, nullsFirst: false })
       .order("start_date", { ascending: true });
 
+    if (siblingsError) throw new Error(siblingsError.message);
     if (siblingsData) {
       seriesSiblings = siblingsData.map((sib) => ({
         id: sib.id,
@@ -616,7 +617,7 @@ async function buildEventDetail(
   // already have public SELECT policies, and a community row carries no PII to protect.
   const [creditedPeopleResponse, venueResponse, organizingCommunitiesResponse] = await Promise.all([
     creditedPeopleOverride
-      ? Promise.resolve({ data: creditedPeopleOverride })
+      ? Promise.resolve({ data: creditedPeopleOverride, error: null })
       : supabase.rpc("get_event_credited_people", { p_event_id: row.id }),
     row.venue_id
       ? supabase.from("venues").select("name, address, slug, visibility").eq("id", row.venue_id).single()
@@ -627,6 +628,13 @@ async function buildEventDetail(
       .eq("event_id", row.id)
       .not("community_id", "is", null),
   ]);
+
+  // The public event page caches this result (I-175), so a failed lookup throws rather than
+  // rendering the event without its teachers, venue or communities for a day. PGRST116 is
+  // .single() finding no venue row, which is just "no venue".
+  if (creditedPeopleResponse.error) throw new Error(creditedPeopleResponse.error.message);
+  if (venueResponse.error && venueResponse.error.code !== "PGRST116") throw new Error(venueResponse.error.message);
+  if (organizingCommunitiesResponse.error) throw new Error(organizingCommunitiesResponse.error.message);
 
   const linkItems = normalizeLinkItems(row.links);
   const venueData = venueResponse.data as { name?: string; address?: string; slug?: string; visibility?: string } | null;
@@ -693,10 +701,30 @@ export async function getEventBySlug(shortId: string): Promise<EventDetail | nul
     return null;
   }
 
+  // I-175 step 4: cached per event, tagged event:<shortId>, shared by the event page and the MCP
+  // get_event tool. The revalidate webhook invalidates the tag on any write that changes what this
+  // returns (the event, its credits, venue, organizing communities, series siblings). A miss is
+  // cached too (null), and an INSERT with that short_id clears it. A hand-typed case variant
+  // ("cibs" for "CIbs") gets its own entry under its own key, which the webhook does not know
+  // about; it only feeds the redirect to the canonical URL, so up to the fallback lifetime of
+  // staleness there is harmless.
+  return unstable_cache(() => loadEventBySlug(shortId), ["event-detail-v1", shortId], {
+    tags: [eventTag(shortId)],
+    revalidate: DETAIL_REVALIDATE_SECONDS,
+  })();
+}
+
+async function loadEventBySlug(shortId: string): Promise<EventDetail | null> {
   // events_select_public RLS covers both 'published' and 'archived' (I-112) -- archived
   // (past) events stay publicly readable so their pages keep working for SEO + history,
   // rendered as "ended"; drafts/pending/rejected stay excluded by RLS regardless of query.
-  const supabase = await createClient();
+  //
+  // Static (cookie-free) client since I-175: the page is cached and shared by everyone, so it
+  // must be the signed-out view. It used to be the cookie client, which let an admin or the
+  // event's own organizer see a pending or hidden event at its public URL; nothing links there
+  // (the dashboard links only published/archived events, admins preview via
+  // /admin/events/pending/[id]/preview), and the cookie read kept the route dynamic.
+  const supabase = createStaticClient();
 
   // Exact match first, then a case-insensitive fallback. This used to be a single
   // .ilike(...).maybeSingle(), which is a bug: short_id is case-sensitive base62, so
@@ -709,16 +737,19 @@ export async function getEventBySlug(shortId: string): Promise<EventDetail | nul
   // The fallback keeps the old forgiveness for a hand-typed or lower-cased URL, but only when it
   // resolves unambiguously. A row reached that way has a short_id in different case to the one
   // requested, so the page's slug check permanent-redirects to the canonical URL.
-  let eventRow: unknown = (
-    await supabase.from("events").select(EVENT_DETAIL_COLUMNS).eq("short_id", shortId).maybeSingle()
-  ).data;
+  // Errors throw (I-175): this result is cached, and a transient failure must not be stored as a
+  // 404 for a day.
+  const exact = await supabase.from("events").select(EVENT_DETAIL_COLUMNS).eq("short_id", shortId).maybeSingle();
+  if (exact.error) throw new Error(exact.error.message);
+  let eventRow: unknown = exact.data;
 
   if (!eventRow) {
-    const { data: fuzzy } = await supabase
+    const { data: fuzzy, error: fuzzyError } = await supabase
       .from("events")
       .select(EVENT_DETAIL_COLUMNS)
       .ilike("short_id", shortId)
       .limit(2);
+    if (fuzzyError) throw new Error(fuzzyError.message);
     if (fuzzy?.length === 1) {
       eventRow = fuzzy[0];
     }

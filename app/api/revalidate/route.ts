@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 
-import { CACHE_TAGS } from "@/lib/cache-tags";
+import { CACHE_TAGS, eventTag } from "@/lib/cache-tags";
 
 import { buildEventSlug, slugify } from "@/lib/events";
 import { getCountryLabel } from "@/lib/event-display";
@@ -75,6 +75,9 @@ function valuesOf(key: string, ...rows: (Row | null)[]): string[] {
 // loses that set of pages (logged), the rest of the write's invalidation still happens.
 class AffectedPages {
   private paths = new Set<string>();
+  // Per-entity data tags (I-175 step 4) for the same entities: the cached detail fetchers are also
+  // read by the MCP get_* tools, which a page-path revalidation does not reach.
+  private tags = new Set<string>();
   private pending: Promise<void>[] = [];
   private client: ReturnType<typeof createAdminClient> | null = null;
 
@@ -96,6 +99,7 @@ class AffectedPages {
     for (const row of rows) {
       if (typeof row?.short_id === "string" && typeof row?.title === "string") {
         this.add(`/events/${buildEventSlug(row.short_id, row.title)}`);
+        this.tags.add(eventTag(row.short_id));
       }
     }
   }
@@ -136,6 +140,7 @@ class AffectedPages {
       const batch = this.pending.splice(0);
       await Promise.all(batch);
     }
+    for (const tag of this.tags) invalidateSnapshot(tag);
     for (const path of this.paths) revalidatePath(path);
     return this.paths.size;
   }
@@ -192,6 +197,8 @@ export async function POST(request: NextRequest) {
       // fire their own triggers, so the lookups finding nothing is fine.
       pages.eventsFromRows(rec, old);
       pages.venues(valuesOf("venue_id", rec, old));
+      // Other dates of the same series list this one (title, dates) on their pages.
+      pages.linked("events", "series_id", valuesOf("series_id", rec, old), "id", (ids) => pages.events(ids));
       const eventIds = valuesOf("id", record);
       pages.linked("event_teachers", "event_id", eventIds, "teacher_id", (ids) => pages.profiles(ids));
       pages.linked("event_organizers", "event_id", eventIds, "organizer_id", (ids) => pages.profiles(ids));
@@ -280,6 +287,8 @@ export async function POST(request: NextRequest) {
       // Table only carries `iso`, not a slug — same derivation getAllCountrySummaries() uses
       // (lib/country-pages.ts), kept in sync here since this route can't import a server-only
       // Supabase helper just to look up a string transform.
+      // Detail pages read the list of countries with a page for their country link (I-175).
+      invalidateSnapshot(CACHE_TAGS.countrySummaries);
       if (record?.iso) {
         revalidatePath(`/${slugify(getCountryLabel(record.iso as string))}`);
         // A new summary is a new page: the index and the sitemap list it too, so a crawler sent

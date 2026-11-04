@@ -12,7 +12,19 @@ export const CACHE_TAGS = {
   profiles: "profiles",
   venues: "venues",
   communities: "communities",
+  // Which countries have a /[country] page; read by every detail page for its country link.
+  countrySummaries: "country_summaries",
 } as const;
+
+// I-175 step 4: per-entity tags for the detail fetchers. A detail page inherits only its own
+// entity's tag, so an edit re-renders the pages that show that entity and nothing else. The
+// webhook revalidates the page paths too; the tag is what reaches the MCP get_* tools, which read
+// the same cached fetcher from a route handler that has no page path to revalidate.
+export const eventTag = (shortId: string) => `event:${shortId}`;
+
+// Fallback lifetime for a per-entity detail entry. Same as the pages' own 24h timer for now; step 5
+// raises both together (a page takes the lowest revalidate of anything it reads).
+export const DETAIL_REVALIDATE_SECONDS = 24 * 60 * 60;
 
 // Fallback lifetime for a snapshot whose invalidation was missed. Writes to the link tables
 // (event_teachers etc.) fire no trigger yet (I-175 step 3), so until then this bounds how stale a

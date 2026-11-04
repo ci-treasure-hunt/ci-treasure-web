@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { getCountryLabel, upcomingClassSeriesFilter, type EventListItem } from "@/lib/event-display";
 import { mapEventRow, slugify, type SupabaseEventRow } from "@/lib/events";
@@ -125,11 +127,33 @@ export async function getAllCountrySlugs(): Promise<string[]> {
 // to decide whether their breadcrumb trail gets a "Sweden" segment at all. Deliberately returns
 // null rather than a country-less fallback — no country page for that iso means no breadcrumb
 // segment, not a broken/empty one (see Breadcrumbs component).
+// I-175: which countries have a page, cached and tagged country_summaries (the revalidate webhook
+// invalidates it on a country_summaries write). Every detail page renders a country link, and this
+// used to load every summary with its full prose on each render: ~3,100 requests a day while the
+// detail pages were uncached (2026-11-04 logs). Codes only, so it stays tiny.
+const loadCountryPageIsos = unstable_cache(
+  async (): Promise<string[]> => {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase.from("country_summaries").select("iso");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => row.iso as string);
+  },
+  ["country-page-isos-v1"],
+  { tags: [CACHE_TAGS.countrySummaries], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+);
+
 export async function getCountryPageLink(iso: string | null): Promise<{ slug: string; label: string } | null> {
-  if (!iso) return null;
-  const summaries = await getAllCountrySummaries();
-  const match = summaries.find((s) => s.iso === iso);
-  return match ? { slug: match.slug, label: match.label } : null;
+  if (!iso || !hasSupabaseEnv()) return null;
+  let isos: string[];
+  try {
+    isos = await loadCountryPageIsos();
+  } catch {
+    return null;
+  }
+  if (!isos.includes(iso)) return null;
+  // Same slug and label derivation as getAllCountrySummaries().
+  const label = getCountryLabel(iso);
+  return { slug: slugify(label), label };
 }
 
 async function resolveCountryBySlug(slug: string): Promise<CountrySummary | null> {

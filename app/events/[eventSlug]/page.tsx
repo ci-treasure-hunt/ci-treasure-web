@@ -13,6 +13,15 @@ import { ogImage, socialImageUrl } from "@/lib/og-image";
 // an order of magnitude, and that regeneration is what consumed the ISR Write quota.
 export const revalidate = 86400;
 
+// I-175 step 4: cached per URL on first request, instead of rendered on every request (which was
+// ~2,800 renders a day in Nov 2026, the largest share of Vercel CPU and Supabase egress). Safe
+// because nothing here reads cookies or the user: getEventBySlug is the signed-out view, cached
+// per event and tagged event:<shortId>. The webhook refreshes this page when the event, its
+// credits, venue, organizing communities or series siblings change. One date-dependent state has
+// no write behind it: a class series' "booking closed" once its first session has passed, which
+// waits for the timer above (see the I-175 spec before raising it).
+export const dynamic = "force-static";
+
 type EventPageProps = {
   params: Promise<{
     eventSlug: string;
