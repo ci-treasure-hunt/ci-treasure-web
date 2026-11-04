@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { requireAdminUser } from "@/lib/admin-auth";
 
-import { getPendingEvents, type PendingEvent } from "./actions";
+import { getPendingEvents, type PendingEvent, type PendingSubmission } from "./actions";
 import { EventReviewActions } from "./review-actions";
 
 // A single pending event, or (I-171) all pending dates of one series, reviewed together.
@@ -74,6 +74,7 @@ export default async function AdminPendingEventsPage() {
                   <p className="mt-1 text-sm text-slate-500">
                     Organizer: {item.event.organizer ? item.event.organizer.name : "— unlinked —"}
                   </p>
+                  <SubmissionInfo submission={item.event.submission} />
                   <Link
                     href={`/admin/events/pending/${item.event.id}/preview`}
                     className="mt-2 inline-block text-sm font-semibold text-(--color-pine) underline"
@@ -96,6 +97,7 @@ export default async function AdminPendingEventsPage() {
                   <p className="mt-1 text-sm text-slate-500">
                     Organizer: {item.dates[0].organizer ? item.dates[0].organizer.name : "— unlinked —"}
                   </p>
+                  <SubmissionInfo submission={item.dates.find((d) => d.submission)?.submission ?? null} />
                   <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
                     {item.dates.map((d) => (
                       <Link
@@ -126,5 +128,36 @@ export default async function AdminPendingEventsPage() {
         </ul>
       )}
     </section>
+  );
+}
+
+// I-192 stage 3: who sent it in and what they gave us to go on. Internal (event_submissions).
+function SubmissionInfo({ submission }: { submission: PendingSubmission | null }) {
+  if (!submission) return null;
+  const who = submission.roles.length
+    ? submission.roles.map((r) => (r === "organizer" ? "organizer" : "teacher")).join(" + ")
+    : "shared by someone else";
+  return (
+    <div className="mt-2 space-y-1 text-sm text-slate-600">
+      <p>
+        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">{who}</span>{" "}
+        {submission.signedIn ? "signed in" : "signed out"}
+        {submission.email ? ` · ${submission.email}` : ""}
+      </p>
+      {submission.sourceUrl ? (
+        <p className="truncate">
+          Source:{" "}
+          <a href={submission.sourceUrl} target="_blank" rel="noreferrer" className="text-(--color-pine) underline">
+            {submission.sourceUrl}
+          </a>
+        </p>
+      ) : null}
+      {submission.pastedText ? (
+        <details>
+          <summary className="cursor-pointer text-(--color-pine)">Pasted text</summary>
+          <p className="mt-1 whitespace-pre-wrap rounded-lg bg-(--color-mist) p-2 text-xs text-slate-700">{submission.pastedText}</p>
+        </details>
+      ) : null}
+    </div>
   );
 }

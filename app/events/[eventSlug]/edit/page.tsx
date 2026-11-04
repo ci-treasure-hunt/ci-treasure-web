@@ -15,10 +15,14 @@ type SegmentDisplay = { title?: string; teachers?: Array<string | { name?: strin
 
 export default async function EditEventPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ eventSlug: string }>;
+  searchParams: Promise<{ step?: string }>;
 }) {
   const { eventSlug } = await params;
+  // I-192 stage 3: step 3 of adding an event. The essentials were just saved in step 1.
+  const justAdded = (await searchParams).step === "details";
   const parsed = parseEventSlug(eventSlug);
   if (!parsed) {
     notFound();
@@ -158,6 +162,18 @@ export default async function EditEventPage({
         <div className="mt-4">
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--color-pine)">Edit event</p>
           <h1 className="mt-2 font-serif text-4xl text-slate-950">{event.title}</h1>
+          {justAdded ? (
+            <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-slate-700">
+              {event.status === "published"
+                ? "Saved and published. "
+                : "Saved. We check every new event by hand before it appears. "}
+              Add the details now: description, prices, teachers, photo. Or{" "}
+              <Link href="/dashboard" className="font-semibold text-(--color-pine) underline">
+                finish later
+              </Link>{" "}
+              from your dashboard.
+            </p>
+          ) : null}
           <p className="mt-3 text-base leading-7 text-slate-700">
             Changes save immediately. Editing a published event keeps it published — it won&apos;t need
             re-approval.

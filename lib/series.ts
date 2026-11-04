@@ -142,7 +142,8 @@ export async function createSeriesFromEvent(opts: {
   eventId: string;
   title: string;
   seriesType: SeriesType;
-  createdBy: string;
+  // Null for a signed-out submission (I-192); event_series.created_by is nullable.
+  createdBy: string | null;
 }): Promise<string> {
   const supabase = createAdminClient();
   const { data: event, error } = await supabase.from("events").select("*").eq("id", opts.eventId).maybeSingle();
@@ -211,7 +212,8 @@ export async function addSeriesDates(opts: {
   dates: string[];
   templateEventId?: string | null;
   copyTeachers: boolean;
-  updatedBy: string;
+  // Null for a signed-out submission (I-192); events.updated_by is nullable.
+  updatedBy: string | null;
   // events.source for the new rows: "series" from the admin form, "self_submitted" when an
   // organizer's own submission generates them (I-171 Stage 4).
   source?: string;

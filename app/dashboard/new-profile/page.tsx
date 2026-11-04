@@ -1,17 +1,31 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { safeNext } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 
 import { NewProfileForm } from "./new-profile-form";
 
-export default async function NewProfilePage() {
+// I-192 stage 3: ?next= returns to an event claim (/events/new/claim?...) once the profile exists,
+// so a signed-out organizer or teacher who just submitted an event ends up linked to it. Only that
+// path is honoured; anything else falls back to the usual profile edit screen.
+function claimNext(raw: string | undefined): string | null {
+  const next = safeNext(raw, "");
+  return next.startsWith("/events/new/claim?") ? next : null;
+}
+
+export default async function NewProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const next = claimNext((await searchParams).next);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect("/auth?next=/dashboard/new-profile");
+    redirect(`/auth?next=${encodeURIComponent(next ? `/dashboard/new-profile?next=${encodeURIComponent(next)}` : "/dashboard/new-profile")}`);
   }
   const { data: owned } = await supabase
     .from("profiles")
@@ -19,7 +33,7 @@ export default async function NewProfilePage() {
     .eq("user_id", user.id)
     .maybeSingle();
   if (owned) {
-    redirect("/dashboard");
+    redirect(next ?? "/dashboard");
   }
 
   return (
@@ -43,7 +57,7 @@ export default async function NewProfilePage() {
             .
           </p>
           <div className="mt-8">
-            <NewProfileForm />
+            <NewProfileForm next={next} />
           </div>
         </div>
       </div>

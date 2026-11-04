@@ -470,13 +470,15 @@ export function computeRepeatDates(
 // /addevent or admin) stay editable.
 export function validateOrganizerEvent(
   data: OrganizerEventFormData,
-  options?: { enforceMinDuration?: boolean }
+  // optionalSingleDayTime (I-192): someone passing on an event they saw often has no start time;
+  // review fills it in. Organizers and teachers still give one.
+  options?: { enforceMinDuration?: boolean; optionalSingleDayTime?: boolean }
 ): string | null {
   if (!data.title.trim()) return "Title is required.";
   if (!data.startDate) return "Start date is required.";
   if (!data.endDate) return "End date is required.";
   if (data.endDate < data.startDate) return "End date can't be before the start date.";
-  if (options?.enforceMinDuration && data.endDate === data.startDate) {
+  if (options?.enforceMinDuration && !options.optionalSingleDayTime && data.endDate === data.startDate) {
     if (!data.startTime.trim()) {
       return "Add a start time for a single-day event.";
     }

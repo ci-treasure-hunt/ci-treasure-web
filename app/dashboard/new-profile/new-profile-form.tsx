@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 
 import { checkSimilarProfiles, createProfile, type SimilarProfile } from "./actions";
 
-export function NewProfileForm() {
+export function NewProfileForm({ next = null }: { next?: string | null }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [website, setWebsite] = useState("");
@@ -28,7 +28,9 @@ export function NewProfileForm() {
         // review (see requestMoreInfo's own email, which points here), and a stub with just a
         // name is exactly what needs a bio/photo/city added next. Landing on /dashboard first
         // made that a second, skippable step.
-        router.push("/dashboard/profile/edit");
+        // I-192: back to the event claim first when the profile was made for one; it links the
+        // new profile to the event and then opens the event's edit form.
+        router.push(next ?? "/dashboard/profile/edit");
       } else {
         setError(result.error ?? "Could not create profile.");
       }

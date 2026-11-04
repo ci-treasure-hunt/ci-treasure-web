@@ -49,6 +49,17 @@ export type PendingEvent = {
   // I-171: set when the date belongs to a series, so the queue can review all its pending
   // dates as one card (approveSeries/rejectSeries) instead of one row per date.
   series: { id: string; title: string } | null;
+  // I-192 stage 3: from event_submissions, when the event came through the three-step flow.
+  submission: PendingSubmission | null;
+};
+
+export type PendingSubmission = {
+  // "organizer" / "teacher"; empty = passed on by someone else ("shared").
+  roles: string[];
+  signedIn: boolean;
+  email: string | null;
+  sourceUrl: string | null;
+  pastedText: string | null;
 };
 
 export async function getPendingEvents(): Promise<PendingEvent[]> {
@@ -62,6 +73,26 @@ export async function getPendingEvents(): Promise<PendingEvent[]> {
     )
     .eq("status", "pending")
     .order("start_date", { ascending: true });
+
+  const ids = (data ?? []).map((e) => e.id as string);
+  const { data: submissionRows } = ids.length
+    ? await admin
+        .from("event_submissions")
+        .select("event_id, roles, user_id, email, source_url, pasted_text")
+        .in("event_id", ids)
+    : { data: [] };
+  const submissions = new Map(
+    (submissionRows ?? []).map((r) => [
+      r.event_id as string,
+      {
+        roles: (r.roles as string[]) ?? [],
+        signedIn: Boolean(r.user_id),
+        email: (r.email as string) ?? null,
+        sourceUrl: (r.source_url as string) ?? null,
+        pastedText: (r.pasted_text as string) ?? null,
+      } satisfies PendingSubmission,
+    ]),
+  );
 
   return (data ?? []).map((event) => {
     // Prefer a claimed (user_id set) lead organizer. Supabase typegen types a
@@ -88,6 +119,7 @@ export async function getPendingEvents(): Promise<PendingEvent[]> {
             title: ((event.event_series as unknown as { title?: string } | null)?.title ?? event.title) as string,
           }
         : null,
+      submission: submissions.get(event.id as string) ?? null,
     };
   });
 }

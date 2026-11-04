@@ -89,9 +89,21 @@ export default function PrivacyPage() {
             </a>{" "}
             for details.
           </p>
+          <p className="mt-2">
+            Anyone can add an event through the &quot;Add an event&quot; form, with or without an account. The event
+            details you enter, including the link you give, are shown on the event page once we have reviewed them. We
+            also store your role at the event (organizer, teacher, or passing it on) and the announcement text if you
+            paste one; these are only for checking and completing the listing and are never shown on the site. If you are
+            signed in, or sign in afterwards to manage the event, we record which account submitted it. If you are not
+            signed in, the form is protected by the Turnstile check described in section 14, we do not store your IP
+            address, and you can leave your own email address, which is optional and only for us in case we have a
+            question. We keep these details for as long as the event is on the site, and delete your email address on
+            request. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in running a directory that people can
+            add events to, and in being able to check and ask about a submission.
+          </p>
         </section>
         <section>
-          <h2 className="font-semibold text-slate-950">6. Teacher, organizer and musician profiles</h2>
+          <h2 className="font-semibold text-slate-950">6.Teacher, organizer and musician profiles</h2>
           <p>
             Most profiles on this site are created by us, not by the person they describe. This section explains that
             processing, as required by Art.&nbsp;14 GDPR, which applies where personal data has not been obtained

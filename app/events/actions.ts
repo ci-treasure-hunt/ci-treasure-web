@@ -12,6 +12,8 @@ import {
   BARE_EMAIL,
   buildPrice,
   computeRepeatDates,
+  createEmptyOrganizerEventFormData,
+  EVENT_TYPE_OPTIONS,
   isClosedClassSeries,
   normalizeCountry,
   normalizeJsonItems,
@@ -29,6 +31,9 @@ import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { uniqueProfileSlug } from "@/lib/profile-slug";
+import { createEventSubmitTicket, verifyEventSubmitTicket } from "@/lib/event-submit-ticket";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { safeExternalUrl } from "@/lib/url-safety";
 type ActionResult = {
   success: boolean;
   error?: string;
@@ -189,6 +194,52 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     return { success: false, error: "Claim or create your profile before submitting events." };
   }
 
+  const result = await insertSubmittedEvent(data, {
+    db: supabase,
+    userId: user.id,
+    profile,
+    roles: ["organizer"],
+    source: "self_submitted",
+  });
+  return result.ok
+    ? { success: true, slug: result.slug, warning: result.warning, published: result.published }
+    : { success: false, error: result.error };
+}
+
+type SubmitterRole = "organizer" | "teacher";
+
+// I-192 stage 3: who is submitting and how the rows get written. `db` is the user's own client
+// (RLS, events.user_id = them) for an organizer or teacher who is signed in, and the admin client
+// for a sharer or a signed-out submission (no owner; the private event_submissions row records
+// who sent it). Callers have already validated, rate-limited and authorized.
+type SubmitterContext = {
+  // Either Supabase client; same reason as resolveVenueLocation's untyped parameter.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any;
+  userId: string | null;
+  profile: { id: string; is_trusted: boolean } | null;
+  roles: SubmitterRole[];
+  source: string;
+};
+
+type InsertResult =
+  | { ok: true; eventId: string; slug: string; title: string; warning?: string; published: boolean }
+  | { ok: false; error: string };
+
+// The write half of createEvent, shared with the I-192 step-1 flow (app/events/new/actions.ts):
+// venue + timezone, the pending row, organizer/teacher links by role, repeating dates, and
+// auto-publish for a trusted organizer. Not exported as an action on purpose: "use server" makes
+// every export callable from the browser, and this trusts its context.
+async function insertSubmittedEvent(data: OrganizerEventFormData, ctx: SubmitterContext): Promise<InsertResult> {
+  const { db: supabase, userId, profile, roles } = ctx;
+  const isOrganizer = roles.includes("organizer") && Boolean(profile);
+  const isTeacher = roles.includes("teacher") && Boolean(profile);
+
+  const phoneContacts = resolveEventPhoneContacts(data);
+  if (phoneContacts.invalid.length) {
+    return { ok: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
+  }
+
   const { imageUrl, warning } = await resolveExternalEventImage(data.imageUrl);
   const { venue_id, address, lat, lng } = await resolveVenueLocation(
     supabase,
@@ -198,13 +249,13 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
     data.city,
     data.country,
     null,
-    { source: "event_form", createdBy: user.id },
+    { source: "event_form", createdBy: userId },
   );
 
   const timezone = deriveTimezone(data.timezone, lat, lng);
   if (!timezone) {
     return {
-      success: false,
+      ok: false,
       error: "We couldn't auto-detect a timezone for this location — please pick one from the Timezone dropdown.",
     };
   }
@@ -230,7 +281,9 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
       }
     : {};
 
-  // Insert as pending. short_id is filled by the generate_short_id() DB trigger.
+  // Insert as pending. short_id is filled by the generate_short_id() DB trigger. Status, hide and
+  // editors are fixed here and never come from the form (the admin client skips the RLS insert
+  // check that enforces the same for signed-in users).
   const { data: inserted, error: insertError } = await supabase
     .from("events")
     .insert({
@@ -240,40 +293,42 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
       address,
       ...(lat != null && lng != null ? { lat, lng } : {}),
       status: "pending",
-      source: "self_submitted",
-      user_id: user.id,
-      updated_by: user.id,
+      source: ctx.source,
+      user_id: userId,
+      updated_by: userId,
     })
     .select("id, short_id, title")
     .single();
   if (insertError || !inserted) {
-    return { success: false, error: insertError?.message ?? "Could not create event." };
+    return { ok: false, error: insertError?.message ?? "Could not create event." };
   }
 
-  // I-165 F3. Ownership is already established: this row was just inserted under this user's
-  // session and RLS.
+  // I-165 F3. Ownership is already established: this row was just inserted under this context.
   await setEntityEmail("event", inserted.id, resolveContactEmail(data));
   await setEntityPhoneContacts("event", inserted.id, phoneContacts.contacts);
 
-  // Link the organizer's profile as lead (roles are always 'lead').
-  const { error: linkError } = await supabase.from("event_organizers").insert({
-    event_id: inserted.id,
-    organizer_id: profile.id,
-    role: "lead",
-  });
-  if (linkError) {
-    // Non-fatal: event exists and is in the admin queue; admin can fix the link.
-    console.error("event_organizers link failed:", linkError.message);
+  // The submitter's own profile, by role: lead organizer (roles are always 'lead'), teacher, or
+  // both (I-192: someone can organize and teach). Non-fatal: the event exists and is in the admin
+  // queue either way; admin can fix a link.
+  if (isOrganizer && profile) {
+    const { error: linkError } = await supabase.from("event_organizers").insert({
+      event_id: inserted.id,
+      organizer_id: profile.id,
+      role: "lead",
+    });
+    if (linkError) console.error("event_organizers link failed:", linkError.message);
   }
 
   // Teachers picked in the create form (PersonPicker) — can only be written now, since
-  // event_teachers needs the real id this insert just produced. Non-fatal for the same reason
-  // as the organizer link above: the event already exists either way.
+  // event_teachers needs the real id this insert just produced. The submitter teaching (I-192)
+  // joins them unless they already picked themselves.
   let teacherWarning: string | undefined;
-  if (data.teachers?.length) {
-    const { error: teacherError } = await supabase.from("event_teachers").insert(
-      data.teachers.map((t) => ({ event_id: inserted.id, teacher_id: t.profileId, role: t.role })),
-    );
+  const teacherRows = (data.teachers ?? []).map((t) => ({ event_id: inserted.id, teacher_id: t.profileId, role: t.role }));
+  if (isTeacher && profile && !teacherRows.some((t) => t.teacher_id === profile.id)) {
+    teacherRows.push({ event_id: inserted.id, teacher_id: profile.id, role: "teacher" });
+  }
+  if (teacherRows.length) {
+    const { error: teacherError } = await supabase.from("event_teachers").insert(teacherRows);
     if (teacherError) {
       console.error("event_teachers link failed:", teacherError.message);
       teacherWarning = "Event created, but teachers couldn't be linked — add them from the edit page.";
@@ -281,12 +336,11 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   }
 
   // Additional organizers picked in the create form, added 2026-09-19 alongside the same
-  // PersonPicker teachers use. Filter out the submitter's own profile: they're already linked
-  // above, and event_organizers has a UNIQUE(event_id, organizer_id) that a re-add would trip.
-  // Always 'lead' regardless of whatever role the item carries (co-organizer is not a role this
-  // form offers, see OrganizerEventFormData's comment on `organizers`).
+  // PersonPicker teachers use. Filter out the submitter's own profile when they are linked as
+  // lead above: event_organizers has a UNIQUE(event_id, organizer_id) that a re-add would trip.
+  // Always 'lead' regardless of whatever role the item carries.
   let organizerWarning: string | undefined;
-  const extraOrganizers = (data.organizers ?? []).filter((o) => o.profileId !== profile.id);
+  const extraOrganizers = (data.organizers ?? []).filter((o) => !(isOrganizer && o.profileId === profile?.id));
   if (extraOrganizers.length) {
     const { error: organizerError } = await supabase.from("event_organizers").insert(
       extraOrganizers.map((o) => ({ event_id: inserted.id, organizer_id: o.profileId, role: "lead" })),
@@ -309,14 +363,14 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
         eventId: inserted.id,
         title: data.title.trim(),
         seriesType: "recurring",
-        createdBy: user.id,
+        createdBy: userId,
       });
       const result = await addSeriesDates({
         seriesId,
         dates: repeatDates,
         copyTeachers: true,
-        updatedBy: user.id,
-        source: "self_submitted",
+        updatedBy: userId,
+        source: ctx.source,
       });
       repeatIds.push(...result.created.map((c) => c.id));
       if (result.skipped.length) {
@@ -331,21 +385,26 @@ export async function createEvent(data: OrganizerEventFormData): Promise<ActionR
   // Trusted organizers auto-publish. The announce Edge Function fires on the
   // pending→published UPDATE (not on INSERT), so publish via a follow-up update. All dates of a
   // repeating event publish together; the announce series guard posts only the earliest
-  // (_shared/series-guard.ts), so a weekly jam doesn't post once per week.
-  if (profile.is_trusted) {
+  // (_shared/series-guard.ts), so a weekly jam doesn't post once per week. Only for the organizer
+  // role: a teacher or a sharer is not the one vouching for the event (I-192).
+  const published = isOrganizer && Boolean(profile?.is_trusted);
+  if (published) {
     const admin = createAdminClient();
     await admin.from("events").update({ status: "published" }).in("id", [inserted.id, ...repeatIds]);
     revalidatePath("/");
   } else {
-    notifyAdminNewEvent(inserted.title).catch(() => {});
+    const who = isOrganizer ? (isTeacher ? "organizer + teacher" : "organizer") : isTeacher ? "teacher" : userId ? "shared, signed in" : "shared";
+    notifyAdminNewEvent(`${inserted.title} (${who})`).catch(() => {});
   }
 
   revalidatePath("/dashboard");
   return {
-    success: true,
+    ok: true,
+    eventId: inserted.id,
     slug: buildEventSlug(inserted.short_id, inserted.title),
+    title: inserted.title,
     warning: teacherWarning ?? organizerWarning ?? repeatWarning ?? warning,
-    published: Boolean(profile.is_trusted),
+    published,
   };
 }
 
@@ -685,3 +744,219 @@ async function notifyAdminNewEvent(title: string) {
 // which carries "use server", and every export in such a module is a callable endpoint whose
 // caller's authorization does not protect it. It is server-only, so it now lives in a plain
 // module where it cannot become one by accident.
+
+// ── I-192 stage 3: step 1 of the three-step event flow ─────────────────────────────────────────
+//
+// /events/new, for everyone. A short form (what, when, where, link) saved as a pending event
+// before anyone signs in. Who the submitter is decides how it is written:
+//   - signed in with a profile, ticking "I organize it" and/or "I teach at it": their own event
+//     (events.user_id, RLS client), linked by role; a trusted organizer still auto-publishes.
+//     Next: the edit form (step 3) for the details.
+//   - signed in, neither ticked, or no profile (a volunteer passing an event on): a shared
+//     submission, no owner. Next: thank-you.
+//   - signed out: a shared submission with a ticket. Next: step 2 ("who are you?"), where an
+//     organizer or teacher signs in and claims it (lib/event-submission-claim.ts).
+// Details for review that never go public (role, own email, source link, pasted post text) are in
+// event_submissions (service role only).
+
+export type EventStep1Input = {
+  title: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  city: string;
+  country: string;
+  venueId: string | null;
+  venueLabel: string;
+  venueName: string;
+  venueAddress: string;
+  sourceUrl: string;
+  pastedText: string;
+  discipline: string[];
+  repeat: OrganizerEventFormData["repeat"];
+  repeatUntil: string;
+  repeatDates: string;
+  dropIn: OrganizerEventFormData["dropIn"];
+  /** Signed in with a profile only; ignored otherwise. Empty = just sharing. */
+  roles: SubmitterRole[];
+  /** Signed out only. */
+  turnstileToken?: string;
+  /** Set after the submitter has seen the "this looks already listed" notice. */
+  confirmDuplicate?: boolean;
+};
+
+export type EventStep1Result =
+  | { ok: true; next: "edit"; slug: string; published: boolean; warning?: string }
+  | { ok: true; next: "thanks"; title: string }
+  | { ok: true; next: "who"; eventId: string; ticket: string; title: string }
+  | { ok: false; error: string; duplicate?: { title: string; slug: string } };
+
+// Signed-out shared submissions, all submitters together, per 24 hours.
+const ANONYMOUS_EVENTS_PER_DAY = 30;
+
+// The source link becomes the event's first link, typed by the link rules
+// (docs/web/link-types.md): forms → registration, a Facebook event → facebook_event, else website.
+function guessLinkType(url: string): string {
+  const u = url.toLowerCase();
+  if (/forms\.gle|docs\.google\.com\/forms|typeform\.com|tally\.so|jotform/.test(u)) return "registration";
+  if (/facebook\.com\/events|fb\.me\/e\//.test(u)) return "facebook_event";
+  if (/(^|\/\/|\.)t\.me\//.test(u)) return "telegram";
+  if (/instagram\.com/.test(u)) return "instagram";
+  return "website";
+}
+
+export async function submitEventStep1(input: EventStep1Input): Promise<EventStep1Result> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+
+  let profile: { id: string; is_trusted: boolean } | null = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("id, is_trusted").eq("user_id", user.id).maybeSingle();
+    profile = data ?? null;
+  }
+  const roles: SubmitterRole[] =
+    user && profile
+      ? (["organizer", "teacher"] as const).filter((r) => (input.roles ?? []).includes(r))
+      : [];
+
+  if (!user) {
+    if (!(await verifyTurnstile(input.turnstileToken))) {
+      return { ok: false, error: "The spam check didn't go through. Please try again." };
+    }
+    const { count } = await admin
+      .from("event_submissions")
+      .select("id", { count: "exact", head: true })
+      .is("user_id", null)
+      .gte("created_at", new Date(Date.now() - 86400_000).toISOString());
+    if ((count ?? 0) >= ANONYMOUS_EVENTS_PER_DAY) {
+      return {
+        ok: false,
+        error: "We've had a lot of new events today. Please try again tomorrow, or send the link to hello@citreasurehunt.com.",
+      };
+    }
+  }
+
+  const sourceUrl = safeExternalUrl(String(input.sourceUrl ?? "").trim().slice(0, 500));
+  if (!sourceUrl) {
+    return { ok: false, error: "Please add a link to the event: its website, Facebook event or a post about it." };
+  }
+  const pastedText = String(input.pastedText ?? "").trim().slice(0, 5000);
+
+  const data: OrganizerEventFormData = {
+    ...createEmptyOrganizerEventFormData(),
+    title: String(input.title ?? "").slice(0, 200),
+    type: input.type,
+    startDate: input.startDate,
+    endDate: input.endDate || input.startDate,
+    startTime: input.startTime ?? "",
+    endTime: input.endTime ?? "",
+    city: String(input.city ?? "").slice(0, 120),
+    country: input.country ?? "",
+    venueId: input.venueId,
+    venueLabel: input.venueLabel ?? "",
+    venueName: String(input.venueName ?? "").slice(0, 150),
+    venueAddress: String(input.venueAddress ?? "").slice(0, 300),
+    discipline: Array.isArray(input.discipline) && input.discipline.length ? input.discipline : ["contact_improvisation"],
+    repeat: input.repeat ?? "",
+    repeatUntil: input.repeatUntil ?? "",
+    repeatDates: input.repeatDates ?? "",
+    dropIn: input.dropIn ?? "",
+    linkItems: [{ type: guessLinkType(sourceUrl), url: sourceUrl }],
+  };
+  if (!(EVENT_TYPE_OPTIONS as readonly string[]).includes(data.type)) {
+    return { ok: false, error: "Please pick a type." };
+  }
+  const validationError = validateOrganizerEvent(data, {
+    enforceMinDuration: true,
+    optionalSingleDayTime: roles.length === 0,
+  });
+  if (validationError) return { ok: false, error: validationError };
+
+  // Already listed? Same link, or same title on the same start date. Shown once; the submitter can
+  // go ahead anyway (a second edition, a different event behind the same Facebook page).
+  if (!input.confirmDuplicate) {
+    const { data: byLink } = await admin
+      .from("events")
+      .select("short_id, title")
+      .contains("links", { items: [{ url: sourceUrl }] })
+      .in("status", ["published", "pending"])
+      .limit(1);
+    let match = byLink?.[0];
+    if (!match) {
+      const { data: byTitle } = await admin
+        .from("events")
+        .select("short_id, title")
+        .ilike("title", data.title.trim().replace(/[%_]/g, ""))
+        .eq("start_date", data.startDate)
+        .in("status", ["published", "pending"])
+        .limit(1);
+      match = byTitle?.[0];
+    }
+    if (match) {
+      return {
+        ok: false,
+        error: "This event may already be listed.",
+        duplicate: { title: match.title, slug: buildEventSlug(match.short_id, match.title) },
+      };
+    }
+  }
+
+  const owner = user && profile && roles.length ? { userId: user.id, profile } : null;
+  const result = await insertSubmittedEvent(data, {
+    db: owner ? supabase : admin,
+    userId: owner?.userId ?? null,
+    profile: owner?.profile ?? null,
+    roles,
+    source: owner ? "self_submitted" : "web_share",
+  });
+  if (!result.ok) return { ok: false, error: result.error };
+
+  const { error: submissionError } = await admin.from("event_submissions").insert({
+    event_id: result.eventId,
+    roles,
+    user_id: user?.id ?? null,
+    source_url: sourceUrl,
+    pasted_text: pastedText || null,
+    claimed_at: user ? new Date().toISOString() : null,
+  });
+  if (submissionError) console.error("event_submissions insert failed:", submissionError.message);
+
+  if (owner) return { ok: true, next: "edit", slug: result.slug, published: result.published, warning: result.warning };
+  if (user) return { ok: true, next: "thanks", title: result.title };
+  return {
+    ok: true,
+    next: "who",
+    eventId: result.eventId,
+    ticket: createEventSubmitTicket(result.eventId),
+    title: result.title,
+  };
+}
+
+// Step 2, "I'm just sharing it", signed out: the optional own email, for questions only. Only for
+// the browser holding the ticket, and only while nobody has claimed the submission.
+export async function saveSharedSubmission(
+  eventId: string,
+  ticket: string,
+  email: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!verifyEventSubmitTicket(eventId, ticket)) {
+    return { ok: false, error: "This link has expired. Your event is saved; thank you!" };
+  }
+  const address = String(email ?? "").trim().slice(0, 200);
+  if (address && !BARE_EMAIL.test(address)) {
+    return { ok: false, error: "This doesn't look like an email address." };
+  }
+  if (address) {
+    await createAdminClient()
+      .from("event_submissions")
+      .update({ email: address })
+      .eq("event_id", eventId)
+      .is("user_id", null);
+  }
+  return { ok: true };
+}
