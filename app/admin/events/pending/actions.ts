@@ -7,7 +7,7 @@ import { sendEmail } from "@/lib/email";
 import { buildEventSlug } from "@/lib/events";
 import { fbGroupsForEvent } from "@/lib/fb-groups";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SUPPORT_EMAIL_LINES } from "@/lib/support";
+import { SUPPORT_EMAIL_LINES, supportHref } from "@/lib/support";
 
 // Share kit (nudge 5, 2026-10-15): the moment an event goes live is when the organizer is most
 // likely to pass the link on, and every share brings dancers to the listing.
@@ -24,6 +24,56 @@ function fbGroupEmailLines(event: { country: string | null; start_date: string; 
     ...groups.map((g) => `${g.name}: ${g.url}`),
     "",
   ];
+}
+
+// I-192: someone passed this event on (event_submissions with no role) and left an address, or was
+// signed in while sharing. Thank them once it is live: it is their work too, and the moment it goes
+// up is when they are most likely to share it. Not on reject: the event was not theirs to fix.
+// The owner email above covers organizers and teachers (events.user_id); a shared submission has
+// no owner, so nobody gets two emails.
+async function notifySharersLive(
+  admin: ReturnType<typeof createAdminClient>,
+  eventIds: string[],
+  event: { title: string; short_id: string },
+) {
+  if (!eventIds.length) return;
+  const { data: rows } = await admin
+    .from("event_submissions")
+    .select("email, user_id, roles")
+    .in("event_id", eventIds);
+  const recipients = new Set<string>();
+  for (const row of rows ?? []) {
+    if ((row.roles as string[] | null)?.length) continue;
+    const address = (row.email as string | null) ?? (await submitterEmail(admin, (row.user_id as string | null) ?? null));
+    if (address) recipients.add(address.toLowerCase());
+  }
+  if (!recipients.size) return;
+
+  const url = `https://citreasurehunt.com/events/${buildEventSlug(event.short_id, event.title)}`;
+  for (const to of recipients) {
+    const result = await sendEmail({
+      to,
+      subject: `Thank you: "${event.title}" is now on CI Treasure Hunt`,
+      text: [
+        `Thank you for passing on "${event.title}". We checked it, added the details, and it is now live:`,
+        url,
+        "",
+        "Share the link with the people you dance with, so more dancers find it.",
+        "",
+        "New events are announced in our Telegram group: https://t.me/citreasurehunt",
+        "And once a month in the newsletter: https://citreasurehunt.com/newsletter",
+        "",
+        "Seen another event? You can add it here: https://citreasurehunt.com/events/new",
+        "",
+        "CI Treasure Hunt is free, and I build and run it on my own. If it helps you find where to dance,",
+        "a small monthly contribution keeps it going:",
+        supportHref("share_email", true),
+        "",
+        "— CI Treasure Hunt",
+      ].join("\n"),
+    });
+    if (!result.ok) console.error("sharer live email failed:", result.error);
+  }
 }
 
 // Look up the submitter's email from the event's user_id.
@@ -163,6 +213,7 @@ export async function approveEvent(eventId: string): Promise<{ success: boolean;
     });
     if (!result.ok) console.error("approve email failed:", result.error);
   }
+  if (event) await notifySharersLive(admin, [eventId], event);
 
   revalidatePath("/admin/events/pending");
   revalidatePath("/");
@@ -235,7 +286,7 @@ export async function approveSeries(seriesId: string): Promise<{ success: boolea
 
   const { data: dates } = await admin
     .from("events")
-    .select("title, short_id, user_id, start_date")
+    .select("id, title, short_id, user_id, start_date")
     .eq("series_id", seriesId)
     .eq("status", "pending")
     .order("start_date");
@@ -272,6 +323,7 @@ export async function approveSeries(seriesId: string): Promise<{ success: boolea
     });
     if (!result.ok) console.error("approve series email failed:", result.error);
   }
+  await notifySharersLive(admin, dates.map((d) => d.id as string), first);
 
   revalidatePath("/admin/events/pending");
   revalidatePath(`/admin/series/${seriesId}`);
