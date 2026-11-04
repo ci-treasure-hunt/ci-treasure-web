@@ -74,7 +74,9 @@ export function WhoChoice({ eventId, ticket }: { eventId: string; ticket: string
               maxLength={200}
               className="w-full rounded-2xl border border-(--color-sand-strong) bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-(--color-pine)"
             />
-            <span className="block text-xs text-slate-500">Only in case we have a question about this event. Never shown.</span>
+            <span className="block text-xs text-slate-500">
+              We&apos;ll only use it to ask you about this event and to tell you when it&apos;s live. Never shown.
+            </span>
           </label>
           {error ? <p className="text-sm text-rose-700">{error}</p> : null}
           <button
