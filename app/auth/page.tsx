@@ -143,12 +143,16 @@ export default async function AuthPage({
           <span className="h-px flex-1 bg-(--color-sand-strong)" />
         </div>
 
-        <p className="mt-6 rounded-2xl bg-(--color-mist) px-4 py-3 text-sm leading-6 text-slate-600">
-          If you go the email route, open the link in the same browser you used to request it, and
-          allow first-party cookies for this site. On phones the email app often opens links in a
-          different browser than the one you started in, which stops sign-in from completing. If
-          that happens, come back to this tab and use the numbered code from the email instead.
-        </p>
+        {/* Short bullets since 2026-11-04 (Eric). Blocked cookies have their own warning
+            (components/auth/cookie-check.tsx), so they're not repeated here. */}
+        <div className="mt-6 rounded-2xl bg-(--color-mist) px-4 py-3 text-sm leading-6 text-slate-600">
+          <p className="font-semibold text-slate-700">Signing in by email?</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5">
+            <li>Open the link in the same browser where you asked for it.</li>
+            <li>Phones often open email links in another browser, and then sign-in fails.</li>
+            <li>If that happens, come back to this tab and type the code from the email.</li>
+          </ul>
+        </div>
 
         {sentEmail ? (
           <p className="mt-4 text-sm text-emerald-700">
@@ -179,7 +183,7 @@ export default async function AuthPage({
           {/* Must stay unchecked by default: a pre-ticked box is not valid consent (Planet49, UWG §7). */}
           <label className="flex items-start gap-2 text-sm text-slate-700">
             <input type="checkbox" name="newsletter" className="mt-1" />
-            <span>Also send me the monthly newsletter with new events and features. You confirm it once by email.</span>
+            <span>Also send me the newsletter: festivals, workshops and news from the CI world. You confirm it once by email.</span>
           </label>
           <button
             type="submit"

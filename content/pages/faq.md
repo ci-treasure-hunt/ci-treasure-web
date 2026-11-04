@@ -44,7 +44,7 @@ No need to keep checking the site. Follow along wherever you already spend your 
 | [Facebook group: Asia, Australia & New Zealand (2+ days)](https://www.facebook.com/groups/citreasurehuntapac) | Weekend workshops, intensives, festivals and other CI events of 2 days or longer across Asia, Australia, New Zealand and the Pacific Islands. |
 | [Facebook group: Water Dance & Aquatic Movement (2+ days)](https://www.facebook.com/groups/citreasurehuntaqua) | Multi-day events in the water worldwide: aquatic CI, Watsu, WaterDance, Aguahara and related work. Open beyond contact improvisation. |
 | [Instagram](https://www.instagram.com/citreasurehunt/) | Visual highlights, festival posts and collaborations with organizers. |
-| [Newsletter](/newsletter) | A monthly roundup of handpicked events and project news. |
+| [Newsletter](/newsletter) | A roundup of handpicked events and project news. |
 
 Inside the Telegram group, new events are sorted by length and region, so you can follow just what
 interests you. Events of 4+ days go to the festivals topic. Events of 2-3 days go to a regional

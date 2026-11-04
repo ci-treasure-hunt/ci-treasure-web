@@ -162,7 +162,7 @@ when you write, you are not writing to a support queue.
 - Facebook group, Asia, Australia & New Zealand (2+ days): [facebook.com/groups/citreasurehuntapac](https://www.facebook.com/groups/citreasurehuntapac)
 - Facebook group, Water Dance & Aquatic Movement worldwide (2+ days, open beyond CI): [facebook.com/groups/citreasurehuntaqua](https://www.facebook.com/groups/citreasurehuntaqua)
 - Instagram: [@citreasurehunt](https://www.instagram.com/citreasurehunt/)
-- Newsletter, monthly: [citreasurehunt.com/newsletter](/newsletter)
+- Newsletter: [citreasurehunt.com/newsletter](/newsletter)
 - Spotted a mistake, or have an event to add: [hello@citreasurehunt.com](mailto:hello@citreasurehunt.com)
 
 Corrections, missing events, and people telling me I have their festival's dates wrong are all

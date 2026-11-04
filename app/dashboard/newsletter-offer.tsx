@@ -31,9 +31,9 @@ export function NewsletterOffer({ email }: { email: string }) {
 
   return (
     <Shell>
-      <h2 className="font-serif text-xl text-slate-950">Get the monthly newsletter?</h2>
+      <h2 className="font-serif text-xl text-slate-950">Get the newsletter?</h2>
       <p className="mt-2 text-sm leading-6 text-slate-700">
-        New events, communities and features, once a month, to {email}. You confirm it once by email and can
+        Festivals, workshops and news from the CI world, to {email}. You confirm it once by email and can
         unsubscribe any time.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
