@@ -427,15 +427,19 @@ export default function PrivacyPage() {
             Anyone can add a venue through the &quot;Add a venue&quot; form, with or without an account, and a place
             entered with its street address in the event form is saved as a venue as well, so that others can select
             it. We store what you enter about the venue: its name, address, links, description, an optional contact
-            email address (shown only behind the check described in section 14) and an optional photo with the
-            photographer credit you give, on the same terms as community photos in section 16. If you are signed in,
-            we also record which account added the venue, and use it to limit how many venues one account can add per
-            day. If you are not signed in, the form is protected by the Turnstile check described in section 14, we do
-            not store your IP address, and you can leave your own email address, which is optional and only for us in
-            case we have a question. Neither the account link nor your own email address is ever shown on the site.
-            We keep them for as long as the venue exists, and delete your email address on request. A venue gets its
-            own public page only after we have reviewed it. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest
-            in running a directory of places that people can add to, and in being able to ask about a submission.
+            email address for the venue (shown only behind the check described in section 14), and an optional photo
+            with the photographer credit you give. A venue gets its own public page only after we have reviewed it,
+            and its links, description and photo are shown only there. Its name and address also appear on the pages
+            of events held there.
+          </p>
+          <p className="mt-2">
+            If you are signed in, we record which account added the venue, to ask about a submission and to limit how
+            many venues one account can add per day. If you are not signed in, the form is protected by the Turnstile
+            check described in section 14, we do not store your IP address, and you can leave your own email address,
+            which is optional and only for us in case we have a question. Neither is ever shown on the site. We keep
+            them for as long as the venue exists, and delete your email address on request. Legal basis:
+            Art.&nbsp;6(1)(f) GDPR: legitimate interest in running a directory of places that people can add to, and in
+            being able to ask about a submission.
           </p>
         </section>
         <section>
