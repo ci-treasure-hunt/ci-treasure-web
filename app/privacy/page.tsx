@@ -97,10 +97,12 @@ export default function PrivacyPage() {
             complete the listing, and never show them on the site. If you are
             signed in, or sign in afterwards to manage the event, we record which account submitted it. If you are not
             signed in, the form is protected by the Turnstile check described in section 14, we do not store your IP
-            address, and you can leave your own email address, which is optional and only for us in case we have a
-            question. We keep these details for as long as the event is on the site, and delete your email address on
-            request. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in running a directory that people can
-            add events to, and in being able to check and ask about a submission.
+            address, and you can leave your own email address, which is optional. If you pass an event on, we use your
+            email address (or, if you are signed in, your account&apos;s address) only to ask you about the event and to
+            let you know once, when it is live. We keep these details for as long as the event is on the site, and
+            delete your email address on request. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in running
+            a directory that people can add events to, and in being able to ask about a submission and tell the
+            person who sent it in that it is live.
           </p>
         </section>
         <section>
