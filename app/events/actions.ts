@@ -14,6 +14,7 @@ import {
   computeRepeatDates,
   createEmptyOrganizerEventFormData,
   EVENT_TYPE_OPTIONS,
+  MAX_PUBLIC_PRACTICES,
   isClosedClassSeries,
   normalizeCountry,
   normalizeJsonItems,
@@ -870,6 +871,9 @@ export async function submitEventStep1(input: EventStep1Input): Promise<EventSte
   };
   if (!(EVENT_TYPE_OPTIONS as readonly string[]).includes(data.type)) {
     return { ok: false, error: "Please pick a type." };
+  }
+  if (data.discipline.length > MAX_PUBLIC_PRACTICES) {
+    return { ok: false, error: `Please pick up to ${MAX_PUBLIC_PRACTICES} practices.` };
   }
   const validationError = validateOrganizerEvent(data, {
     enforceMinDuration: true,

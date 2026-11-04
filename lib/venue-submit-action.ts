@@ -39,8 +39,8 @@ export type VenueSubmitInput = {
   facebook: string;
   description: string;
   email: string;
-  /** "I run this space, or I've checked it's fine to list it." Required. */
-  consent: boolean;
+  /** No longer asked (2026-11-04): a note above the button says what may be added instead. */
+  consent?: boolean;
   /** Signed out only: the submitter's own address, for questions. Internal, never shown. */
   submitterEmail?: string;
   /** Signed out only. */
@@ -117,7 +117,6 @@ export async function submitVenue(input: VenueSubmitInput): Promise<VenueSubmitR
   if (submitterEmail && !EMAIL_RE.test(submitterEmail)) {
     fieldErrors.submitterEmail = "This doesn't look like an email address.";
   }
-  if (!input.consent) fieldErrors.consent = "Please confirm that this venue may be listed.";
 
   const links: Record<"website" | "instagram" | "facebook", string | null> = {
     website: null,

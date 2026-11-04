@@ -173,6 +173,11 @@ export type OrganizerEventFormData = {
 
 export type DropInAnswer = "" | "yes" | "no";
 
+// Practices an organizer can pick on the public forms (step 1 and the edit form), decided
+// 2026-11-04: 759 of 765 listed events had three or fewer. The admin form has no limit, and an
+// event that already has more keeps them; only adding beyond the limit is blocked.
+export const MAX_PUBLIC_PRACTICES = 3;
+
 // A repeating class booked as a whole: one row, its dates stored as segments (DEC-8).
 export function isClosedClassSeries(data: Pick<OrganizerEventFormData, "type" | "repeat" | "dropIn">) {
   return data.type === "class" && Boolean(data.repeat) && data.dropIn === "no";

@@ -9,7 +9,13 @@ import { submitEventStep1, type EventStep1Input } from "@/app/events/actions";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
 import { disciplineLabel } from "@/lib/event-display";
-import { EVENT_TYPE_OPTIONS, REPEAT_OPTIONS, type DropInAnswer, type RepeatMode } from "@/lib/organizer-events";
+import {
+  EVENT_TYPE_OPTIONS,
+  MAX_PUBLIC_PRACTICES,
+  REPEAT_OPTIONS,
+  type DropInAnswer,
+  type RepeatMode,
+} from "@/lib/organizer-events";
 
 // I-192 stage 3, step 1 of adding an event: only what, when, where and a link, so anyone can pass
 // an event on in a minute. Saved as pending right away (app/events/actions.ts submitEventStep1);
@@ -293,11 +299,22 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
                   type="checkbox"
                   className="sr-only"
                   checked={discipline.includes(p)}
-                  onChange={() => setDiscipline((prev) => (prev.includes(p) ? prev.filter((d) => d !== p) : [...prev, p]))}
+                  onChange={() =>
+                    setDiscipline((prev) =>
+                      prev.includes(p)
+                        ? prev.filter((d) => d !== p)
+                        : prev.length >= MAX_PUBLIC_PRACTICES
+                          ? prev
+                          : [...prev, p],
+                    )
+                  }
                 />
                 {disciplineLabel(p)}
               </label>
             ))}
+            {showAllPractices ? (
+              <span className="self-center text-xs text-slate-500">Up to {MAX_PUBLIC_PRACTICES}</span>
+            ) : null}
             {!showAllPractices ? (
               <button
                 type="button"

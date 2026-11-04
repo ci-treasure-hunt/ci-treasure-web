@@ -23,7 +23,6 @@ export function VenueSubmitForm({ signedIn }: { signedIn: boolean }) {
   const [facebook, setFacebook] = useState("");
   const [description, setDescription] = useState("");
   const [email, setEmail] = useState("");
-  const [consent, setConsent] = useState(false);
   const [submitterEmail, setSubmitterEmail] = useState("");
   const [token, setToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
@@ -80,7 +79,6 @@ export function VenueSubmitForm({ signedIn }: { signedIn: boolean }) {
         facebook,
         description,
         email,
-        consent,
         submitterEmail: signedIn ? undefined : submitterEmail,
         turnstileToken: signedIn ? undefined : token,
       });
@@ -237,14 +235,11 @@ export function VenueSubmitForm({ signedIn }: { signedIn: boolean }) {
       </div>
 
       <div className="space-y-3">
-        <label className="flex items-start gap-2 text-sm text-slate-700">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
-          <span>
-            I run this space, teach or organize there, or I&apos;ve checked that it&apos;s fine to list it.
-            <span className="text-rose-700"> *</span>
-          </span>
-        </label>
-        {err("consent")}
+        {/* Was a required "I run this space ... or I've checked it's fine to list it" checkbox until
+            2026-11-04 (Jan: reads too strict). The real risk is a private home address on the map. */}
+        <p className="text-sm text-slate-600">
+          Please only add places that are open to the public or are happy to be listed. No private home addresses.
+        </p>
         {!signedIn ? (
           <>
             <Field label="Your email (optional)">

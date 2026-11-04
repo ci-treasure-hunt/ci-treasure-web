@@ -24,6 +24,7 @@ import {
   computeRepeatDates,
   createEmptyOrganizerEventFormData,
   isClosedClassSeries,
+  MAX_PUBLIC_PRACTICES,
   type DropInAnswer,
   type RepeatMode,
   type AdminLinkItem,
@@ -120,7 +121,9 @@ export function OrganizerEventForm({
       ...prev,
       discipline: prev.discipline.includes(value)
         ? prev.discipline.filter((d) => d !== value)
-        : [...prev.discipline, value],
+        : prev.discipline.length >= MAX_PUBLIC_PRACTICES
+          ? prev.discipline
+          : [...prev.discipline, value],
     }));
   }
 
@@ -395,9 +398,9 @@ export function OrganizerEventForm({
       <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Practice *</h3>
         <p className="mt-1 text-sm text-slate-600">
-          Select every practice taught at this event. Contact Improvisation is checked by
-          default; untick it only if this event doesn&apos;t include CI at all. Missing a
-          practice? Message us and we&apos;ll add it as an option.
+          Select the practices taught at this event, up to {MAX_PUBLIC_PRACTICES}. Contact
+          Improvisation is checked by default; untick it only if this event doesn&apos;t include CI
+          at all. Missing a practice? Message us and we&apos;ll add it as an option.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {availablePractices.map((p) => (
