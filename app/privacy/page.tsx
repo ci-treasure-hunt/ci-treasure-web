@@ -92,8 +92,9 @@ export default function PrivacyPage() {
           <p className="mt-2">
             Anyone can add an event through the &quot;Add an event&quot; form, with or without an account. The event
             details you enter, including the link you give, are shown on the event page once we have reviewed them. We
-            also store your role at the event (organizer, teacher, or passing it on) and the announcement text if you
-            paste one; these are only for checking and completing the listing and are never shown on the site. If you are
+            also store what you tell us about yourself (whether you organize the event, teach at it, or are passing it
+            on) and, if you paste it in, the text of the post where you saw the event. We use both only to check and
+            complete the listing, and never show them on the site. If you are
             signed in, or sign in afterwards to manage the event, we record which account submitted it. If you are not
             signed in, the form is protected by the Turnstile check described in section 14, we do not store your IP
             address, and you can leave your own email address, which is optional and only for us in case we have a

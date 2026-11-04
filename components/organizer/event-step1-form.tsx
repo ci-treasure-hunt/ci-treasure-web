@@ -265,14 +265,17 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
             inputMode="url"
           />
         </Field>
-        <Field label="The announcement text (optional)">
+        <Field label="Text of the post (optional)">
           <textarea
             value={pastedText}
             onChange={(e) => setPastedText(e.target.value)}
             className={`${inputClassName} min-h-28`}
             maxLength={5000}
-            placeholder="Paste the post or announcement here, if you have it. It helps us fill in the details."
           />
+          <span className="block text-xs text-slate-500">
+            Paste the post or message you saw, if you have it, e.g. from Facebook or Telegram. We only use it to fill in
+            the details.
+          </span>
         </Field>
         <Group label="Practice">
           <div className="flex flex-wrap gap-2">
