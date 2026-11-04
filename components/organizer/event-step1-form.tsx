@@ -7,6 +7,8 @@ import { Turnstile } from "@marsidev/react-turnstile";
 
 import { submitEventStep1, type EventStep1Input } from "@/app/events/actions";
 import { CountryPicker } from "@/components/shared/country-picker";
+import { compressImageForUpload } from "@/lib/client-image-compress";
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { VenuePicker } from "@/components/shared/venue-picker";
 import { disciplineLabel } from "@/lib/event-display";
 import {
@@ -65,6 +67,8 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
   const [venueAddress, setVenueAddress] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [pastedText, setPastedText] = useState("");
+  const [flyer, setFlyer] = useState<File | null>(null);
+  const [flyerFailed, setFlyerFailed] = useState(false);
   const [discipline, setDiscipline] = useState<string[]>(["contact_improvisation"]);
   // Most events are CI: show only that until asked, so step 1 stays short.
   const [showAllPractices, setShowAllPractices] = useState(false);
@@ -107,10 +111,17 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
       roles: askRole ? [...(organize ? (["organizer"] as const) : []), ...(teach ? (["teacher"] as const) : [])] : [],
       turnstileToken: mode.signedIn ? undefined : token,
       confirmDuplicate,
+      hasFlyer: Boolean(flyer),
     };
     startTransition(async () => {
       const result = await submitEventStep1(input);
       if (result.ok) {
+        // The event is saved; a failed flyer never undoes that. The edit form (organizers) or our
+        // review (shared) can still add an image.
+        if (flyer && result.flyerTicket) {
+          const uploaded = await uploadFlyer(result.eventId, result.flyerTicket);
+          if (!uploaded) setFlyerFailed(true);
+        }
         if (result.next === "edit") router.push(`/events/${result.slug}/edit?step=details`);
         else if (result.next === "thanks") router.push("/events/new/done?state=thanks");
         else
@@ -127,6 +138,22 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
         setTurnstileKey((k) => k + 1);
       }
     });
+  }
+
+  async function uploadFlyer(eventId: string, ticket: string): Promise<boolean> {
+    if (!flyer) return true;
+    try {
+      const compressed = await compressImageForUpload(flyer);
+      if (compressed.size > MAX_UPLOAD_BYTES) return false;
+      const body = new FormData();
+      body.append("eventId", eventId);
+      body.append("ticket", ticket);
+      body.append("file", compressed);
+      const res = await fetch("/api/events/flyer", { method: "POST", body });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 
   return (
@@ -283,6 +310,21 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
             the details.
           </span>
         </Field>
+        <Group label="Flyer or event image (optional)">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              setFlyer(e.target.files?.[0] ?? null);
+              setFlyerFailed(false);
+            }}
+            className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-(--color-mist) file:px-4 file:py-2 file:text-sm file:font-medium"
+          />
+          <p className="text-xs text-slate-500">The event&apos;s own flyer or photo, as published. JPEG, PNG or WEBP.</p>
+          {flyerFailed ? (
+            <p className="text-xs text-amber-700">The image couldn&apos;t be uploaded, but the event is saved.</p>
+          ) : null}
+        </Group>
         <Group label="Practice">
           <div className="flex flex-wrap gap-2">
             {(showAllPractices

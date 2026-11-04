@@ -32,7 +32,7 @@ import { setEntityEmail } from "@/lib/entity-email";
 import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { uniqueProfileSlug } from "@/lib/profile-slug";
-import { createEventSubmitTicket, verifyEventSubmitTicket } from "@/lib/event-submit-ticket";
+import { createEventFlyerTicket, createEventSubmitTicket, verifyEventSubmitTicket } from "@/lib/event-submit-ticket";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { safeExternalUrl } from "@/lib/url-safety";
 type ActionResult = {
@@ -221,6 +221,9 @@ type SubmitterContext = {
   profile: { id: string; is_trusted: boolean } | null;
   roles: SubmitterRole[];
   source: string;
+  // A flyer follows from step 1 (app/api/events/flyer): a trusted organizer's event is published
+  // there, after the image, so the Telegram announcement carries it.
+  deferPublish?: boolean;
 };
 
 type InsertResult =
@@ -388,7 +391,7 @@ async function insertSubmittedEvent(data: OrganizerEventFormData, ctx: Submitter
   // repeating event publish together; the announce series guard posts only the earliest
   // (_shared/series-guard.ts), so a weekly jam doesn't post once per week. Only for the organizer
   // role: a teacher or a sharer is not the one vouching for the event (I-192).
-  const published = isOrganizer && Boolean(profile?.is_trusted);
+  const published = isOrganizer && Boolean(profile?.is_trusted) && !ctx.deferPublish;
   if (published) {
     const admin = createAdminClient();
     await admin.from("events").update({ status: "published" }).in("id", [inserted.id, ...repeatIds]);
@@ -786,12 +789,15 @@ export type EventStep1Input = {
   turnstileToken?: string;
   /** Set after the submitter has seen the "this looks already listed" notice. */
   confirmDuplicate?: boolean;
+  /** A flyer is chosen; it is uploaded right after with flyerTicket. */
+  hasFlyer?: boolean;
 };
 
+type FlyerUpload = { eventId: string; flyerTicket: string | null };
 export type EventStep1Result =
-  | { ok: true; next: "edit"; slug: string; published: boolean; warning?: string }
-  | { ok: true; next: "thanks"; title: string }
-  | { ok: true; next: "who"; eventId: string; ticket: string; title: string }
+  | ({ ok: true; next: "edit"; slug: string; published: boolean; warning?: string } & FlyerUpload)
+  | ({ ok: true; next: "thanks"; title: string } & FlyerUpload)
+  | ({ ok: true; next: "who"; ticket: string; title: string } & FlyerUpload)
   | { ok: false; error: string; duplicate?: { title: string; slug: string } };
 
 // Signed-out shared submissions, all submitters together, per 24 hours.
@@ -917,6 +923,7 @@ export async function submitEventStep1(input: EventStep1Input): Promise<EventSte
     profile: owner?.profile ?? null,
     roles,
     source: owner ? "self_submitted" : "web_share",
+    deferPublish: Boolean(input.hasFlyer),
   });
   if (!result.ok) return { ok: false, error: result.error };
 
@@ -930,15 +937,15 @@ export async function submitEventStep1(input: EventStep1Input): Promise<EventSte
   });
   if (submissionError) console.error("event_submissions insert failed:", submissionError.message);
 
-  if (owner) return { ok: true, next: "edit", slug: result.slug, published: result.published, warning: result.warning };
-  if (user) return { ok: true, next: "thanks", title: result.title };
-  return {
-    ok: true,
-    next: "who",
+  const flyer: FlyerUpload = {
     eventId: result.eventId,
-    ticket: createEventSubmitTicket(result.eventId),
-    title: result.title,
+    flyerTicket: input.hasFlyer ? createEventFlyerTicket(result.eventId) : null,
   };
+  if (owner) {
+    return { ok: true, next: "edit", slug: result.slug, published: result.published, warning: result.warning, ...flyer };
+  }
+  if (user) return { ok: true, next: "thanks", title: result.title, ...flyer };
+  return { ok: true, next: "who", ticket: createEventSubmitTicket(result.eventId), title: result.title, ...flyer };
 }
 
 // Step 2, "I'm just sharing it", signed out: the optional own email, for questions only. Only for

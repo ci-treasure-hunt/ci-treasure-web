@@ -31,3 +31,31 @@ export function verifyEventSubmitTicket(eventId: string, ticket: string | null |
   const given = Buffer.from(signature, "hex");
   return expected.length === given.length && timingSafeEqual(expected, given);
 }
+
+// The flyer uploaded with step 1 (app/api/events/flyer): a server action can't carry the file, so
+// it goes to the route right after the save, with this ticket. Own prefix and 15 minutes, like the
+// venue photo ticket; valid for that one event only.
+const FLYER_TTL_MS = 15 * 60 * 1000;
+
+function signFlyer(eventId: string, expires: number): string {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
+  return createHmac("sha256", key).update(`event-flyer:${eventId}:${expires}`).digest("hex");
+}
+
+export function createEventFlyerTicket(eventId: string): string {
+  const expires = Date.now() + FLYER_TTL_MS;
+  return `${expires}.${signFlyer(eventId, expires)}`;
+}
+
+export function verifyEventFlyerTicket(eventId: string, ticket: string | null | undefined): boolean {
+  if (!/^[0-9a-f-]{36}$/i.test(eventId)) return false;
+  const [expiresRaw, signature] = String(ticket ?? "").split(".");
+  const expires = Number(expiresRaw);
+  if (!Number.isFinite(expires) || expires < Date.now() || !signature || !/^[0-9a-f]+$/i.test(signature)) {
+    return false;
+  }
+  const expected = Buffer.from(signFlyer(eventId, expires), "hex");
+  const given = Buffer.from(signature, "hex");
+  return expected.length === given.length && timingSafeEqual(expected, given);
+}
