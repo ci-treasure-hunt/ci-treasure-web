@@ -14,6 +14,7 @@ import { supportHref } from "@/lib/support";
 import { completeSignupOptin, needsNewsletterConfirmation, newsletterState } from "./newsletter";
 import { NewsletterOffer } from "./newsletter-offer";
 import { NewsletterReminder } from "./newsletter-reminder";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type DashboardEvent = {
@@ -79,6 +80,11 @@ export default async function DashboardPage({
     !submitted && Boolean(user.email) && !newsletterState(user) && signupNewsletter === null;
   // Subscribed but never confirmed with EmailOctopus: remind on the site instead of by email.
   const showNewsletterReminder = !submitted && signupNewsletter === null && (await needsNewsletterConfirmation(user));
+
+  // I-192: events this account passed on without organizing or teaching (event_submissions, no
+  // role). Read with the admin client: event_submissions is service-role only, and a pending or
+  // rejected event isn't readable through RLS by someone who doesn't own it. Scoped to user.id here.
+  const sharedEvents = await loadSharedEvents(user.id);
 
   // Profile this user owns (claim approved, or self-created).
   const { data: profile } = await supabase
@@ -277,6 +283,13 @@ export default async function DashboardPage({
             <p className="mt-3 text-base leading-7 text-slate-700">
               To manage events, tell us whether you&apos;re already listed here or you&apos;re new.
             </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Just passing events on? You don&apos;t need a profile for that:{" "}
+              <Link href="/events/new" className="font-semibold text-(--color-pine) underline">
+                add an event
+              </Link>
+              , and it shows up below.
+            </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/dashboard/claim"
@@ -416,6 +429,8 @@ export default async function DashboardPage({
             )}
           </div>
         )}
+
+        {sharedEvents.length > 0 ? <SharedEventList events={sharedEvents} /> : null}
       </div>
     </main>
   );
@@ -587,5 +602,126 @@ function ClaimSuggestionCard({ suggestion }: { suggestion: ClaimSuggestion }) {
         Yes, this is me
       </Link>
     </div>
+  );
+}
+
+// ── I-192: "Events you passed on" ─────────────────────────────────────────────────────────────
+// What a volunteer (or anyone signed in) sent in without organizing or teaching it: read-only,
+// with where it stands. A repeating event is one line with its number of dates.
+
+type SharedEvent = {
+  key: string;
+  title: string;
+  slug: string;
+  startDate: string | null;
+  endDate: string | null;
+  place: string;
+  status: string;
+  dates: number;
+};
+
+async function loadSharedEvents(userId: string): Promise<SharedEvent[]> {
+  const admin = createAdminClient();
+  const { data: submissions } = await admin
+    .from("event_submissions")
+    .select("event_id, roles")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const ids = (submissions ?? []).filter((r) => !(r.roles as string[] | null)?.length).map((r) => r.event_id as string);
+  if (!ids.length) return [];
+
+  const { data: rows } = await admin
+    .from("events")
+    .select("id, short_id, title, start_date, end_date, city, country, status, series_id")
+    .in("id", ids)
+    .order("start_date", { ascending: false });
+
+  // Siblings of a repeating event (dates created by the same submission share series_id).
+  const seriesIds = [...new Set((rows ?? []).map((r) => r.series_id as string | null).filter(Boolean))] as string[];
+  const { data: siblings } = seriesIds.length
+    ? await admin.from("events").select("series_id, start_date, end_date, status").in("series_id", seriesIds)
+    : { data: [] };
+
+  const seen = new Set<string>();
+  const list: SharedEvent[] = [];
+  for (const row of rows ?? []) {
+    const key = (row.series_id as string | null) ?? (row.id as string);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const group = row.series_id ? (siblings ?? []).filter((x) => x.series_id === row.series_id) : [row];
+    const starts = group.map((x) => x.start_date as string).filter(Boolean).sort();
+    const ends = group.map((x) => (x.end_date ?? x.start_date) as string).filter(Boolean).sort();
+    list.push({
+      key,
+      title: row.title as string,
+      slug: buildEventSlug(row.short_id as string, row.title as string),
+      startDate: starts[0] ?? null,
+      endDate: ends[ends.length - 1] ?? null,
+      place: [row.city, row.country ? getCountryLabel(row.country as string) : null].filter(Boolean).join(", "),
+      // Any date live means the event is live.
+      status: group.some((x) => x.status === "published") ? "published" : (row.status as string),
+      dates: group.length,
+    });
+  }
+  return list;
+}
+
+// Plain words for someone who doesn't manage the event.
+const SHARED_STATUS: Record<string, { label: string; style: string }> = {
+  pending: { label: "In review", style: "bg-amber-100 text-amber-800" },
+  published: { label: "Live", style: "bg-emerald-100 text-emerald-800" },
+  archived: { label: "Past", style: "bg-slate-100 text-slate-700" },
+  rejected: { label: "Not listed", style: "bg-rose-100 text-rose-800" },
+};
+
+function SharedEventList({ events }: { events: SharedEvent[] }) {
+  const live = events.filter((e) => e.status === "published").length;
+  return (
+    <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-serif text-2xl text-slate-950">Events you passed on</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {events.length} {events.length === 1 ? "event" : "events"}
+            {live ? `, ${live} live` : ""}. Thank you! We check each one, add the details and publish it.
+          </p>
+        </div>
+        <Link
+          href="/events/new"
+          className="self-start rounded-full border border-(--color-sand-strong) px-4 py-2 text-sm font-medium text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
+        >
+          Add another
+        </Link>
+      </div>
+      <ul className="mt-6 divide-y divide-(--color-sand-strong)">
+        {events.map((event) => {
+          const status = SHARED_STATUS[event.status] ?? { label: event.status, style: "bg-slate-100 text-slate-700" };
+          return (
+            <li key={event.key} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                {event.status === "published" || event.status === "archived" ? (
+                  <Link href={`/events/${event.slug}`} className="font-semibold text-slate-950 hover:text-(--color-pine) hover:underline">
+                    {event.title}
+                  </Link>
+                ) : (
+                  <p className="font-semibold text-slate-950">{event.title}</p>
+                )}
+                <p className="text-sm text-slate-600">
+                  {event.startDate
+                    ? formatEventDateRange({ startDate: event.startDate, endDate: event.endDate ?? event.startDate })
+                    : "—"}
+                  {event.dates > 1 ? ` · ${event.dates} dates` : ""}
+                  {event.place ? ` · ${event.place}` : ""}
+                </p>
+              </div>
+              <span className={`self-start rounded-full px-3 py-1 text-xs font-semibold sm:self-auto ${status.style}`}>
+                {status.label}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
