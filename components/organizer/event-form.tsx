@@ -3,12 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { createEvent, updateEvent } from "@/app/events/actions";
+import { updateEvent } from "@/app/events/actions";
 import { disciplineLabel } from "@/lib/event-display";
 import { CountryPicker } from "@/components/shared/country-picker";
 import { CurrencyPicker } from "@/components/shared/currency-picker";
 import { VenuePicker } from "@/components/shared/venue-picker";
-import { PersonPicker } from "@/components/organizer/person-picker";
 import { PhoneContactsEditor } from "@/components/shared/phone-contacts-editor";
 import { PHONE_CONTACTS_HINT } from "@/lib/phone-contacts";
 import { compressImageForUpload } from "@/lib/client-image-compress";
@@ -18,15 +17,9 @@ import {
   LANGUAGE_OPTIONS,
   LEVEL_OPTIONS,
   LINK_TYPE_OPTIONS,
-  TEACHER_ROLE_OPTIONS,
   TIMEZONE_OPTIONS,
-  REPEAT_OPTIONS,
-  computeRepeatDates,
   createEmptyOrganizerEventFormData,
-  isClosedClassSeries,
   MAX_PUBLIC_PRACTICES,
-  type DropInAnswer,
-  type RepeatMode,
   type AdminLinkItem,
   type AdminPriceItem,
   type OrganizerEventFormData,
@@ -79,16 +72,16 @@ function daySpan(startDate: string, endDate: string): number | null {
   return days > 0 ? days : null;
 }
 
+// The long event form, now edit-only: since I-192 stage 3 (2026-11-04) a new event starts with
+// the short step-1 form (components/organizer/event-step1-form.tsx) and this is step 3.
 export function OrganizerEventForm({
-  mode,
   eventId,
   initial,
   availablePractices,
   extraSections,
   otherSeriesDates = 0,
 }: {
-  mode: "create" | "edit";
-  eventId?: string;
+  eventId: string;
   initial?: OrganizerEventFormData;
   availablePractices: string[];
   // Edit mode on one date of a series: how many other upcoming dates it has. Above zero, the save
@@ -133,11 +126,6 @@ export function OrganizerEventForm({
   // practice since they run far longer) benefit from a daily time window too, not just
   // single-day events. 4 days is the same cutoff the spec settled on.
   const showTimeFields = span != null && span <= 4;
-  // I-171 Stage 4: live preview of the extra dates, computed by the same function the server uses.
-  const repeatPreview = mode === "create" ? computeRepeatDates(form) : { dates: [], error: null };
-  // I-171 DEC-8: only a repeating class asks about drop-in. Jams are drop-in by nature.
-  const askDropIn = mode === "create" && form.type === "class" && Boolean(form.repeat);
-  const closedSeries = isClosedClassSeries(form);
 
   function toggleFeature(slug: string) {
     setForm((prev) => ({
@@ -169,31 +157,13 @@ export function OrganizerEventForm({
     setSuccess(null);
     setWarning(null);
     startSaving(async () => {
-      const result =
-        mode === "create"
-          ? await createEvent(form)
-          : await updateEvent(eventId!, form, { applyToSeries: applyToSeries && otherSeriesDates > 0 });
+      const result = await updateEvent(eventId, form, { applyToSeries: applyToSeries && otherSeriesDates > 0 });
       if (!result.success) {
         setError(result.error ?? "Could not save.");
         return;
       }
-      // A rehost warning means the event image didn't come through — stay on the page so
-      // it's actually seen instead of redirecting straight past it (create mode otherwise
-      // jumps to /dashboard immediately).
-      if (mode === "create" && !result.warning) {
-        // The dashboard shows a thank-you note for this (and the support nudge, I-173 F).
-        router.push(
-          result.published && result.slug
-            ? `/dashboard?submitted=live&event=${encodeURIComponent(result.slug)}`
-            : "/dashboard?submitted=review",
-        );
-        router.refresh();
-        return;
-      }
       setSuccess(
-        mode === "create"
-          ? "Event submitted."
-          : result.seriesUpdated
+        result.seriesUpdated
             ? `Saved. Your changes are on ${result.seriesUpdated} other ${result.seriesUpdated === 1 ? "date" : "dates"} too.`
             : result.seriesUpdated === 0
               ? "Saved. Nothing new to copy to the other dates."
@@ -220,12 +190,6 @@ export function OrganizerEventForm({
                 </option>
               ))}
             </select>
-            {mode === "create" ? (
-              <p className="mt-1 text-xs text-slate-500">
-                A weekly jam or a regular class: pick jam or class, enter the first date, and add
-                the repeating dates below. A multi-day jam gathering is a long_jam.
-              </p>
-            ) : null}
           </Field>
           <Field label="Start date *">
             <input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} className={inputClassName} />
@@ -248,87 +212,6 @@ export function OrganizerEventForm({
                 </p>
               ) : null}
             </>
-          ) : null}
-          {mode === "create" ? (
-            <div className="space-y-3 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-4 md:col-span-2">
-              <Field label="Does this repeat?">
-                <select
-                  value={form.repeat}
-                  onChange={(e) => set("repeat", e.target.value as RepeatMode)}
-                  className={inputClassName}
-                >
-                  {REPEAT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              {form.repeat === "weekly" || form.repeat === "biweekly" ? (
-                <Field label="Repeat until">
-                  <input
-                    type="date"
-                    value={form.repeatUntil}
-                    onChange={(e) => set("repeatUntil", e.target.value)}
-                    className={inputClassName}
-                  />
-                </Field>
-              ) : null}
-              {form.repeat === "dates" ? (
-                <Field label="The other dates, one per line">
-                  <textarea
-                    value={form.repeatDates}
-                    onChange={(e) => set("repeatDates", e.target.value)}
-                    rows={4}
-                    placeholder={"2026-11-07\n2026-12-12"}
-                    className={`${inputClassName} font-mono`}
-                  />
-                </Field>
-              ) : null}
-              {askDropIn ? (
-                <fieldset className="space-y-2">
-                  <legend className="text-sm font-medium text-slate-700">
-                    Can people come to single dates (drop-in)?
-                  </legend>
-                  {(
-                    [
-                      { value: "yes", label: "Yes, drop-in is possible (a series price on top is fine)" },
-                      { value: "no", label: "No, people book the whole series" },
-                    ] as Array<{ value: DropInAnswer; label: string }>
-                  ).map((o) => (
-                    <label key={o.value} className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="radio"
-                        name="dropIn"
-                        value={o.value}
-                        checked={form.dropIn === o.value}
-                        onChange={() => set("dropIn", o.value)}
-                      />
-                      {o.label}
-                    </label>
-                  ))}
-                </fieldset>
-              ) : null}
-              {form.repeat ? (
-                repeatPreview.error ? (
-                  <p className="text-xs text-rose-700">{repeatPreview.error}</p>
-                ) : closedSeries ? (
-                  <p className="text-xs text-slate-600">
-                    {repeatPreview.dates.length + 1} sessions: {form.startDate}
-                    {repeatPreview.dates.length ? `, ${repeatPreview.dates.join(", ")}` : ""}. This
-                    becomes one listing, a class series booked as a whole, with each date shown as
-                    a session. It stays in the calendar until the first session.
-                  </p>
-                ) : (
-                  <p className="text-xs text-slate-600">
-                    {repeatPreview.dates.length + 1} dates in total: {form.startDate}
-                    {repeatPreview.dates.length ? `, ${repeatPreview.dates.join(", ")}` : ""}. Each
-                    date gets its own listing with the same details, shown as one entry with its
-                    next dates in the calendar. Up to about 6 months ahead; you can add more later.
-                  </p>
-                )
-              ) : null}
-            </div>
           ) : null}
           <Field label="Timezone">
             <select value={form.timezone} onChange={(e) => set("timezone", e.target.value)} className={inputClassName}>
@@ -570,8 +453,7 @@ export function OrganizerEventForm({
         </div>
       </section>
 
-      {mode === "edit" ? (
-        <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+              <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Cancellation</h3>
           <label className="mt-4 flex items-center gap-3 text-sm font-medium text-slate-700">
             <input
@@ -598,7 +480,6 @@ export function OrganizerEventForm({
             </div>
           ) : null}
         </section>
-      ) : null}
 
       <ArraySection
         title="Pricing"
@@ -666,25 +547,6 @@ export function OrganizerEventForm({
         </div>
       </section>
 
-      {mode === "create" ? (
-        <>
-          <PersonPicker
-            title="Teachers"
-            description="Add every teacher or musician linked to this event."
-            kind="teacher"
-            roleOptions={TEACHER_ROLE_OPTIONS}
-            items={form.teachers}
-            onChange={(teachers) => set("teachers", teachers)}
-          />
-          <PersonPicker
-            title="Organizers"
-            description="Add anyone else co-organizing this event with you. You don't need to add yourself; you're already linked as the lead organizer."
-            kind="organizer"
-            items={form.organizers}
-            onChange={(organizers) => set("organizers", organizers)}
-          />
-        </>
-      ) : null}
 
       {extraSections}
 
@@ -692,7 +554,7 @@ export function OrganizerEventForm({
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
         {warning ? <p className="text-sm text-amber-700">{warning}</p> : null}
-        {mode === "edit" && otherSeriesDates > 0 ? (
+        {otherSeriesDates > 0 ? (
           <label className="mb-3 flex items-start gap-3 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-3 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -719,7 +581,7 @@ export function OrganizerEventForm({
             onClick={save}
             className="rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist) disabled:opacity-60"
           >
-            {isSaving ? "Saving…" : mode === "create" ? "Submit event" : "Save changes"}
+            {isSaving ? "Saving…" : "Save changes"}
           </button>
           <button
             type="button"
@@ -729,11 +591,6 @@ export function OrganizerEventForm({
             Back to dashboard
           </button>
         </div>
-        {mode === "create" ? (
-          <p className="mt-3 text-xs text-slate-500">
-            New events are reviewed by an admin before going live, unless your profile is already trusted.
-          </p>
-        ) : null}
       </section>
     </div>
   );

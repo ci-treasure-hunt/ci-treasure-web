@@ -342,7 +342,7 @@ export default async function DashboardPage({
                     href="/events/new"
                     className="rounded-full bg-(--color-ink) px-5 py-3 text-sm font-semibold text-(--color-mist)"
                   >
-                    Submit a new event
+                    Add an event
                   </Link>
                   <Link href="/venues/new" className="text-sm font-medium text-(--color-pine) hover:underline">
                     Add a venue

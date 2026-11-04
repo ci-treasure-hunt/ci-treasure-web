@@ -19,7 +19,7 @@ import { safeNext, SITE_OG_IMAGE, SITE_URL } from "@/lib/site";
 // as the homepage.
 const DESTINATION_META: Record<string, { title: string; description: string }> = {
   "/events/new": {
-    title: "Submit an event",
+    title: "Add an event",
     description:
       "Add a Contact Improvisation workshop, lab, jam gathering or festival to CI Treasure Hunt. One-day and multi-day events both welcome.",
   },

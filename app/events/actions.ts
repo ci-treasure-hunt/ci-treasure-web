@@ -167,45 +167,9 @@ function deriveTimezone(explicit: string, lat: number | undefined, lng: number |
   }
 }
 
-export async function createEvent(data: OrganizerEventFormData): Promise<ActionResult> {
-  const validationError = validateOrganizerEvent(data, { enforceMinDuration: true });
-  if (validationError) {
-    return { success: false, error: validationError };
-  }
-  const phoneContacts = resolveEventPhoneContacts(data);
-  if (phoneContacts.invalid.length) {
-    return { success: false, error: phoneContactsErrorMessage(phoneContacts.invalid) };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: "You are not signed in." };
-  }
-
-  // Must own a profile to submit — this is the organizer link + trust flag.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, is_trusted")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!profile) {
-    return { success: false, error: "Claim or create your profile before submitting events." };
-  }
-
-  const result = await insertSubmittedEvent(data, {
-    db: supabase,
-    userId: user.id,
-    profile,
-    roles: ["organizer"],
-    source: "self_submitted",
-  });
-  return result.ok
-    ? { success: true, slug: result.slug, warning: result.warning, published: result.published }
-    : { success: false, error: result.error };
-}
+// createEvent (the long form's create mode) was removed with I-192 stage 3 (2026-11-04): new
+// events start with submitEventStep1 below and the long form is edit-only. Its write half lives
+// on as insertSubmittedEvent, shared with step 1.
 
 type SubmitterRole = "organizer" | "teacher";
 

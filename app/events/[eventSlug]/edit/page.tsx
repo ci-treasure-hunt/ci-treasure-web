@@ -168,7 +168,16 @@ export default async function EditEventPage({
                 ? "Saved and published. "
                 : "Saved. We check every new event by hand before it appears. "}
               Add the details now: description, prices, teachers, photo. Or{" "}
-              <Link href="/dashboard" className="font-semibold text-(--color-pine) underline">
+              {/* The dashboard's thank-you note (Facebook groups, support nudge, I-173 F) used to follow
+                  the long form's create mode; it follows the new flow from here. */}
+              <Link
+                href={
+                  event.status === "published"
+                    ? `/dashboard?submitted=live&event=${encodeURIComponent(eventSlug)}`
+                    : "/dashboard?submitted=review"
+                }
+                className="font-semibold text-(--color-pine) underline"
+              >
                 finish later
               </Link>{" "}
               from your dashboard.
@@ -191,7 +200,6 @@ export default async function EditEventPage({
 
         <div className="mt-8">
           <OrganizerEventForm
-            mode="edit"
             eventId={event.id}
             initial={initial}
             availablePractices={availablePractices}
