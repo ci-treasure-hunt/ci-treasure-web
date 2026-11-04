@@ -259,6 +259,7 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                   </>
                 )}
               </p>
+              <ClaimCta teacher={teacher} />
             </div>
           </div>
 
@@ -394,8 +395,6 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
           </div>
         </section>
         <div className="text-center text-sm text-slate-400">
-          <ClaimCta teacher={teacher} />
-          {teacher.user_id ? null : <>{" "}·{" "}</>}
           <ReportButton
             entity_type="profile"
             entity_id={teacher.id}
@@ -409,22 +408,32 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
 }
 
 // Three states (not two) — mirrors submit_profile_claim's own rules so the UI never
-// lets someone hit the RPC's "already pending" rejection.
+// lets someone hit the RPC's "already pending" rejection. In the hero since 2026-11-04 (Eric:
+// teachers couldn't find the claim link at the bottom of the page). The second button is for a
+// teacher who lands here but isn't this person.
 function ClaimCta({ teacher }: { teacher: { id: string; user_id: string | null; claim_pending_user_id: string | null } }) {
   if (teacher.user_id) {
     return null;
   }
   if (teacher.claim_pending_user_id) {
-    return <span>Claim pending review</span>;
+    return <p className="pt-1 text-sm text-white/80">Claim pending review</p>;
   }
   const next = `/dashboard/claim?profile=${teacher.id}`;
   return (
-    <span>
-      Is this your profile?{" "}
-      <Link href={`/auth?next=${encodeURIComponent(next)}`} className="font-semibold text-(--color-pine) underline">
-        Claim this profile
+    <div className="flex flex-wrap gap-2 pt-2">
+      <Link
+        href={`/auth?next=${encodeURIComponent(next)}`}
+        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-(--color-pine) transition hover:bg-white/90"
+      >
+        This is me
       </Link>
-    </span>
+      <Link
+        href="/dashboard/new-profile"
+        className="rounded-full border border-white/70 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+      >
+        Create your profile
+      </Link>
+    </div>
   );
 }
 
