@@ -42,6 +42,12 @@ function NewBadge() {
   );
 }
 
+// I-192 stage 1 (2026-11-04): the one highlighted action in the header. Specific ("Add an
+// event"), not a generic "+ Add": events are the submission that matters most, and communities,
+// venues and teachers get their own buttons in the hero of their list pages. Until I-192 stage 3
+// it leads to today's organizer flow (sign-in + own profile).
+const ADD_EVENT_HREF = "/events/new";
+
 // null = session check still in flight (renders a same-sized skeleton so the
 // button never visibly swaps labels after paint, matching the recommendation
 // discussed with Jan 2026-08-29 to avoid a "sign in" -> "dashboard" flash).
@@ -94,21 +100,21 @@ export function SiteHeader() {
   return (
     <header className="border-b border-(--color-sand-strong) bg-(--color-mist)/90 backdrop-blur">
       <InstallToHomeScreen />
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-10">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 min-[360px]:gap-4 min-[360px]:px-5 sm:px-8 lg:px-10">
         <Link
           href="/"
-          className="flex items-center gap-2 font-serif text-2xl tracking-tight text-slate-950"
+          className="flex shrink-0 items-center gap-2 font-serif text-xl tracking-tight whitespace-nowrap min-[360px]:text-2xl text-slate-950"
           onClick={() => setOpen(false)}
         >
           CI Treasure Hunt
-          <span className="rounded-full bg-(--color-pine)/10 px-2 py-0.5 font-sans text-[10px] font-bold tracking-widest uppercase text-(--color-pine)">
+          <span className="hidden rounded-full bg-(--color-pine)/10 px-2 py-0.5 font-sans min-[400px]:inline text-[10px] font-bold tracking-widest uppercase text-(--color-pine)">
             Alpha
           </span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden sm:flex items-center gap-6">
-          <nav className="flex items-center gap-5 text-sm font-medium text-slate-700">
+        <div className="hidden items-center gap-4 lg:flex xl:gap-6">
+          <nav className="flex items-center gap-3 text-sm xl:gap-5 font-medium text-slate-700">
             {NAV_LINKS.map((link) =>
               link.external ? (
                 <a
@@ -152,6 +158,12 @@ export function SiteHeader() {
               </div>
             </details>
           </nav>
+          <Link
+            href={ADD_EVENT_HREF}
+            className="rounded-full bg-(--color-pine) px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-white transition hover:opacity-90"
+          >
+            Add an event
+          </Link>
           {signedIn === null ? (
             <span
               aria-hidden="true"
@@ -161,14 +173,14 @@ export function SiteHeader() {
             <div className="flex items-center gap-2">
               <Link
                 href={signedIn ? "/dashboard" : "/auth?next=/dashboard"}
-                className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+                className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
               >
                 {signedIn ? "Dashboard" : "Sign in"}
               </Link>
               {isAdmin ? (
                 <Link
                   href="/admin"
-                  className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
+                  className="rounded-full border border-(--color-sand-strong) px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
                 >
                   Admin
                 </Link>
@@ -177,19 +189,28 @@ export function SiteHeader() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          className="sm:hidden p-2 text-slate-700 hover:text-(--color-pine)"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Close menu" : "Open menu"}
-        >
-          {open ? <X className="size-6" /> : <Menu className="size-6" />}
-        </button>
+        {/* Mobile: the add button stays visible next to the hamburger, not hidden in the menu */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <Link
+            href={ADD_EVENT_HREF}
+            className="rounded-full bg-(--color-pine) px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-white transition hover:opacity-90"
+            onClick={() => setOpen(false)}
+          >
+            Add event
+          </Link>
+          <button
+            className="p-2 text-slate-700 hover:text-(--color-pine)"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Close menu" : "Open menu"}
+          >
+            {open ? <X className="size-6" /> : <Menu className="size-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown */}
       {open && (
-        <nav className="sm:hidden border-t border-(--color-sand-strong) bg-(--color-mist) px-5 py-4 flex flex-col gap-4 text-base font-medium text-slate-700 items-end">
+        <nav className="lg:hidden border-t border-(--color-sand-strong) bg-(--color-mist) px-5 py-4 flex flex-col gap-4 text-base font-medium text-slate-700 items-end">
           {NAV_LINKS.map((link) =>
             link.external ? (
               <a
