@@ -145,7 +145,7 @@ export default async function DashboardPage({
   let organizeEvents: DashboardEvent[] = [];
   let teachEvents: DashboardEvent[] = [];
   let musicEvents: DashboardEvent[] = [];
-  let seriesList: Array<{ id: string; title: string }> = [];
+  let seriesList: SeriesSummary[] = [];
 
   if (profile) {
     // 1. Organise
@@ -170,9 +170,12 @@ export default async function DashboardPage({
       const { data: seriesRows } = await supabase
         .from("event_series")
         .select("id, title")
-        .in("id", seriesIds)
-        .order("title");
-      seriesList = seriesRows ?? [];
+        .in("id", seriesIds);
+      const { data: seriesDates } = await supabase
+        .from("events")
+        .select("series_id, start_date, end_date, city, country, cancelled")
+        .in("series_id", seriesIds);
+      seriesList = summarizeSeries(seriesRows ?? [], (seriesDates ?? []) as SeriesDateRow[]);
     }
 
     // 2. Teach
@@ -353,7 +356,10 @@ export default async function DashboardPage({
                   <ul className="mt-2 space-y-2">
                     {seriesList.map((s) => (
                       <li key={s.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-sm text-slate-700">{s.title}</span>
+                        <span className="text-sm text-slate-700">
+                          <span className="font-medium text-slate-900">{s.title}</span>
+                          {s.details ? <span className="block text-slate-500">{s.details}</span> : null}
+                        </span>
                         <Link
                           href={`/dashboard/series/${s.id}`}
                           className="self-start rounded-full border border-(--color-sand-strong) bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-(--color-pine) hover:text-(--color-pine)"
@@ -474,6 +480,44 @@ function ProfileGaps({ gaps }: { gaps: string[] }) {
       </Link>
     </section>
   );
+}
+
+// "Your repeating events": two series with the same title (Eric's labs in India and on Koh Phangan,
+// feedback 2026-10-28) looked identical with the title alone. Each line now carries place, date
+// range and number of dates, and the list runs by next date instead of alphabetically.
+type SeriesSummary = { id: string; title: string; details: string; sortKey: string };
+type SeriesDateRow = {
+  series_id: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  city: string | null;
+  country: string | null;
+  cancelled: boolean | null;
+};
+
+function summarizeSeries(series: Array<{ id: string; title: string }>, rows: SeriesDateRow[]): SeriesSummary[] {
+  const today = new Date().toISOString().slice(0, 10);
+  return series
+    .map((s) => {
+      const dates = rows.filter((r) => r.series_id === s.id && r.start_date && !r.cancelled);
+      const starts = dates.map((r) => r.start_date as string).sort();
+      const ends = dates.map((r) => (r.end_date ?? r.start_date) as string).sort();
+      const places = [
+        ...new Set(dates.map((r) => [r.city, r.country ? getCountryLabel(r.country) : null].filter(Boolean).join(", "))),
+      ].filter(Boolean);
+      const next = starts.find((d) => d >= today);
+      const parts: string[] = [];
+      if (places.length) parts.push(places.length === 1 ? places[0] : `${places[0]} and ${places.length - 1} more`);
+      if (starts.length) {
+        parts.push(formatEventDateRange({ startDate: starts[0], endDate: ends[ends.length - 1] }));
+        parts.push(`${starts.length} ${starts.length === 1 ? "date" : "dates"}`);
+      }
+      if (next && next !== starts[0]) parts.push(`next ${formatEventDateRange({ startDate: next, endDate: next })}`);
+      // Upcoming series first, by next date; finished ones after, newest first.
+      const sortKey = next ? `0${next}` : `1${String(99999999 - Number((starts[starts.length - 1] ?? "0").replaceAll("-", "")))}`;
+      return { id: s.id, title: s.title, details: parts.join(" · "), sortKey };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey) || a.title.localeCompare(b.title));
 }
 
 function EventList({ events, teacherId }: { events: DashboardEvent[]; teacherId?: string }) {
