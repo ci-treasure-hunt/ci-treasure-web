@@ -213,8 +213,9 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
           currentLabel={teacher.name}
           currentUrl={`${SITE_URL}/teachers/${teacher.slug}`}
         />
-        <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <BackButton />
+          <ClaimCta teacher={teacher} />
         </div>
         <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_25px_90px_rgba(105,73,22,0.12)]">
           <div className={`flex min-h-52 flex-col justify-end border-b border-(--color-sand-strong) ${GENERIC_ACCENT_GRADIENT} px-6 py-8 sm:px-8`}>
@@ -259,7 +260,6 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
                   </>
                 )}
               </p>
-              <ClaimCta teacher={teacher} />
             </div>
           </div>
 
@@ -408,30 +408,31 @@ export default async function TeacherPage({ params }: TeacherPageProps) {
 }
 
 // Three states (not two) — mirrors submit_profile_claim's own rules so the UI never
-// lets someone hit the RPC's "already pending" rejection. In the hero since 2026-11-04 (Eric:
-// teachers couldn't find the claim link at the bottom of the page). The second button is for a
+// lets someone hit the RPC's "already pending" rejection. At the top since 2026-11-04 (Eric:
+// teachers couldn't find the claim link at the bottom of the page), in the Back button's row
+// rather than the hero band, which stays the same on every page. The second button is for a
 // teacher who lands here but isn't this person.
 function ClaimCta({ teacher }: { teacher: { id: string; user_id: string | null; claim_pending_user_id: string | null } }) {
   if (teacher.user_id) {
     return null;
   }
   if (teacher.claim_pending_user_id) {
-    return <p className="pt-1 text-sm text-white/80">Claim pending review</p>;
+    return <p className="ml-auto text-sm text-slate-500">Claim pending review</p>;
   }
   const next = `/dashboard/claim?profile=${teacher.id}`;
   return (
-    <div className="flex flex-wrap gap-2 pt-2">
+    <div className="ml-auto flex flex-wrap justify-end gap-2">
       <Link
         href={`/auth?next=${encodeURIComponent(next)}`}
-        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-(--color-pine) transition hover:bg-white/90"
+        className="rounded-full bg-(--color-pine) px-4 py-1.5 text-sm font-semibold text-white transition hover:opacity-90"
       >
         This is me
       </Link>
       <Link
         href="/dashboard/new-profile"
-        className="rounded-full border border-white/70 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+        className="rounded-full border border-(--color-sand-strong) bg-white px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:border-(--color-pine) hover:text-(--color-pine)"
       >
-        Create your profile
+        Create your own profile
       </Link>
     </div>
   );
