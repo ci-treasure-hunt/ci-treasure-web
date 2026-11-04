@@ -5,6 +5,7 @@ import { getVenues } from "@/lib/venues";
 import { VenuesClient } from "./venues-client";
 import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site";
 import { EntityIndex } from "@/components/entity-index";
+import { HeroAddButton } from "@/components/hero-add-button";
 
 const TITLE = "Contact Improvisation Venues Worldwide";
 const DESCRIPTION =
@@ -58,6 +59,9 @@ export default async function VenuesPage() {
             workshops, and festivals. Each venue is researched and verified by hand, not scraped
             automatically, so listings stay accurate as spaces open, close, or change hands.
           </p>
+          <div className="mb-6">
+            <HeroAddButton href="/venues/new" label="Add a venue" />
+          </div>
           <div className="flex justify-start gap-8 text-sm font-medium text-slate-700">
             <span className="flex items-center gap-2">
               <Globe className="size-4 text-(--color-pine)" />

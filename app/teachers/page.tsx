@@ -7,6 +7,7 @@ import { getListedPeople } from "@/lib/teachers";
 import { getCountryLabel } from "@/lib/event-display";
 import { EntityIndex } from "@/components/entity-index";
 import { TeachersClient } from "./teachers-client";
+import { HeroAddButton } from "@/components/hero-add-button";
 
 const TITLE = "Contact Improvisation Teachers Worldwide";
 const DESCRIPTION =
@@ -73,6 +74,9 @@ export default async function TeachersPage() {
             linked to the events they are part of. Filter by country or continent to find who
             teaches near you.
           </p>
+          <div className="mb-6">
+            <HeroAddButton href="/dashboard/new-profile" label="Add yourself" />
+          </div>
           <div className="flex justify-start gap-8 text-sm font-medium text-slate-700">
             <span className="flex items-center gap-2">
               <Globe className="size-4 text-(--color-pine)" />
@@ -88,11 +92,7 @@ export default async function TeachersPage() {
             <Link href="/dashboard/claim" className="font-medium text-(--color-pine) underline">
               Claim your profile
             </Link>{" "}
-            to edit your bio, photo and links. Not listed yet?{" "}
-            <Link href="/dashboard/new-profile" className="font-medium text-(--color-pine) underline">
-              Add yourself
-            </Link>
-            .
+            to edit your bio, photo and links.
           </p>
         </header>
 

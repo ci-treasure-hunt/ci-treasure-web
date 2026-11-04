@@ -10,6 +10,7 @@ import { getCommunityCountries } from "@/lib/communities";
 import { getAllCountrySummaries } from "@/lib/country-pages";
 import { SITE_URL } from "@/lib/site";
 import { EntityIndex } from "@/components/entity-index";
+import { HeroAddButton } from "@/components/hero-add-button";
 
 // I-172: 24h, not 1h. This route is invalidated on write by the Supabase revalidate webhook
 // (app/api/revalidate/route.ts), so the timer is only a backstop, not the freshness mechanism.
@@ -98,6 +99,9 @@ export default async function Home() {
             <p className="mt-3 text-base text-slate-500 sm:text-lg">
               Browse {events.length} upcoming events across {countries.length} countries.
             </p>
+            <div className="mt-5">
+              <HeroAddButton href="/events/new" label="Add an event" />
+            </div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

@@ -5,6 +5,7 @@ import { getCommunities } from "@/lib/communities";
 import { CommunitiesClient } from "./communities-client";
 import { SITE_URL, SITE_OG_IMAGE, TELEGRAM_URL } from "@/lib/site";
 import { EntityIndex } from "@/components/entity-index";
+import { HeroAddButton } from "@/components/hero-add-button";
 
 const TITLE = "Contact Improvisation Communities Worldwide";
 const DESCRIPTION =
@@ -59,6 +60,9 @@ export default async function CommunitiesPage() {
           <p className="mb-6 max-w-2xl text-lg text-slate-600">
             Explore Contact Improvisation communities around the globe and find the public channels, websites, and resources that help you connect locally.
           </p>
+          <div className="mb-6">
+            <HeroAddButton href="/communities/new" label="Add a community" />
+          </div>
           <div className="flex justify-start gap-8 text-sm font-medium text-slate-700">
             <span className="flex items-center gap-2">
               <Globe className="size-4 text-(--color-pine)" />
