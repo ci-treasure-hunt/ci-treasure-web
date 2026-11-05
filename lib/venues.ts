@@ -45,7 +45,7 @@ export async function getVenueAssociations(venueId: string): Promise<{
   if (!hasSupabaseEnv()) return { communities: [], people: [] };
 
   const supabase = createStaticClient();
-  const [{ data: communityRows }, { data: peopleRows }] = await Promise.all([
+  const [{ data: communityRows, error: communityError }, { data: peopleRows, error: peopleError }] = await Promise.all([
     supabase
       .from("community_venues")
       .select("community:community_id ( slug, name, type, city, description, deleted_at )")
@@ -55,6 +55,9 @@ export async function getVenueAssociations(venueId: string): Promise<{
       .select("role, profile:profile_id ( slug, name, city, bio, image_url, website, instagram, facebook )")
       .eq("venue_id", venueId),
   ]);
+  // Throw rather than render the cached page without its communities/people (I-175).
+  if (communityError) throw new Error(communityError.message);
+  if (peopleError) throw new Error(peopleError.message);
 
   type CommunityRowShape = { slug: string; name: string; type: string | null; city: string | null; description: string | null; deleted_at: string | null };
   type PeopleRowShape = { slug: string; name: string; city: string | null; bio: string | null; image_url: string | null; website: string | null; instagram: string | null; facebook: string | null };
@@ -152,7 +155,13 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
     .eq("visibility", "public")
     .single();
 
-  if (error || !data) return null;
+  // I-175: the venue page is cached, so only "no such public venue" (PGRST116 from .single())
+  // may become a 404; any other error throws and a failed rebuild keeps the old page.
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message);
+  }
+  if (!data) return null;
 
   return {
     id: data.id,
@@ -207,8 +216,10 @@ export async function getVenueEvents(venueId: string) {
     .lt("end_date", today)
     .order("start_date", { ascending: false });
 
-  if (upcomingError) console.error("Error fetching upcoming venue events:", upcomingError);
-  if (pastError) console.error("Error fetching past venue events:", pastError);
+  // Throw rather than cache the venue page without its events (I-175); MCP get_venue then reports
+  // an error instead of an empty list.
+  if (upcomingError) throw new Error(upcomingError.message);
+  if (pastError) throw new Error(pastError.message);
 
   return {
     upcoming: ((upcoming ?? []) as unknown as SupabaseEventRow[]).map(mapEventRow),
@@ -443,12 +454,14 @@ export async function resolveVenueSlugRedirect(slug: string): Promise<string | n
   if (!hasSupabaseEnv()) return null;
 
   const supabase = createStaticClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("venues")
     .select("slug")
     .contains("previous_slugs", [slug])
     .eq("visibility", "public")
     .maybeSingle();
+  // An error must not become a cached 404 for an old, possibly externally linked URL (I-175).
+  if (error) throw new Error(error.message);
 
   return data?.slug ?? null;
 }
