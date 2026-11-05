@@ -271,11 +271,15 @@ export async function getTeacherBySlug(slug: string): Promise<TeacherProfile | n
     .eq("visibility", "public")
     .single();
 
-  if (error || !data) {
-    return null;
+  // I-175: the teacher page is cached, so only "no such public profile" (PGRST116 from .single())
+  // may become a 404. Any other error throws: a failed background rebuild keeps the old page,
+  // where returning null here would cache a 404 for a real teacher for a day.
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message);
   }
 
-  return data as TeacherProfile;
+  return (data as TeacherProfile) ?? null;
 }
 
 // I-153: associated communities (community_profiles) and venues (venue_profiles, e.g. a resident
@@ -314,7 +318,7 @@ export async function getProfileAssociations(profileId: string): Promise<{
   if (!hasSupabaseEnv()) return { communities: [], venues: [] };
 
   const supabase = createStaticClient();
-  const [{ data: communityRows }, { data: venueRows }] = await Promise.all([
+  const [{ data: communityRows, error: communityError }, { data: venueRows, error: venueError }] = await Promise.all([
     supabase
       .from("community_profiles")
       .select("community:community_id ( slug, name, type, city, description, deleted_at )")
@@ -324,6 +328,9 @@ export async function getProfileAssociations(profileId: string): Promise<{
       .select("role, venue:venue_id ( slug, name, city, description, image_url, visibility )")
       .eq("profile_id", profileId),
   ]);
+  // Throw rather than render the cached page without its communities/venues (I-175).
+  if (communityError) throw new Error(communityError.message);
+  if (venueError) throw new Error(venueError.message);
 
   type CommunityRowShape = { slug: string; name: string; type: string | null; city: string | null; description: string | null; deleted_at: string | null };
   type VenueRowShape = { slug: string; name: string; city: string | null; description: string | null; image_url: string | null; visibility: string };
@@ -353,12 +360,14 @@ export async function resolveTeacherSlugRedirect(slug: string): Promise<string |
     return null;
   }
   const supabase = createStaticClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("slug")
     .contains("previous_slugs", [slug])
     .eq("visibility", "public")
     .maybeSingle();
+  // An error must not turn into a cached 404 for an old, possibly externally linked URL (I-175).
+  if (error) throw new Error(error.message);
 
   return data?.slug ?? null;
 }
@@ -376,10 +385,14 @@ export async function getTeacherEvents(profileId: string): Promise<{
   const fields = `role, teacher_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, segments, status, hide, series_id, event_series(series_type))`;
   const orgFields = `organizer_id, events (id, short_id, title, description, type, start_date, end_date, start_time, end_time, city, country, image_url, lat, lng, discipline, segments, status, hide, series_id, event_series(series_type))`;
 
-  const [{ data: asTeacher }, { data: asOrganizer }] = await Promise.all([
+  const [{ data: asTeacher, error: teacherError }, { data: asOrganizer, error: organizerError }] = await Promise.all([
     supabase.from("event_teachers").select(fields).eq("teacher_id", profileId),
     supabase.from("event_organizers").select(orgFields).eq("organizer_id", profileId),
   ]);
+  // Throw rather than cache a teacher page with no events (I-175). Also reaches MCP get_teacher,
+  // which then reports an error instead of claiming the person has no events.
+  if (teacherError) throw new Error(teacherError.message);
+  if (organizerError) throw new Error(organizerError.message);
 
   const allRows = [
     ...(asTeacher ?? []).map(r => ({ ...r.events, role: r.role, teacher_id: r.teacher_id })),

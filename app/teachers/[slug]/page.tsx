@@ -52,6 +52,15 @@ import { ringSectionHeading } from "@/lib/entity-ring";
 // clock at render time. 24h bounds that; Jan's call 2026-09-10 over a shorter window.
 export const revalidate = 86400;
 
+// I-175 step 4: cached per URL on first request instead of rendered on every request (~1,100
+// renders a day in Nov 2026). Nothing here reads cookies or the viewer: the claim buttons depend
+// on the profile's own user_id/claim_pending_user_id, not on who is looking. The revalidate webhook
+// refreshes this page when the profile, its event credits, those events, its venue/community links
+// or its group invites change. The fetchers throw on errors so a failed rebuild keeps the old page
+// instead of caching a 404 or an empty page. The "also browse" ring is navigational and may lag
+// until the timer, as the spec accepts.
+export const dynamic = "force-static";
+
 // I-172: deliberately no generateStaticParams. Pre-rendering all ~515 teacher slugs meant every
 // deploy rebuilt all of them — 20 deploys in the five days to 2026-09-02, against 410 pageviews
 // across the whole route in 30 days, so the overwhelming majority were rebuilt repeatedly and
