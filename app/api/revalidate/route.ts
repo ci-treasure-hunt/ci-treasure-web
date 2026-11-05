@@ -61,6 +61,10 @@ function revalidateCountryFor(...records: (Row | null)[]) {
   if (seen.size > 0) revalidatePath("/countries");
 }
 
+// Event columns the community page's "upcoming events in this country" box selects on or renders
+// (app/communities/[slug]/page.tsx EventListItem, lib/communities.ts getCommunityEventsByCountry).
+const COUNTRY_BOX_FIELDS = ["status", "hide", "title", "type", "start_date", "end_date", "city", "country", "series_id"];
+
 // Distinct non-empty string values of `key` across the given rows (new and old side of a write).
 function valuesOf(key: string, ...rows: (Row | null)[]): string[] {
   const out = new Set<string>();
@@ -203,6 +207,13 @@ export async function POST(request: NextRequest) {
       pages.linked("event_teachers", "event_id", eventIds, "teacher_id", (ids) => pages.profiles(ids));
       pages.linked("event_organizers", "event_id", eventIds, "organizer_id", (ids) => pages.profiles(ids));
       pages.linked("event_organizers", "event_id", eventIds, "community_id", (ids) => pages.communities(ids));
+      // Every community page lists the next upcoming events in its country (cards with type,
+      // title, dates and place). Refresh the country's communities only when the event can change
+      // that box: a new or removed event, or one of the fields it selects or shows. Description,
+      // price and link edits, most of the ~36 event edits a day, leave community pages alone.
+      if (!rec || !old || COUNTRY_BOX_FIELDS.some((f) => rec[f] !== old[f])) {
+        pages.linked("communities", "country", valuesOf("country", rec, old), "id", (ids) => pages.communities(ids));
+      }
       break;
     }
     case "profiles": {
@@ -277,6 +288,10 @@ export async function POST(request: NextRequest) {
     // updated_at-only WHEN clause on the entity triggers now deliberately ignores.
     case "profile_invites": {
       pages.profiles(valuesOf("profile_id", rec, old));
+      break;
+    }
+    case "community_invites": {
+      pages.communities(valuesOf("community_id", rec, old));
       break;
     }
     case "venue_invites": {

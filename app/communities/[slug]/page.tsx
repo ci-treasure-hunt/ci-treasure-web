@@ -69,6 +69,14 @@ import { ringSectionHeading } from "@/lib/entity-ring";
 // clock at render time. 24h bounds that; Jan's call 2026-09-10 over a shorter window.
 export const revalidate = 86400;
 
+// I-175 step 4: cached per URL on first request instead of rendered on every request (~900
+// renders a day in Nov 2026). Nothing here reads cookies or the viewer. The revalidate webhook
+// refreshes this page when the community, its teacher/venue links, its own events or its group
+// invites change, and when an event in its country changes in a way the "upcoming events in this
+// country" box shows (new or removed event, title, type, dates, place, status). The fetchers throw
+// on errors so a failed rebuild keeps the old page. The "also browse" ring may lag until the timer.
+export const dynamic = "force-static";
+
 type CommunityPageProps = {
   params: Promise<{
     slug: string;

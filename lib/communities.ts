@@ -435,7 +435,13 @@ export async function getCommunityBySlug(slug: string): Promise<CommunityDetail 
     .is("deleted_at", null)
     .single();
 
-  if (error || !data) return null;
+  // I-175: the community page is cached, so only "no such community" (PGRST116 from .single())
+  // may become a 404; any other error throws and a failed rebuild keeps the old page.
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(error.message);
+  }
+  if (!data) return null;
 
   type AssociatedProfileRow = {
     slug: string;
@@ -560,12 +566,14 @@ export async function resolveCommunitySlugRedirect(slug: string): Promise<string
   if (!hasSupabaseEnv()) return null;
 
   const supabase = createStaticClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("communities")
     .select("slug")
     .contains("previous_slugs", [slug])
     .is("deleted_at", null)
     .maybeSingle();
+  // An error must not become a cached 404 for an old, possibly externally linked URL (I-175).
+  if (error) throw new Error(error.message);
 
   return data?.slug ?? null;
 }
@@ -587,10 +595,10 @@ export async function getCommunityOwnEvents(communityId: string) {
     .select(`events (${EVENT_COLS})`)
     .eq("community_id", communityId);
 
-  if (error || !data) {
-    console.error("Error fetching community's own events:", error);
-    return [];
-  }
+  // Throw rather than cache the community page without its events (I-175); MCP get_community
+  // then reports an error instead of an empty list.
+  if (error) throw new Error(error.message);
+  if (!data) return [];
 
   type Row = { events: (SupabaseEventRow & { status: string }) | (SupabaseEventRow & { status: string })[] | null };
   const events = (data as unknown as Row[])
@@ -627,10 +635,8 @@ export async function getCommunityEventsByCountry(countryIso: string | null) {
     // "and N more dates" line. 300 rows covers a country with a few half-year weekly series.
     .limit(300);
 
-  if (error) {
-    console.error("Error fetching community events by country:", error);
-    return [];
-  }
+  // Throw rather than cache the page with an empty box (I-175).
+  if (error) throw new Error(error.message);
 
   return collapseRecurringSeries((data as unknown as SupabaseEventRow[]).map(mapEventRow)).slice(0, COMMUNITY_RELATED_EVENTS_LIMIT);
 }
