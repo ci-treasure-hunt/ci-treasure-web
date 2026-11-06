@@ -99,7 +99,7 @@ export default function PrivacyPage() {
             signed in, the form is protected by the Turnstile check described in section 14, we do not store your IP
             address, and you can leave your own email address, which is optional. If you pass an event on, we use your
             email address (or, if you are signed in, your account&apos;s address) only to ask you about the event and to
-            let you know once, when it is live. We keep these details for as long as the event is on the site, and
+            let you know once, when it is live, unless you also tick the newsletter box (section 8). We keep these details for as long as the event is on the site, and
             delete your email address on request. Legal basis: Art.&nbsp;6(1)(f) GDPR: legitimate interest in running
             a directory that people can add events to, and in being able to ask about a submission and tell the
             person who sent it in that it is live.
@@ -216,7 +216,8 @@ export default function PrivacyPage() {
           <h2 className="font-semibold text-slate-950">8. Newsletter</h2>
           <p>
             The newsletter is sent with EmailOctopus (EmailOctopus Limited, UK). When you subscribe, through the
-            form on our newsletter page, the checkbox when you create an account, or the button in your dashboard,
+            form on our newsletter page, the checkbox when you create an account or pass an event on, or the button
+            in your dashboard,
             our server passes your email address to EmailOctopus, which stores it and sends you an email to
             confirm your subscription. You only receive the newsletter after you confirm. Their{" "}
             <a

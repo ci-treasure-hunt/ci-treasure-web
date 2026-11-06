@@ -25,8 +25,12 @@ const STATES = {
   },
 } as const;
 
-export default async function DonePage({ searchParams }: { searchParams: Promise<{ state?: string }> }) {
-  const { state } = await searchParams;
+export default async function DonePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string; newsletter?: string }>;
+}) {
+  const { state, newsletter } = await searchParams;
   const content = STATES[(state as keyof typeof STATES) ?? "thanks"] ?? STATES.thanks;
 
   return (
@@ -34,13 +38,18 @@ export default async function DonePage({ searchParams }: { searchParams: Promise
       <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="font-serif text-3xl tracking-tight text-slate-950">{content.title}</h1>
         <p className="mt-3 text-base text-slate-700">{content.body}</p>
+        {newsletter === "pending" ? (
+          <p className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            One more step for the newsletter: we sent you an email. Click the button in it to confirm.
+          </p>
+        ) : null}
         {state !== "taken" && state !== "expired" ? (
           <p className="mt-3 text-sm text-slate-600">
             New events are announced in our{" "}
             <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" className="font-medium text-(--color-pine) underline">
               Telegram group
             </a>
-            , and every month in the{" "}
+            , and in the{" "}
             <Link href="/newsletter" className="font-medium text-(--color-pine) underline">
               newsletter
             </Link>

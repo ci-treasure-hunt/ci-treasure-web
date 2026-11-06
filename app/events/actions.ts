@@ -35,6 +35,7 @@ import { uniqueProfileSlug } from "@/lib/profile-slug";
 import { createEventFlyerTicket, createEventSubmitTicket, verifyEventSubmitTicket } from "@/lib/event-submit-ticket";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { safeExternalUrl } from "@/lib/url-safety";
+import { subscribeToNewsletter } from "@/lib/newsletter";
 type ActionResult = {
   success: boolean;
   error?: string;
@@ -914,17 +915,23 @@ export async function submitEventStep1(input: EventStep1Input): Promise<EventSte
 
 // Step 2, "I'm just sharing it", signed out: the optional own email, for questions only. Only for
 // the browser holding the ticket, and only while nobody has claimed the submission.
+// The newsletter box is a separate, unticked opt-in (never a condition of passing the event on).
+// EmailOctopus sends the confirmation email; nothing is sent before the person confirms.
 export async function saveSharedSubmission(
   eventId: string,
   ticket: string,
   email: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+  newsletter = false,
+): Promise<{ ok: true; newsletter: "pending" | "already" | null } | { ok: false; error: string }> {
   if (!verifyEventSubmitTicket(eventId, ticket)) {
     return { ok: false, error: "This link has expired. Your event is saved; thank you!" };
   }
   const address = String(email ?? "").trim().slice(0, 200);
   if (address && !BARE_EMAIL.test(address)) {
     return { ok: false, error: "This doesn't look like an email address." };
+  }
+  if (newsletter && !address) {
+    return { ok: false, error: "Add your email address for the newsletter, or untick the box." };
   }
   if (address) {
     await createAdminClient()
@@ -933,5 +940,10 @@ export async function saveSharedSubmission(
       .eq("event_id", eventId)
       .is("user_id", null);
   }
-  return { ok: true };
+  let subscribed: "pending" | "already" | null = null;
+  if (newsletter && address) {
+    const result = await subscribeToNewsletter(address, "share");
+    if (result === "pending" || result === "already") subscribed = result;
+  }
+  return { ok: true, newsletter: subscribed };
 }

@@ -21,7 +21,7 @@ export type NewsletterResult = "pending" | "already" | "invalid" | "error";
 
 // Where the signup came from, as an EmailOctopus tag. Lets the newsletter compare the form with
 // the account nudges, like support_clicks does for the support link.
-export type NewsletterSource = "website" | "signup" | "dashboard";
+export type NewsletterSource = "website" | "signup" | "dashboard" | "share";
 
 // A contact as EmailOctopus has it, "missing" when it is not on the list, null when the lookup failed.
 export type ContactStatus =

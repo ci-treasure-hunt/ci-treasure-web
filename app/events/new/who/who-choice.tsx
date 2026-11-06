@@ -11,6 +11,7 @@ export function WhoChoice({ eventId, ticket }: { eventId: string; ticket: string
   const [organize, setOrganize] = useState(false);
   const [teach, setTeach] = useState(false);
   const [email, setEmail] = useState("");
+  const [newsletter, setNewsletter] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
 
@@ -26,9 +27,10 @@ export function WhoChoice({ eventId, ticket }: { eventId: string; ticket: string
   function share() {
     setError(null);
     startTransition(async () => {
-      const result = await saveSharedSubmission(eventId, ticket, email);
-      if (result.ok) router.push("/events/new/done?state=thanks");
-      else setError(result.error);
+      const result = await saveSharedSubmission(eventId, ticket, email, newsletter);
+      if (!result.ok) setError(result.error);
+      else if (result.newsletter === "pending") router.push("/events/new/done?state=thanks&newsletter=pending");
+      else router.push("/events/new/done?state=thanks");
     });
   }
 
@@ -76,6 +78,20 @@ export function WhoChoice({ eventId, ticket }: { eventId: string; ticket: string
             />
             <span className="block text-xs text-slate-500">
               We&apos;ll only use it to ask you about this event and to tell you when it&apos;s live. Never shown.
+            </span>
+          </label>
+          {/* Unticked by default: a pre-ticked box is not valid consent (Planet49), and the newsletter is
+              never a condition of passing an event on (Art. 7(4) GDPR). */}
+          <label className="flex items-start gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={newsletter}
+              onChange={(e) => setNewsletter(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              Also send me the newsletter: festivals, workshops and news from the CI world. You confirm it once by
+              email.
             </span>
           </label>
           {error ? <p className="text-sm text-rose-700">{error}</p> : null}
