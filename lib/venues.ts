@@ -16,24 +16,22 @@ import type { InvitePlatform } from "./communities";
 export async function getPublishedVenueInvitePlatforms(
   venueId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
-  try {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("venue_invites")
-      .select("platform")
-      .eq("venue_id", venueId)
-      .eq("published", true);
-    const result: Partial<Record<InvitePlatform, boolean>> = {};
-    for (const row of data ?? []) {
-      const platform = row.platform as string;
-      if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
-        result[platform] = true;
-      }
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("venue_invites")
+    .select("platform")
+    .eq("venue_id", venueId)
+    .eq("published", true);
+  // Throw rather than cache the venue page without its Join buttons for a day (I-175).
+  if (error) throw new Error(error.message);
+  const result: Partial<Record<InvitePlatform, boolean>> = {};
+  for (const row of data ?? []) {
+    const platform = row.platform as string;
+    if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
+      result[platform] = true;
     }
-    return result;
-  } catch {
-    return {};
   }
+  return result;
 }
 
 // I-153: associated communities (community_venues) and people (venue_profiles, e.g. an owner or

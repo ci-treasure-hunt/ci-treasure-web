@@ -291,24 +291,22 @@ export async function getTeacherBySlug(slug: string): Promise<TeacherProfile | n
 export async function getPublishedProfileInvitePlatforms(
   profileId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
-  try {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("profile_invites")
-      .select("platform")
-      .eq("profile_id", profileId)
-      .eq("published", true);
-    const result: Partial<Record<InvitePlatform, boolean>> = {};
-    for (const row of data ?? []) {
-      const platform = row.platform as string;
-      if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
-        result[platform] = true;
-      }
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("profile_invites")
+    .select("platform")
+    .eq("profile_id", profileId)
+    .eq("published", true);
+  // Throw rather than cache the teacher page without its Join buttons for a day (I-175).
+  if (error) throw new Error(error.message);
+  const result: Partial<Record<InvitePlatform, boolean>> = {};
+  for (const row of data ?? []) {
+    const platform = row.platform as string;
+    if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
+      result[platform] = true;
     }
-    return result;
-  } catch {
-    return {};
   }
+  return result;
 }
 
 export async function getProfileAssociations(profileId: string): Promise<{

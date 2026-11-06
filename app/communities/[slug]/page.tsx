@@ -23,6 +23,7 @@ import { ExpandableList } from "@/components/expandable-list";
 import { CompactTeacherRow, CompactCommunityRingRow } from "@/components/compact-entity-row";
 import { VenueCard } from "@/components/entity-cards";
 import { getLinkLabel, linkSortKey } from "@/lib/events";
+import { safeExternalUrl } from "@/lib/url-safety";
 import {
   formatEventDateRange,
   formatMoreDates,
@@ -174,6 +175,14 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
     icon: isMessengerUrl(community.other_resource) ? <MessengerIcon /> : isLineUrl(community.other_resource) ? <LineIcon /> : <ExternalLink className="h-4 w-4" />,
   });
   communityLinks.sort((a, b) => linkSortKey(a.type) - linkSortKey(b.type));
+  // I-165: every href goes through the scheme allowlist at render, like the teacher and venue
+  // pages. The app's write paths already sanitize (classifyCommunityLinks), but rows imported from
+  // Airtable or inserted by SQL do not; 6 of them stored a bare host ("www.danceshare.dk"), which
+  // rendered as a relative link to a 404 on our own site until this prefixed https://.
+  const safeCommunityLinks = communityLinks.flatMap((row) => {
+    const href = safeExternalUrl(row.href);
+    return href ? [{ ...row, href }] : [];
+  });
 
   return (
     <main className="min-h-screen bg-(--color-mist) px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
@@ -355,8 +364,8 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
               <section className="rounded-[1.75rem] border border-(--color-sand-strong) bg-(--color-mist) p-6">
                 <h2 className="font-serif text-2xl text-slate-950">Links & Resources</h2>
                 <div className="mt-5 flex flex-col gap-3">
-                  {communityLinks.length > 0
-                    ? communityLinks.map((row, i) => (
+                  {safeCommunityLinks.length > 0
+                    ? safeCommunityLinks.map((row, i) => (
                         <SocialLink key={i} href={row.href} icon={row.icon} label={row.label} />
                       ))
                     : !community.has_email && !community.has_phone_contacts && <p className="text-sm text-slate-500 italic">No links available.</p>

@@ -70,14 +70,18 @@ async function revealInviteLinks(target: RevealTarget, token: string): Promise<I
     return { error: "rate_limited" };
   }
 
-  // The parent must be live before revealing its invites: an active (not soft-deleted) community,
-  // or a venue or profile with a public page.
+  // The parent must be live before revealing its invites: a published, not soft-deleted community,
+  // or a venue or profile with a public page. The status check is belt and braces: approval is what
+  // publishes a submitted community's invites, but a community moved back out of 'published'
+  // without being soft-deleted would otherwise keep them revealable (same rule as the phone
+  // contacts' parentIsPublic).
   const parent =
     target.kind === "community"
       ? await supabase
           .from("communities")
           .select("id")
           .eq("id", target.id)
+          .eq("status", "published")
           .is("deleted_at", null)
           .maybeSingle()
       : await supabase

@@ -19,43 +19,39 @@ export type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
 export async function getPublishedInvitePlatforms(
   communityId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
-  try {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("community_invites")
-      .select("platform")
-      .eq("community_id", communityId)
-      .eq("published", true)
-      .is("broken_since", null);
-    const result: Partial<Record<InvitePlatform, boolean>> = {};
-    for (const row of data ?? []) {
-      const platform = row.platform as string;
-      if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
-        result[platform] = true;
-      }
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("community_invites")
+    .select("platform")
+    .eq("community_id", communityId)
+    .eq("published", true)
+    .is("broken_since", null);
+  // Throw rather than cache the community page without its Join buttons for a day (I-175).
+  if (error) throw new Error(error.message);
+  const result: Partial<Record<InvitePlatform, boolean>> = {};
+  for (const row of data ?? []) {
+    const platform = row.platform as string;
+    if (platform === "telegram" || platform === "whatsapp" || platform === "signal" || platform === "line") {
+      result[platform] = true;
     }
-    return result;
-  } catch {
-    return {};
   }
+  return result;
 }
 
 // I-029: chat platforms whose stored invite link has expired, published or not. Only the platform
 // name leaves the server, never the dead URL.
 export async function getExpiredInvitePlatforms(communityId: string): Promise<InvitePlatform[]> {
-  try {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("community_invites")
-      .select("platform")
-      .eq("community_id", communityId)
-      .not("broken_since", "is", null);
-    return (data ?? [])
-      .map((row) => row.platform as string)
-      .filter((p): p is InvitePlatform => p === "telegram" || p === "whatsapp" || p === "signal" || p === "line");
-  } catch {
-    return [];
-  }
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("community_invites")
+    .select("platform")
+    .eq("community_id", communityId)
+    .not("broken_since", "is", null);
+  // Throw rather than cache the page without its "link expired" notes for a day (I-175).
+  if (error) throw new Error(error.message);
+  return (data ?? [])
+    .map((row) => row.platform as string)
+    .filter((p): p is InvitePlatform => p === "telegram" || p === "whatsapp" || p === "signal" || p === "line");
 }
 
 // I-111: the public Add form, replacing the Airtable form. Corrections go through "Suggest an
