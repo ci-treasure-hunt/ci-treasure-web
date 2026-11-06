@@ -377,6 +377,40 @@ async function insertSubmittedEvent(data: OrganizerEventFormData, ctx: Submitter
   };
 }
 
+// Mirrors the events_update RLS policy exactly: owner, listed editor, admin or moderator role, or
+// credited as an organizer through one of the caller's own profiles. Must never be stricter than
+// that policy, or it would block someone RLS lets in; if the policy changes, change this with it.
+async function mayEditEvent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data: event } = await supabase
+    .from("events")
+    .select("user_id, editors")
+    .eq("id", eventId)
+    .maybeSingle<{ user_id: string | null; editors: string[] | null }>();
+  // Not visible to the caller means RLS would not let the update through either.
+  if (!event) return false;
+  if (event.user_id === userId || (event.editors ?? []).includes(userId)) return true;
+
+  for (const role of ["admin", "moderator"] as const) {
+    const { data: hasRole } = await supabase.rpc("has_role", { _user_id: userId, _role: role });
+    if (hasRole === true) return true;
+  }
+
+  const { data: ownProfiles } = await supabase.from("profiles").select("id").eq("user_id", userId);
+  const profileIds = (ownProfiles ?? []).map((p) => p.id as string);
+  if (profileIds.length === 0) return false;
+  const { data: link } = await supabase
+    .from("event_organizers")
+    .select("event_id")
+    .eq("event_id", eventId)
+    .in("organizer_id", profileIds)
+    .limit(1);
+  return (link ?? []).length > 0;
+}
+
 export async function updateEvent(
   eventId: string,
   data: OrganizerEventFormData,
@@ -397,6 +431,13 @@ export async function updateEvent(
   } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: "You are not signed in." };
+  }
+
+  // The RLS-guarded update below stays the real gate. This pre-check only keeps the steps before
+  // it (re-hosting an external image, geocoding, possibly inserting a hidden venue and pinging the
+  // admins) from running for an event the caller cannot edit (I-165 November delta review).
+  if (!(await mayEditEvent(supabase, eventId, user.id))) {
+    return { success: false, error: "You don't have permission to edit this event." };
   }
 
   const { imageUrl, warning } = await resolveExternalEventImage(data.imageUrl);
