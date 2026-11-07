@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
+import { CACHE_TAGS, DETAIL_REVALIDATE_SECONDS } from "@/lib/cache-tags";
 import { createClient as createStaticClient } from "@/lib/supabase/static";
 import { getCountryLabel, upcomingClassSeriesFilter, type EventListItem } from "@/lib/event-display";
 import { mapEventRow, slugify, type SupabaseEventRow } from "@/lib/events";
@@ -131,6 +131,12 @@ export async function getAllCountrySlugs(): Promise<string[]> {
 // invalidates it on a country_summaries write). Every detail page renders a country link, and this
 // used to load every summary with its full prose on each render: ~3,100 requests a day while the
 // detail pages were uncached (2026-11-04 logs). Codes only, so it stays tiny.
+// I-175 step 5: the root layout's country band reads it too, so every page carries the
+// country_summaries tag; the webhook invalidates it only when a country page is added or removed.
+// 7-day fallback like the detail pages: a page takes the lowest revalidate of anything it reads,
+// and 24h here would hold every detail page at 24h. Errors throw (also from the two helpers
+// below), so a failed lookup never stores a page without its country link or band for a week;
+// the previous version of the page stays up instead.
 const loadCountryPageIsos = unstable_cache(
   async (): Promise<string[]> => {
     const supabase = createStaticClient();
@@ -139,21 +145,28 @@ const loadCountryPageIsos = unstable_cache(
     return (data ?? []).map((row) => row.iso as string);
   },
   ["country-page-isos-v1"],
-  { tags: [CACHE_TAGS.countrySummaries], revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+  { tags: [CACHE_TAGS.countrySummaries], revalidate: DETAIL_REVALIDATE_SECONDS },
 );
 
-export async function getCountryPageLink(iso: string | null): Promise<{ slug: string; label: string } | null> {
-  if (!iso || !hasSupabaseEnv()) return null;
-  let isos: string[];
-  try {
-    isos = await loadCountryPageIsos();
-  } catch {
-    return null;
-  }
-  if (!isos.includes(iso)) return null;
+function countryPageLink(iso: string): { slug: string; label: string } {
   // Same slug and label derivation as getAllCountrySummaries().
   const label = getCountryLabel(iso);
   return { slug: slugify(label), label };
+}
+
+export async function getCountryPageLink(iso: string | null): Promise<{ slug: string; label: string } | null> {
+  if (!iso || !hasSupabaseEnv()) return null;
+  const isos = await loadCountryPageIsos();
+  return isos.includes(iso) ? countryPageLink(iso) : null;
+}
+
+// Every live country page as {iso, slug, label}, sorted by label: the root layout's country band.
+export async function getCountryPageLinks(): Promise<{ iso: string; slug: string; label: string }[]> {
+  if (!hasSupabaseEnv()) return [];
+  const isos = await loadCountryPageIsos();
+  return isos
+    .map((iso) => ({ iso, ...countryPageLink(iso) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 async function resolveCountryBySlug(slug: string): Promise<CountrySummary | null> {

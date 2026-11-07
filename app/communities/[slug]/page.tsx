@@ -68,7 +68,10 @@ import { ringSectionHeading } from "@/lib/entity-ring";
 // Supabase revalidate webhook, so the TTL is only a backstop for content that goes stale
 // with no write behind it — mainly the upcoming/past split, which is computed from the
 // clock at render time. 24h bounds that; Jan's call 2026-09-10 over a shorter window.
-export const revalidate = 86400;
+// I-175 step 5 (2026-11-07): 7 days. The date-driven states now have nightly jobs behind them
+// (archive-past-events sets ended events to archived, revalidate-started-class-series refreshes a
+// class series once it has started), so the timer only catches a missed invalidation.
+export const revalidate = 604800;
 
 // I-175 step 4: cached per URL on first request instead of rendered on every request (~900
 // renders a day in Nov 2026). Nothing here reads cookies or the viewer. The revalidate webhook

@@ -11,15 +11,18 @@ import { ogImage, socialImageUrl } from "@/lib/og-image";
 // (app/api/revalidate/route.ts), so the timer is only a backstop, not the freshness mechanism.
 // At 1h every crawler sweep regenerated it; crawlers outnumber human pageviews here by roughly
 // an order of magnitude, and that regeneration is what consumed the ISR Write quota.
-export const revalidate = 86400;
+// I-175 step 5 (2026-11-07): 7 days. The date-driven states now have nightly jobs behind them
+// (archive-past-events sets ended events to archived, revalidate-started-class-series refreshes a
+// class series once it has started), so the timer only catches a missed invalidation.
+export const revalidate = 604800;
 
 // I-175 step 4: cached per URL on first request, instead of rendered on every request (which was
 // ~2,800 renders a day in Nov 2026, the largest share of Vercel CPU and Supabase egress). Safe
 // because nothing here reads cookies or the user: getEventBySlug is the signed-out view, cached
 // per event and tagged event:<shortId>. The webhook refreshes this page when the event, its
 // credits, venue, organizing communities or series siblings change. One date-dependent state has
-// no write behind it: a class series' "booking closed" once its first session has passed, which
-// waits for the timer above (see the I-175 spec before raising it).
+// no write behind it: a class series' "booking closed" once its first session has passed. The
+// pg_cron job revalidate-started-class-series (00:10 UTC) refreshes those pages.
 export const dynamic = "force-static";
 
 type EventPageProps = {

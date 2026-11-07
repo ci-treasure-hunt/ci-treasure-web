@@ -11,7 +11,7 @@ import NavigationTracker from "@/components/navigation-tracker";
 import ServiceWorkerRegistration from "@/components/service-worker-registration";
 import { supportHref } from "@/lib/support";
 import { SiteHeader } from "@/components/site-header";
-import { getAllCountrySummaries } from "@/lib/country-pages";
+import { getCountryPageLinks } from "@/lib/country-pages";
 import { getCountryLabelWithArticle } from "@/lib/event-display";
 import { EVENT_TYPE_PAGES } from "@/lib/event-type-pages";
 import {
@@ -35,7 +35,12 @@ import {
 // also runs getAllCountrySummaries() on every render, which is why country_summaries was the most
 // queried table on the site (~1.2k reads/day for a band that changes when a country page goes
 // live, i.e. rarely and manually).
-export const revalidate = 86400;
+// I-175 step 5: 24h -> 7 days, so the detail routes can use their own 7-day timer (pages with a
+// shorter one, like the lists at 24h, keep it). The band now reads the cached country-code list
+// (tag country_summaries), which the revalidate webhook invalidates when a country page is added or
+// removed: that marks every page stale once, and each re-renders on its next visit.
+// Literal, not the DETAIL_REVALIDATE_SECONDS constant: segment config must be statically analyzable.
+export const revalidate = 604800;
 
 const sans = Manrope({
   variable: "--font-sans",
@@ -96,7 +101,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const countryLinks = (await getAllCountrySummaries()).sort((a, b) => a.label.localeCompare(b.label));
+  const countryLinks = await getCountryPageLinks();
 
   return (
     <html lang="en">

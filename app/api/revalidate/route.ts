@@ -302,15 +302,20 @@ export async function POST(request: NextRequest) {
       // Table only carries `iso`, not a slug — same derivation getAllCountrySummaries() uses
       // (lib/country-pages.ts), kept in sync here since this route can't import a server-only
       // Supabase helper just to look up a string transform.
-      // Detail pages read the list of countries with a page for their country link (I-175).
-      invalidateSnapshot(CACHE_TAGS.countrySummaries);
-      if (record?.iso) {
-        revalidatePath(`/${slugify(getCountryLabel(record.iso as string))}`);
-        // A new summary is a new page: the index and the sitemap list it too, so a crawler sent
-        // to the sitemap finds it the same day instead of after their daily timers.
+      // Every page reads the cached list of countries with a page (detail pages for their country
+      // link, the root layout for its country band; I-175), so invalidating that tag marks the
+      // whole site stale. Only adding or removing a country page changes the list; a prose edit
+      // refreshes just its own country page.
+      const iso = record?.iso as string | undefined;
+      const listChanged = payload.type !== "UPDATE" || !rec || !old || rec.iso !== old.iso;
+      if (listChanged) {
+        invalidateSnapshot(CACHE_TAGS.countrySummaries);
+        // The index and the sitemap list country pages too, so a crawler sent to the sitemap finds
+        // a new one the same day instead of after their daily timers.
         revalidatePath("/countries");
         revalidatePath("/sitemap.xml");
       }
+      if (iso) revalidatePath(`/${slugify(getCountryLabel(iso))}`);
       break;
     }
     default:

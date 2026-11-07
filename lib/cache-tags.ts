@@ -22,9 +22,14 @@ export const CACHE_TAGS = {
 // the same cached fetcher from a route handler that has no page path to revalidate.
 export const eventTag = (shortId: string) => `event:${shortId}`;
 
-// Fallback lifetime for a per-entity detail entry. Same as the pages' own 24h timer for now; step 5
-// raises both together (a page takes the lowest revalidate of anything it reads).
-export const DETAIL_REVALIDATE_SECONDS = 24 * 60 * 60;
+// Fallback lifetime for the data the detail pages read (per-event entry, country-page list).
+// I-175 step 5: 7 days, matching the four detail routes' own timer and the root layout's (a page
+// takes the lowest revalidate of anything it reads, layout included). Edits reach the pages through
+// the revalidate webhook; the timer only catches a missed invalidation, and each timer rebuild of a
+// page a crawler revisits cost CPU, ISR writes and Supabase egress (~12K ISR write units a day at
+// 24h, 2026-11-05/06). Date-driven states are covered by the nightly jobs (archive-past-events,
+// revalidate-started-class-series).
+export const DETAIL_REVALIDATE_SECONDS = 7 * 24 * 60 * 60;
 
 // Fallback lifetime for a snapshot whose invalidation was missed. Writes to the link tables
 // (event_teachers etc.) fire no trigger yet (I-175 step 3), so until then this bounds how stale a
