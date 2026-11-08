@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, hasAdminCredentials } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { unstable_cache } from "next/cache";
 import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
@@ -16,6 +16,7 @@ import type { InvitePlatform } from "./communities";
 export async function getPublishedVenueInvitePlatforms(
   venueId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
+  if (!hasAdminCredentials()) return {};
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("venue_invites")

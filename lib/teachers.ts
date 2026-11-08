@@ -8,7 +8,7 @@ import { getContinent, getContinentCountries } from "./entity-continents";
 import { getCountryLabel } from "./event-display";
 import { buildRing, RING_MIN_POOL, type RingEntity, type RingTier } from "./entity-ring";
 import { safeExternalUrl } from "./url-safety";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, hasAdminCredentials } from "@/lib/supabase/admin";
 import type { InvitePlatform } from "./communities";
 
 function hasSupabaseEnv() {
@@ -291,6 +291,7 @@ export async function getTeacherBySlug(slug: string): Promise<TeacherProfile | n
 export async function getPublishedProfileInvitePlatforms(
   profileId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
+  if (!hasAdminCredentials()) return {};
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("profile_invites")

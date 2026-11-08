@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, hasAdminCredentials } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { unstable_cache } from "next/cache";
 import { CACHE_TAGS, SNAPSHOT_REVALIDATE_SECONDS } from "@/lib/cache-tags";
@@ -19,6 +19,7 @@ export type InvitePlatform = "telegram" | "whatsapp" | "signal" | "line";
 export async function getPublishedInvitePlatforms(
   communityId: string,
 ): Promise<Partial<Record<InvitePlatform, boolean>>> {
+  if (!hasAdminCredentials()) return {};
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("community_invites")
@@ -41,6 +42,7 @@ export async function getPublishedInvitePlatforms(
 // I-029: chat platforms whose stored invite link has expired, published or not. Only the platform
 // name leaves the server, never the dead URL.
 export async function getExpiredInvitePlatforms(communityId: string): Promise<InvitePlatform[]> {
+  if (!hasAdminCredentials()) return [];
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("community_invites")

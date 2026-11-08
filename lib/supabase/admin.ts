@@ -12,6 +12,13 @@ export function toStorageBody(buffer: Buffer, contentType: string): Blob {
   return new Blob([new Uint8Array(buffer)], { type: contentType });
 }
 
+// False only where the service-role key is deliberately absent: the Playwright CI job and a
+// local checkout without it. Lets public pages render their optional admin-only extras (the
+// invite Join buttons) as absent there, while a real query error in production still throws.
+export function hasAdminCredentials(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
