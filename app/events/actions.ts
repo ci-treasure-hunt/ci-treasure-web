@@ -808,6 +808,10 @@ export type EventStep1Result =
 
 // Signed-out shared submissions, all submitters together, per 24 hours.
 const ANONYMOUS_EVENTS_PER_DAY = 30;
+// Per signed-in account, per 24 hours. Accounts are free, so without this a throwaway one could
+// fill the review queue (and the admin pings, and hidden venues) with no Turnstile in the way.
+// Real use peaks at one a day; trusted organizers are exempt (I-165 November delta review).
+const SIGNED_IN_EVENTS_PER_DAY = 10;
 
 // The source link becomes the event's first link, typed by the link rules
 // (docs/web/link-types.md): forms → registration, a Facebook event → facebook_event, else website.
@@ -836,6 +840,20 @@ export async function submitEventStep1(input: EventStep1Input): Promise<EventSte
     user && profile
       ? (["organizer", "teacher"] as const).filter((r) => (input.roles ?? []).includes(r))
       : [];
+
+  if (user && !profile?.is_trusted) {
+    const { count } = await admin
+      .from("event_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", new Date(Date.now() - 86400_000).toISOString());
+    if ((count ?? 0) >= SIGNED_IN_EVENTS_PER_DAY) {
+      return {
+        ok: false,
+        error: "You've added a lot of events today. Please try again tomorrow, or send the rest to hello@citreasurehunt.com.",
+      };
+    }
+  }
 
   if (!user) {
     if (!(await verifyTurnstile(input.turnstileToken))) {
