@@ -59,6 +59,7 @@ export const COUNTRY_NAME: Record<string, string> = {
   TW: 'Taiwan', VN: 'Vietnam', RS: 'Serbia', SG: 'Singapore', PH: 'Philippines', HK: 'HongKong',
   NP: 'Nepal', LK: 'SriLanka', KH: 'Cambodia', CY: 'Cyprus', MT: 'Malta', LU: 'Luxembourg',
   GE: 'Georgia', AM: 'Armenia', MA: 'Morocco', AE: 'UAE', BO: 'Bolivia', GT: 'Guatemala',
+  PR: 'PuertoRico',
 }
 
 // Hashtag form of a country: the map above, else the English name from Intl with spaces and
