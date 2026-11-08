@@ -55,7 +55,7 @@ const REGION_CONTINENT: Record<(typeof COMMUNITY_REGIONS)[number], string> = {
 const COUNTRY_REGION: Record<string, (typeof COMMUNITY_REGIONS)[number]> = {
   AE: "West Asia & Caucasus", AM: "West Asia & Caucasus", AR: "South America",
   AT: "Central & Eastern Europe", AU: "Oceania", BE: "Western Europe", BG: "Balkans",
-  BR: "South America", CA: "North America", CH: "Central & Eastern Europe", CL: "South America",
+  BR: "South America", BY: "Russia & Belarus", CA: "North America", CH: "Central & Eastern Europe", CL: "South America",
   CN: "East Asia", CO: "South America", CR: "Central America & Caribbean",
   CZ: "Central & Eastern Europe", DE: "Central & Eastern Europe", DK: "Nordics & Baltics",
   EC: "South America", EE: "Nordics & Baltics", EG: "Africa", ES: "Southern Europe",
