@@ -68,7 +68,10 @@ export function WhoChoice({ eventId, ticket }: { eventId: string; ticket: string
             You&apos;re passing it on: thank you! We check it, add the details and publish it.
           </p>
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-700">Your email (optional)</span>
+            {/* Benefit first (Eric, 2026-11-06), but still optional: the tip box stays open to anyone. */}
+            <span className="text-sm font-medium text-slate-700">
+              Want to know when it&apos;s live? <span className="font-normal text-slate-500">Your email (optional)</span>
+            </span>
             <input
               type="email"
               value={email}
