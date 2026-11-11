@@ -94,7 +94,9 @@ export function EventDetailView({
     "@context": "https://schema.org",
     "@type": "Event",
     name: event.title,
-    image: event.imageUrl ?? undefined,
+    // Google flags Event markup without an image ("Missing field 'image'"); past events added
+    // without one fall back to the site's default social image, same as og:image already does.
+    image: event.imageUrl ?? `${SITE_URL}/opengraph-image.jpg`,
     description: event.description ? stripMarkdown(event.description).slice(0, 200) : undefined,
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: event.cancelled ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
