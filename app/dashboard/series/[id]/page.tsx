@@ -4,8 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { buildEventSlug } from "@/lib/events";
 import { getSeriesDetail } from "@/lib/series";
 import { canManageSeries } from "@/lib/series-access";
+import { getSeriesRenewalInfo, nextRenewalDates } from "@/lib/series-renewal";
 import { createClient } from "@/lib/supabase/server";
 
+import { extendOrganizerSeries } from "./actions";
 import { SeriesAddDatesForm } from "./add-dates-form";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -16,8 +18,15 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 // I-171: an organizer's view of one of their series, with every date and a form to add more.
-export default async function DashboardSeriesPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DashboardSeriesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ extended?: string; until?: string; live?: string; extendError?: string }>;
+}) {
   const { id } = await params;
+  const { extended, until, live, extendError } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,6 +45,9 @@ export default async function DashboardSeriesPage({ params }: { params: Promise<
 
   const latest = series.instances[series.instances.length - 1];
   const today = new Date().toISOString().slice(0, 10);
+  // I-171 DEC-3b: only an open-ended series (recurrence rule) gets the one-click extension.
+  const renewal = await getSeriesRenewalInfo(id);
+  const renewalDates = renewal?.lastDate ? nextRenewalDates(renewal.lastDate, renewal.stepDays) : [];
 
   return (
     <main className="min-h-screen bg-(--color-mist) px-5 py-6 text-slate-900 sm:px-8 lg:px-10">
@@ -83,6 +95,40 @@ export default async function DashboardSeriesPage({ params }: { params: Promise<
             })}
           </ul>
         </section>
+
+        {renewal ? (
+          <section className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-[0_18px_55px_rgba(106,75,25,0.08)]">
+            <h2 className="font-serif text-2xl text-slate-950">Keeps going</h2>
+            {extended ? (
+              <p className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                Added {extended} {extended === "1" ? "date" : "dates"}
+                {until ? `, until ${until}` : ""}.{" "}
+                {live === "1" ? "They are live." : "They go live once we have checked them."}
+              </p>
+            ) : null}
+            {extendError ? (
+              <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800">{extendError}</p>
+            ) : null}
+            <p className="mt-2 text-sm text-slate-600">
+              This series has no end date. We list about six months ahead
+              {renewal.lastDate ? `, currently until ${renewal.lastDate}` : ""}, and email you before the last date to
+              ask if it is still running. You can also extend it now.
+            </p>
+            {renewalDates.length ? (
+              <form action={extendOrganizerSeries} className="mt-4">
+                <input type="hidden" name="seriesId" value={series.id} />
+                <button
+                  type="submit"
+                  className="rounded-full bg-(--color-pine) px-5 py-3 text-sm font-semibold text-white hover:opacity-90"
+                >
+                  Extend 6 months (until {renewalDates[renewalDates.length - 1]})
+                </button>
+              </form>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600">It already has dates for the next six months.</p>
+            )}
+          </section>
+        ) : null}
 
         <SeriesAddDatesForm
           seriesId={series.id}

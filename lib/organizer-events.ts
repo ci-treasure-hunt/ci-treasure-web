@@ -203,6 +203,29 @@ export const REPEAT_OPTIONS: Array<{ value: RepeatMode; label: string }> = [
 export const REPEAT_HORIZON_DAYS = 183;
 export const REPEAT_MAX_DATES = 30;
 
+// I-171 DEC-3b: "Repeat until" may be "keeps going" instead of a date (Michal Gregulec, 2026-11-11:
+// an arbitrary end date is one he'd forget). The form then fills the six-month horizon and the
+// series stores its pattern, so a confirmed renewal can generate the next six months
+// (lib/series-renewal.ts). Stored in repeatUntil as this sentinel, never as a date.
+export const REPEAT_ONGOING = "ongoing";
+
+export function isOngoingRepeat(data: Pick<OrganizerEventFormData, "repeat" | "repeatUntil">) {
+  return (data.repeat === "weekly" || data.repeat === "biweekly") && data.repeatUntil === REPEAT_ONGOING;
+}
+
+// RRULE for event_series.recurrence_rule. Only the two patterns the form offers.
+export function recurrenceRuleFor(repeat: RepeatMode): string | null {
+  if (repeat === "weekly") return "FREQ=WEEKLY;INTERVAL=1";
+  if (repeat === "biweekly") return "FREQ=WEEKLY;INTERVAL=2";
+  return null;
+}
+
+// Days between dates for a stored rule, or null for a rule we don't generate from.
+export function recurrenceStepDays(rule: string | null | undefined): number | null {
+  const match = /^FREQ=WEEKLY;INTERVAL=(1|2)$/.exec(String(rule ?? "").trim());
+  return match ? Number(match[1]) * 7 : null;
+}
+
 export function createEmptyOrganizerEventFormData(): OrganizerEventFormData {
   return {
     title: "",
@@ -443,9 +466,15 @@ export function computeRepeatDates(
       };
     }
   } else {
-    if (!data.repeatUntil) return { dates: [], error: "Pick the last date it repeats until." };
-    if (data.repeatUntil <= data.startDate) return { dates: [], error: "The repeat-until date should come after the first date." };
-    const until = data.repeatUntil < horizonEnd ? data.repeatUntil : horizonEnd;
+    const ongoing = data.repeatUntil === REPEAT_ONGOING;
+    if (ongoing && closed) {
+      return { dates: [], error: "A class series booked as a whole needs its last date." };
+    }
+    if (!data.repeatUntil) return { dates: [], error: "Pick the last date it repeats until, or that it keeps going." };
+    if (!ongoing && data.repeatUntil <= data.startDate) {
+      return { dates: [], error: "The repeat-until date should come after the first date." };
+    }
+    const until = ongoing || data.repeatUntil >= horizonEnd ? horizonEnd : data.repeatUntil;
     const step = data.repeat === "weekly" ? 7 : 14;
     dates = [];
     for (let offset = step; daysBetween(data.startDate, until) >= offset; offset += step) {

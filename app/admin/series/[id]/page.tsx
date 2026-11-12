@@ -3,17 +3,29 @@ import { notFound } from "next/navigation";
 
 import { requireAdminUser } from "@/lib/admin-auth";
 import { getSeriesDetail } from "@/lib/series";
+import { getSeriesRenewalInfo, nextRenewalDates } from "@/lib/series-renewal";
 import { AddDatesForm } from "./add-dates-form";
-import { publishPendingDatesAction } from "../actions";
+import { extendSeriesAction, publishPendingDatesAction, setSeriesRecurrenceAction } from "../actions";
 
-export default async function AdminSeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminSeriesDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ extended?: string; until?: string; extendError?: string }>;
+}) {
   await requireAdminUser();
   const { id } = await params;
+  const { extended, until, extendError } = await searchParams;
   const series = await getSeriesDetail(id);
   if (!series) notFound();
 
   const latest = series.instances[series.instances.length - 1];
   const pendingCount = series.instances.filter((e) => e.status === "pending").length;
+  const renewal = await getSeriesRenewalInfo(id);
+  const renewalDates = renewal?.lastDate ? nextRenewalDates(renewal.lastDate, renewal.stepDays) : [];
+  const currentRepeat =
+    series.recurrenceRule === "FREQ=WEEKLY;INTERVAL=1" ? "weekly" : series.recurrenceRule === "FREQ=WEEKLY;INTERVAL=2" ? "biweekly" : "";
 
   return (
     <section>
@@ -23,6 +35,45 @@ export default async function AdminSeriesDetailPage({ params }: { params: Promis
       <h1 className="mt-3 font-serif text-3xl text-slate-950">{series.title}</h1>
       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{series.seriesType}</p>
       {series.description ? <p className="mt-3 max-w-2xl text-sm text-slate-600">{series.description}</p> : null}
+
+      {series.seriesType === "recurring" ? (
+        <div className="mt-6 rounded-2xl border border-(--color-sand-strong) bg-(--color-mist) p-4 text-sm">
+          <h2 className="font-semibold text-slate-950">Keeps going (I-171 DEC-3b)</h2>
+          {extended ? (
+            <p className="mt-2 text-emerald-800">
+              Added {extended} dates{until ? `, until ${until}` : ""}.
+            </p>
+          ) : null}
+          {extendError ? <p className="mt-2 text-rose-800">{extendError}</p> : null}
+          <form action={setSeriesRecurrenceAction} className="mt-3 flex flex-wrap items-center gap-3">
+            <input type="hidden" name="seriesId" value={series.id} />
+            <select name="repeat" defaultValue={currentRepeat} className="rounded-xl border border-(--color-sand-strong) bg-white px-3 py-2">
+              <option value="">No pattern (ends after its last date)</option>
+              <option value="weekly">Every week, keeps going</option>
+              <option value="biweekly">Every 2 weeks, keeps going</option>
+            </select>
+            <button type="submit" className="rounded-full border border-(--color-ink) px-4 py-2 text-xs font-semibold">
+              Save pattern
+            </button>
+          </form>
+          {renewal ? (
+            renewalDates.length ? (
+              <form action={extendSeriesAction} className="mt-3">
+                <input type="hidden" name="seriesId" value={series.id} />
+                <button type="submit" className="rounded-full bg-(--color-ink) px-4 py-2 text-xs font-semibold text-(--color-mist)">
+                  Extend 6 months: {renewalDates.length} dates, {renewalDates[0]} to {renewalDates[renewalDates.length - 1]}
+                </button>
+              </form>
+            ) : (
+              <p className="mt-3 text-slate-600">Already has dates for the next six months.</p>
+            )
+          ) : null}
+          <p className="mt-3 text-xs text-slate-500">
+            With a pattern, the owner gets &ldquo;Still running?&rdquo; emails four weeks and one week before the last
+            date. New dates copy the latest date and go live at once if the series was published before.
+          </p>
+        </div>
+      ) : null}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-serif text-xl text-slate-950">Dates</h2>

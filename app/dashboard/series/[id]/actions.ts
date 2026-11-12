@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { TEACHER_ROLE_OPTIONS } from "@/lib/admin-events";
 import { ISO_DATE, addDays } from "@/lib/date-list";
@@ -9,6 +10,7 @@ import { notifyAdminSeriesDatesAdded } from "@/lib/notify";
 import { REPEAT_HORIZON_DAYS, REPEAT_MAX_DATES } from "@/lib/organizer-events";
 import { addSeriesDates } from "@/lib/series";
 import { canManageSeries } from "@/lib/series-access";
+import { extendSeries } from "@/lib/series-renewal";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -126,4 +128,24 @@ export async function addOrganizerSeriesDates(input: OrganizerAddDatesInput): Pr
     created: (rows ?? []).map((r) => ({ slug: buildEventSlug(r.short_id, r.title), startDate: r.start_date })),
     skipped: result.skipped,
   };
+}
+
+// I-171 DEC-3b: "Extend 6 months" for an open-ended series (one with a recurrence rule), the same
+// renewal the reminder email offers. Plain form action: the page re-renders with the result.
+export async function extendOrganizerSeries(formData: FormData) {
+  const seriesId = String(formData.get("seriesId") ?? "");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/auth?next=/dashboard/series/${seriesId}`);
+
+  const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+  if (!(await canManageSeries(supabase, user.id, profile?.id ?? null, seriesId))) redirect("/dashboard");
+
+  const result = await extendSeries({ seriesId, updatedBy: user.id });
+  const params = result.ok
+    ? new URLSearchParams({ extended: String(result.created), until: result.lastNew ?? "", live: result.published ? "1" : "0" })
+    : new URLSearchParams({ extendError: result.error });
+  redirect(`/dashboard/series/${seriesId}?${params.toString()}`);
 }

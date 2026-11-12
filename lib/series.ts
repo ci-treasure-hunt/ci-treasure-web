@@ -29,6 +29,9 @@ export type SeriesListItem = {
   total: number;
   upcoming: number;
   nextDate: string | null;
+  // I-171 DEC-3b: the last upcoming date, and whether the series is open-ended (has a rule).
+  lastDate: string | null;
+  openEnded: boolean;
 };
 
 export type SeriesInstance = {
@@ -47,6 +50,7 @@ export type SeriesDetail = {
   title: string;
   seriesType: SeriesType;
   description: string | null;
+  recurrenceRule: string | null;
   defaults: Record<string, unknown>;
   instances: SeriesInstance[];
 };
@@ -63,7 +67,7 @@ function todayIso() {
 export async function listSeries(): Promise<SeriesListItem[]> {
   const supabase = createAdminClient();
   const [{ data: series, error }, { data: events, error: eventsError }] = await Promise.all([
-    supabase.from("event_series").select("id, title, series_type").order("title"),
+    supabase.from("event_series").select("id, title, series_type, recurrence_rule").order("title"),
     supabase.from("events").select("series_id, start_date, end_date, status").not("series_id", "is", null),
   ]);
   if (error) throw new Error(error.message);
@@ -83,6 +87,8 @@ export async function listSeries(): Promise<SeriesListItem[]> {
       total: mine.length,
       upcoming: upcoming.length,
       nextDate: upcoming[0] ?? null,
+      lastDate: upcoming[upcoming.length - 1] ?? null,
+      openEnded: Boolean(s.recurrence_rule),
     };
   });
 }
@@ -119,6 +125,7 @@ export async function getSeriesDetail(seriesId: string): Promise<SeriesDetail | 
     title: series.title,
     seriesType: series.series_type,
     description: series.description,
+    recurrenceRule: series.recurrence_rule ?? null,
     defaults,
     instances: ((events ?? []) as unknown as Row[]).map((e) => ({
       id: e.id,
@@ -144,6 +151,8 @@ export async function createSeriesFromEvent(opts: {
   seriesType: SeriesType;
   // Null for a signed-out submission (I-192); event_series.created_by is nullable.
   createdBy: string | null;
+  // I-171 DEC-3b: set for an open-ended series ("keeps going"), so a renewal knows the pattern.
+  recurrenceRule?: string | null;
 }): Promise<string> {
   const supabase = createAdminClient();
   const { data: event, error } = await supabase.from("events").select("*").eq("id", opts.eventId).maybeSingle();
@@ -172,6 +181,7 @@ export async function createSeriesFromEvent(opts: {
       default_features: event.features,
       default_links: event.links,
       default_price: event.price,
+      recurrence_rule: opts.recurrenceRule ?? null,
       created_by: opts.createdBy,
     })
     .select("id")

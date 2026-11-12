@@ -14,6 +14,7 @@ import { disciplineLabel } from "@/lib/event-display";
 import {
   EVENT_TYPE_OPTIONS,
   MAX_PUBLIC_PRACTICES,
+  REPEAT_ONGOING,
   REPEAT_OPTIONS,
   type DropInAnswer,
   type RepeatMode,
@@ -213,9 +214,34 @@ export function EventStep1Form({ availablePractices, mode }: { availablePractice
             ))}
           </select>
           {repeat === "weekly" || repeat === "biweekly" ? (
-            <Field label="Repeat until">
-              <input type="date" value={repeatUntil} onChange={(e) => setRepeatUntil(e.target.value)} className={inputClassName} />
-            </Field>
+            <div className="space-y-2">
+              {/* I-171 DEC-3b: a closed class series always has a last date; everything else may keep going. */}
+              {!(type === "class" && dropIn === "no") ? (
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={repeatUntil === REPEAT_ONGOING}
+                    onChange={(e) => setRepeatUntil(e.target.checked ? REPEAT_ONGOING : "")}
+                  />
+                  It keeps going, no end date
+                </label>
+              ) : null}
+              {repeatUntil === REPEAT_ONGOING && !(type === "class" && dropIn === "no") ? (
+                <p className="text-sm text-slate-600">
+                  We list the next six months. Before the last date we email you to ask if it is still running,
+                  and one click adds the next six months.
+                </p>
+              ) : (
+                <Field label="Repeat until">
+                  <input
+                    type="date"
+                    value={repeatUntil === REPEAT_ONGOING ? "" : repeatUntil}
+                    onChange={(e) => setRepeatUntil(e.target.value)}
+                    className={inputClassName}
+                  />
+                </Field>
+              )}
+            </div>
           ) : null}
           {repeat === "dates" ? (
             <Field label="The other dates, one per line">

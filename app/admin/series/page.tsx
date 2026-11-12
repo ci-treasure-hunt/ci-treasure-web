@@ -10,6 +10,13 @@ const inputClass =
 export default async function AdminSeriesPage() {
   await requireAdminUser();
   const series = await listSeries();
+  // I-171 DEC-3b: recurring series whose dates run out within four weeks. Owners of open-ended
+  // series get a reminder email; ownerless ones (added by us) only show up here.
+  const today = new Date().toISOString().slice(0, 10);
+  const soon = new Date(Date.now() + 28 * 86400000).toISOString().slice(0, 10);
+  const ending = series
+    .filter((s) => s.seriesType === "recurring" && s.lastDate && s.lastDate >= today && s.lastDate <= soon)
+    .sort((a, b) => (a.lastDate ?? "").localeCompare(b.lastDate ?? ""));
 
   return (
     <section>
@@ -43,6 +50,29 @@ export default async function AdminSeriesPage() {
         </button>
       </form>
 
+      {ending.length ? (
+        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <h2 className="text-sm font-semibold text-amber-900">Ending within four weeks</h2>
+          <p className="mt-1 text-xs text-amber-900/80">
+            Still running? Open it and extend, or set a pattern first (&ldquo;keeps going&rdquo;). Otherwise the
+            listing ends after its last date.
+          </p>
+          <ul className="mt-3 space-y-1 text-sm">
+            {ending.map((s) => (
+              <li key={s.id}>
+                <Link href={`/admin/series/${s.id}`} className="font-medium text-(--color-pine) hover:underline">
+                  {s.title}
+                </Link>{" "}
+                <span className="text-slate-600">
+                  · last date {s.lastDate}
+                  {s.openEnded ? " · keeps going (owner gets an email)" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="mt-6 space-y-3">
         {series.map((s) => (
           <Link
@@ -51,7 +81,10 @@ export default async function AdminSeriesPage() {
             className="grid gap-2 rounded-2xl bg-(--color-mist) p-4 text-sm text-slate-900 shadow-[0_10px_30px_rgba(106,75,25,0.05)] hover:ring-1 hover:ring-(--color-pine) sm:grid-cols-[1fr_110px_150px_120px] sm:items-center"
           >
             <span className="font-medium">{s.title}</span>
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{s.seriesType}</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              {s.seriesType}
+              {s.openEnded ? " · ∞" : ""}
+            </span>
             <span className="text-slate-600">
               {s.upcoming} upcoming / {s.total} total
             </span>

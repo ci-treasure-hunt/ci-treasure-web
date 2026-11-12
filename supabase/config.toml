@@ -413,3 +413,7 @@ verify_jwt = false
 
 [functions.check-invite-links]
 verify_jwt = false
+
+# I-171 DEC-3b: called daily by pg_cron (migration 20261112120000), same bearer secret.
+[functions.series-renewal-reminders]
+verify_jwt = false

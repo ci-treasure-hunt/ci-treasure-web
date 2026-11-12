@@ -12,6 +12,8 @@ import {
   BARE_EMAIL,
   buildPrice,
   computeRepeatDates,
+  isOngoingRepeat,
+  recurrenceRuleFor,
   createEmptyOrganizerEventFormData,
   EVENT_TYPE_OPTIONS,
   MAX_PUBLIC_PRACTICES,
@@ -333,6 +335,7 @@ async function insertSubmittedEvent(data: OrganizerEventFormData, ctx: Submitter
         title: data.title.trim(),
         seriesType: "recurring",
         createdBy: userId,
+        recurrenceRule: isOngoingRepeat(data) ? recurrenceRuleFor(data.repeat) : null,
       });
       const result = await addSeriesDates({
         seriesId,

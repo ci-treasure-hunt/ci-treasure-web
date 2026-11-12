@@ -6,7 +6,9 @@ import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { recurrenceRuleFor, type RepeatMode } from "@/lib/organizer-events";
 import { addSeriesDates, createSeriesFromEvent, parseDateList, type SeriesType } from "@/lib/series";
+import { extendSeries } from "@/lib/series-renewal";
 
 // requireAdminUser() only carries the email; the series/event rows record the auth user id.
 async function requireAdminUserId(): Promise<string> {
@@ -94,4 +96,29 @@ export async function publishPendingDatesAction(formData: FormData) {
   revalidatePath(`/admin/series/${seriesId}`);
   revalidatePath("/admin/events/pending");
   revalidatePath("/");
+}
+
+// I-171 DEC-3b: admin side of the renewal. An ownerless series (most of the ones we added by hand)
+// never gets a reminder email, so the series list shows what ends within four weeks and these two
+// actions keep it going: set the pattern once, then extend by six months like the email link does.
+export async function setSeriesRecurrenceAction(formData: FormData) {
+  await requireAdminUser();
+  const seriesId = String(formData.get("seriesId") ?? "");
+  const repeat = String(formData.get("repeat") ?? "");
+  const rule = repeat === "" ? null : recurrenceRuleFor(repeat as RepeatMode);
+  if (repeat !== "" && !rule) throw new Error("Unknown pattern.");
+  const { error } = await createAdminClient().from("event_series").update({ recurrence_rule: rule }).eq("id", seriesId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/series/${seriesId}`);
+  revalidatePath("/admin/series");
+}
+
+export async function extendSeriesAction(formData: FormData) {
+  const userId = await requireAdminUserId();
+  const seriesId = String(formData.get("seriesId") ?? "");
+  const result = await extendSeries({ seriesId, updatedBy: userId });
+  const params = result.ok
+    ? new URLSearchParams({ extended: String(result.created), until: result.lastNew ?? "" })
+    : new URLSearchParams({ extendError: result.error });
+  redirect(`/admin/series/${seriesId}?${params.toString()}`);
 }
