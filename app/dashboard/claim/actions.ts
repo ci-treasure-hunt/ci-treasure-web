@@ -31,9 +31,14 @@ async function requireSignedIn(): Promise<boolean> {
   return Boolean(user);
 }
 
-// Search runs on the service-role client: shadow/CIGC profiles are invisible to a
-// normal user session (profiles RLS = public OR own), but they must be claimable.
-// Only non-sensitive fields and only truly-claimable rows are returned.
+// Search runs on the service-role client so it can filter on claim state. Only non-sensitive
+// fields and only truly-claimable rows are returned.
+//
+// Public profiles only (2026-11-12): name search used to return shadow profiles too, so anyone
+// who signed up could look up hidden profiles by name and read a bio snippet. A teacher found a
+// hidden profile built from his CI Global Calendar entry that he had never been told about.
+// Shadow profiles stay claimable through the ?profile=<id> deep link (getClaimableProfileById
+// below), which only reaches people we deliberately invite.
 export async function searchProfiles(query: string): Promise<ClaimableProfile[]> {
   if (!(await requireSignedIn())) return [];
 
@@ -45,6 +50,7 @@ export async function searchProfiles(query: string): Promise<ClaimableProfile[]>
     .from("profiles")
     .select("id, name, bio, visibility, is_organizer, is_teacher, is_musician")
     .ilike("name", `%${escapeLike(q)}%`)
+    .eq("visibility", "public")
     .is("user_id", null)
     .is("claim_pending_user_id", null)
     .order("name")

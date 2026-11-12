@@ -583,8 +583,8 @@ export type SimilarProfileMatch = { id: string; name: string; bioSnippet: string
 // organizer's search can miss a real match (typo, nickname, maiden name) and the picker only
 // offers "suggest new" once search comes back empty, so without this a near-duplicate stub was
 // one typo away. Mirrors checkSimilarProfiles in app/dashboard/new-profile/actions.ts exactly,
-// including the same security reasoning: search_similar_profiles is SECURITY DEFINER and can
-// see shadow profiles a normal session can't, so this only runs signed in.
+// including the same security reasoning: search_similar_profiles is SECURITY DEFINER, so this
+// only runs signed in. It returns public profiles only since 2026-11-12.
 export async function checkSimilarProfileNames(name: string): Promise<SimilarProfileMatch[]> {
   if (name.trim().length < 3) return [];
 

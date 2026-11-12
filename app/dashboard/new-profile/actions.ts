@@ -16,8 +16,9 @@ export type SimilarProfile = {
 };
 
 // Advisory only — never blocks creation. Backs the "similar profiles already exist" warning
-// so someone doesn't accidentally create a duplicate of a profile that's already listed
-// (including shadow profiles, which search_similar_profiles can see but a normal session can't).
+// so someone doesn't accidentally create a duplicate of a profile that's already listed.
+// Public profiles only since 2026-11-12 (see 20261112180000_similar_profiles_public_only.sql);
+// a duplicate of a hidden profile is caught at admin approval instead.
 export async function checkSimilarProfiles(name: string): Promise<SimilarProfile[]> {
   if (name.trim().length < 3) return [];
 
