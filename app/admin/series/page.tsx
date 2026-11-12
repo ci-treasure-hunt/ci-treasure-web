@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { requireAdminUser } from "@/lib/admin-auth";
+import { addDays } from "@/lib/date-list";
 import { listSeries } from "@/lib/series";
 import { createSeriesAction } from "./actions";
 
@@ -13,7 +14,7 @@ export default async function AdminSeriesPage() {
   // I-171 DEC-3b: recurring series whose dates run out within four weeks. Owners of open-ended
   // series get a reminder email; ownerless ones (added by us) only show up here.
   const today = new Date().toISOString().slice(0, 10);
-  const soon = new Date(Date.now() + 28 * 86400000).toISOString().slice(0, 10);
+  const soon = addDays(today, 28);
   const ending = series
     .filter((s) => s.seriesType === "recurring" && s.lastDate && s.lastDate >= today && s.lastDate <= soon)
     .sort((a, b) => (a.lastDate ?? "").localeCompare(b.lastDate ?? ""));
