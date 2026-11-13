@@ -18,8 +18,8 @@
 --     PATCH /rest/v1/events, and PostgREST rejects a whole patch containing an unknown column.
 --     That job is dormant: enrichment_tracker.csv last modified 2026-06-23, last commit 2026-07-30.
 --     It must be pointed at entity_emails before it is switched back on.
---   * The remaining repo references are spent one-off enrichment scripts, CSV logs, and a CIGC
---     HTML form field that happens to be named contact_email.
+--   * The remaining repo references are spent one-off enrichment scripts, CSV logs, and an
+--     external HTML form field that happens to be named contact_email.
 --
 -- No CASCADE, deliberately. If a view or function still depends on one of these columns, this
 -- should fail loudly rather than silently drop the dependent object.

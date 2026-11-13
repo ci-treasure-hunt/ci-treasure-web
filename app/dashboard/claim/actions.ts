@@ -35,10 +35,9 @@ async function requireSignedIn(): Promise<boolean> {
 // fields and only truly-claimable rows are returned.
 //
 // Public profiles only (2026-11-12): name search used to return shadow profiles too, so anyone
-// who signed up could look up hidden profiles by name and read a bio snippet. A teacher found a
-// hidden profile built from his CI Global Calendar entry that he had never been told about.
-// Shadow profiles stay claimable through the ?profile=<id> deep link (getClaimableProfileById
-// below), which only reaches people we deliberately invite.
+// who signed up could look up hidden profiles by name and read a bio snippet. Hidden means hidden
+// from everyone except admins. Shadow profiles stay claimable through the ?profile=<id> deep link
+// (getClaimableProfileById below), which only reaches people we deliberately invite.
 export async function searchProfiles(query: string): Promise<ClaimableProfile[]> {
   if (!(await requireSignedIn())) return [];
 

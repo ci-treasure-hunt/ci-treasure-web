@@ -61,7 +61,7 @@ AS $$
   ),
   shadow_linked AS (
     -- Full current list; caller diffs against its own state to only alert on newly-linked ones
-    -- (expected to be a large, steady-state list once I-066's CIGC import lands, not a defect).
+    -- (expected to be a large, steady-state list once I-066's bulk teacher import lands, not a defect).
     SELECT DISTINCT p.id, p.name FROM profiles p
     WHERE p.visibility = 'shadow'
       AND (

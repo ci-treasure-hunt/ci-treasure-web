@@ -2,10 +2,9 @@
 --
 -- search_similar_profiles is SECURITY DEFINER and granted to every authenticated user, so any
 -- signed-in account could look up shadow profiles by name and read a 160-character bio snippet,
--- through the new-profile and event-form duplicate warnings or by calling the RPC directly. A
--- teacher who signed up was shown a hidden profile built from his CI Global Calendar entry that
--- he had never been told about. Shadow means hidden from everyone except admins; a deliberate
--- invitation goes through the /dashboard/claim?profile=<id> deep link instead.
+-- through the new-profile and event-form duplicate warnings or by calling the RPC directly.
+-- Shadow means hidden from everyone except admins; a deliberate invitation goes through the
+-- /dashboard/claim?profile=<id> deep link instead.
 --
 -- Trade-off accepted: the duplicate warning no longer catches a shadow twin. New and suggested
 -- profiles go through admin approval, which catches those.

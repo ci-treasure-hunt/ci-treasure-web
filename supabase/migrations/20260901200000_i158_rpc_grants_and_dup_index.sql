@@ -20,8 +20,8 @@
 -- /dashboard/claim both gate on auth; submit_profile_claim refuses without a session), so nothing
 -- a real user does is affected.
 --
--- This matters more than today's 7 shadow rows suggest: I-066 plans to import ~608 CIGC teacher
--- profiles as shadow. Anon-callable, that becomes a bulk-harvestable dataset of scraped people.
+-- This matters more than today's 7 shadow rows suggest: I-066 plans a bulk import of teacher
+-- profiles as shadow. Anon-callable, hidden profiles would become harvestable in bulk.
 REVOKE EXECUTE ON FUNCTION public.search_similar_profiles(text) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION public.search_similar_profiles(text) TO authenticated, service_role;
 

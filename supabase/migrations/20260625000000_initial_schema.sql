@@ -70,7 +70,7 @@ CREATE TYPE series_type AS ENUM (
     'sequential'    -- workshop training or festival arc, order matters
 );
 
--- Profile visibility. Shadow import flow for CIGC and manual imports.
+-- Profile visibility. Shadow import flow for bulk and manual imports.
 CREATE TYPE profile_visibility AS ENUM (
     'shadow',       -- imported, not public, not yet claimed
     'claimed',      -- user linked their account, not yet fully public
@@ -240,7 +240,7 @@ CREATE TABLE public.profiles (
     country                 text,
     -- ISO 3166-1 alpha-2: "DE", "TH", "US"
 
-    -- CI teaching history (valuable for CIGC imports)
+    -- CI teaching history (valuable for bulk imports)
     year_starting_practice  integer,
     year_starting_teaching  integer,
     significant_teachers    text,
@@ -248,7 +248,7 @@ CREATE TABLE public.profiles (
 
     -- Import source tracking
     source                  text,
-    -- 'cigc' | 'manual' | 'user'
+    -- 'import' | 'manual' | 'user'
     source_id               text,
     -- original ID in source system
 
@@ -525,7 +525,7 @@ CREATE TABLE public.events (
 
     -- Source tracking → D-10
     source          text,
-    -- cigc | manual | user_submission
+    -- import | manual | user_submission
     source_id       text,
     imported_by     uuid REFERENCES auth.users(id) ON DELETE SET NULL,
 
