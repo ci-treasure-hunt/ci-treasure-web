@@ -30,7 +30,7 @@ const TYPE_LABELS: Record<string, string> = {
   class: "Class",
   lab: "Lab",
   underscore: "Underscore",
-  cdp: "CDP (Contact Dance Practice)",
+  cdp: "CDP (Contemplative Dance Practice)",
   performance: "Performance",
   lecture: "Talk / lecture",
   workshop: "Workshop",
