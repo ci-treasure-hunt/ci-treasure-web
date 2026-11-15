@@ -30,8 +30,8 @@ import { createClient } from "@/lib/supabase/server";
 import { sanitizeAccommodation, sanitizeFeatures } from "@/lib/event-features";
 import tzlookup from "tz-lookup";
 
-import { setEntityEmail } from "@/lib/entity-email";
-import { setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
+import { getEntityEmail, setEntityEmail } from "@/lib/entity-email";
+import { getEntityPhoneContacts, setEntityPhoneContacts } from "@/lib/entity-phone-contacts";
 import { phoneContactsErrorMessage, resolvePhoneContacts } from "@/lib/phone-contacts";
 import { uniqueProfileSlug } from "@/lib/profile-slug";
 import { createEventFlyerTicket, createEventSubmitTicket, verifyEventSubmitTicket } from "@/lib/event-submit-ticket";
@@ -565,8 +565,39 @@ export async function updateEvent(
 
   // I-165 F3. Only reached when the RLS-guarded update above actually matched a row, so the
   // caller's permission to edit this event is already proven.
-  await setEntityEmail("event", updated.id, resolveContactEmail(data));
+  const nextEmail = resolveContactEmail(data);
+  const [prevEmail, prevPhones] = options.applyToSeries && current?.series_id
+    ? await Promise.all([getEntityEmail("event", updated.id), getEntityPhoneContacts("event", updated.id)])
+    : [null, []];
+  await setEntityEmail("event", updated.id, nextEmail);
   await setEntityPhoneContacts("event", updated.id, phoneContacts.contacts);
+
+  // Contacts live outside the events row, so the column copy above never reaches them: an organizer
+  // who added the email after creating a series ended up with it on one date only (Michał's Ubud
+  // series, 2026-11-14, twice). Carry a changed address or number set to the same upcoming dates.
+  if (options.applyToSeries && current?.series_id) {
+    const phoneKey = (rows: Array<{ channel: string; number: string; label: string | null }>) =>
+      rows.map((r) => `${r.channel}:${r.number.replace(/^\+/, "")}:${r.label ?? ""}`).join("|");
+    const emailChanged = (prevEmail ?? "") !== (nextEmail?.trim() ?? "");
+    const phonesChanged = phoneKey(prevPhones) !== phoneKey(phoneContacts.contacts);
+    if (emailChanged || phonesChanged) {
+      // A no-op update through the user's own client, so RLS returns only the dates they may edit,
+      // the same set the column copy above reaches.
+      const { data: siblings } = await supabase
+        .from("events")
+        .update({ updated_by: user.id })
+        .eq("series_id", current.series_id)
+        .neq("id", eventId)
+        .gte("end_date", new Date().toISOString().slice(0, 10))
+        .in("status", ["published", "pending"])
+        .select("id");
+      for (const s of siblings ?? []) {
+        if (emailChanged) await setEntityEmail("event", s.id, nextEmail);
+        if (phonesChanged) await setEntityPhoneContacts("event", s.id, phoneContacts.contacts);
+      }
+      if (seriesUpdated === 0 && siblings?.length) seriesUpdated = siblings.length;
+    }
+  }
 
   revalidatePath("/dashboard");
   // Cached ISR pages (homepage list, this event's own detail page) won't
