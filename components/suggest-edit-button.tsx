@@ -7,7 +7,7 @@
 import { useState, useTransition } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 
-import { SUGGESTION_FIELDS, SUGGESTION_TYPES, TYPES_WITH_FIELDS } from "@/lib/community-suggest-options";
+import { GROUP_LINK_FIELD, SUGGESTION_FIELDS, SUGGESTION_TYPES, TYPES_WITH_FIELDS } from "@/lib/community-suggest-options";
 import { suggestCommunityEdit } from "@/lib/community-suggest-action";
 
 export function SuggestEditButton({ communityId, communityName }: { communityId: string; communityName: string }) {
@@ -16,6 +16,7 @@ export function SuggestEditButton({ communityId, communityName }: { communityId:
   const [fields, setFields] = useState<string[]>([]);
   const [newValue, setNewValue] = useState("");
   const [contact, setContact] = useState("");
+  const [linksConsent, setLinksConsent] = useState(false);
   const [token, setToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,8 @@ export function SuggestEditButton({ communityId, communityName }: { communityId:
 
   const siteKey = process.env.NEXT_PUBLIC_CF_TURNSTILE_SITE_KEY;
   const wantsFields = TYPES_WITH_FIELDS.includes(requestType);
+  // A new group link is only shown publicly with an admin's OK, so ask for it right where it applies.
+  const asksLinkConsent = wantsFields && fields.includes(GROUP_LINK_FIELD);
 
   function handleOpen() {
     setOpen(true);
@@ -32,6 +35,7 @@ export function SuggestEditButton({ communityId, communityName }: { communityId:
     setFields([]);
     setNewValue("");
     setContact("");
+    setLinksConsent(false);
     setError(null);
     setFieldErrors({});
     setDone(false);
@@ -48,6 +52,7 @@ export function SuggestEditButton({ communityId, communityName }: { communityId:
         fields,
         newValue,
         contact,
+        linksConsent: asksLinkConsent && linksConsent,
         turnstileToken: token,
       });
       if (result.ok) {
@@ -145,6 +150,21 @@ export function SuggestEditButton({ communityId, communityName }: { communityId:
                   />
                   {err("newValue")}
                 </div>
+
+                {asksLinkConsent ? (
+                  <label className="flex items-start gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={linksConsent}
+                      onChange={(e) => setLinksConsent(e.target.checked)}
+                      className="mt-1"
+                    />
+                    <span>
+                      I&apos;m an admin of this group, or an admin agreed, and it&apos;s okay to show this link on the
+                      listing.
+                    </span>
+                  </label>
+                ) : null}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">

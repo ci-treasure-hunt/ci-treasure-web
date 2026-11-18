@@ -12,7 +12,13 @@
 import { createHash } from "crypto";
 import { headers } from "next/headers";
 
-import { SUGGESTION_FIELDS, SUGGESTION_TYPES, TYPES_WITH_FIELDS, suggestionTypeLabel } from "@/lib/community-suggest-options";
+import {
+  GROUP_LINK_FIELD,
+  SUGGESTION_FIELDS,
+  SUGGESTION_TYPES,
+  TYPES_WITH_FIELDS,
+  suggestionTypeLabel,
+} from "@/lib/community-suggest-options";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -24,6 +30,8 @@ export type CommunitySuggestInput = {
   fields: string[];
   newValue: string;
   contact: string;
+  // Ticked "admin of this group, or an admin agreed": the new group link may be published.
+  linksConsent?: boolean;
   turnstileToken: string;
 };
 
@@ -88,6 +96,8 @@ export async function suggestCommunityEdit(input: CommunitySuggestInput): Promis
     fields,
     new_value: newValue,
     contact: contact || null,
+    // Only meaningful for a new group link; ignored for anything else.
+    links_consent: input.linksConsent === true && fields.includes(GROUP_LINK_FIELD),
     ip_hash: ipHash,
   });
   if (error) {

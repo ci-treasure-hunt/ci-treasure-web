@@ -28,6 +28,9 @@ export const SUGGESTION_FIELDS = [
   "Other",
 ] as const;
 
+/** The field whose new link may need the group admin's OK before it is shown publicly. */
+export const GROUP_LINK_FIELD = "Group or chat link";
+
 export function suggestionTypeLabel(value: string): string {
   return SUGGESTION_TYPES.find((t) => t.value === value)?.label ?? value;
 }

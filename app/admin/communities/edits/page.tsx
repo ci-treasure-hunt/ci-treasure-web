@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { requireAdminUser } from "@/lib/admin-auth";
-import { suggestionTypeLabel } from "@/lib/community-suggest-options";
+import { GROUP_LINK_FIELD, suggestionTypeLabel } from "@/lib/community-suggest-options";
 
 import { getOpenEditSuggestions } from "./actions";
 import { ResolveSuggestionActions } from "./resolve-actions";
@@ -55,6 +55,15 @@ export default async function AdminCommunityEditsPage() {
                   {s.fields.length ? ` · ${s.fields.join(", ")}` : ""}
                 </p>
                 <p className="whitespace-pre-line break-words rounded-2xl bg-(--color-mist) p-3 text-slate-800">{s.newValue}</p>
+                {s.fields.includes(GROUP_LINK_FIELD) ? (
+                  s.linksConsent ? (
+                    <p className="font-semibold text-emerald-700">
+                      Group admin (or an admin agreed): OK to publish the link. Switch it to public in the editor.
+                    </p>
+                  ) : (
+                    <p className="text-amber-700">No admin OK for the link: keep it private unless the link is already public.</p>
+                  )
+                ) : null}
                 <p className="text-slate-500">
                   {age(s.createdAt)}
                   {s.contact ? ` · from ${s.contact}` : " · anonymous"}

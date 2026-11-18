@@ -19,6 +19,7 @@ export type EditSuggestion = {
   fields: string[];
   newValue: string;
   contact: string | null;
+  linksConsent: boolean;
   createdAt: string;
 };
 
@@ -29,6 +30,7 @@ type Row = {
   fields: string[] | null;
   new_value: string;
   contact: string | null;
+  links_consent: boolean;
   created_at: string;
   communities: { name: string; slug: string | null; status: string; deleted_at: string | null } | null;
 };
@@ -38,7 +40,7 @@ export async function getOpenEditSuggestions(): Promise<EditSuggestion[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("community_edit_suggestions")
-    .select("id, community_id, request_type, fields, new_value, contact, created_at, communities(name, slug, status, deleted_at)")
+    .select("id, community_id, request_type, fields, new_value, contact, links_consent, created_at, communities(name, slug, status, deleted_at)")
     .eq("status", "open")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -54,6 +56,7 @@ export async function getOpenEditSuggestions(): Promise<EditSuggestion[]> {
     fields: r.fields ?? [],
     newValue: r.new_value,
     contact: r.contact,
+    linksConsent: r.links_consent,
     createdAt: r.created_at,
   }));
 }

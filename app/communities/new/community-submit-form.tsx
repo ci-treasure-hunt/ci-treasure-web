@@ -357,7 +357,8 @@ export function CommunitySubmitForm() {
         <label className="flex items-start gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={linksConsent} onChange={(e) => setLinksConsent(e.target.checked)} className="mt-1" />
           <span>
-            I&apos;m an organizer of this community, or I&apos;ve checked that it&apos;s fine to share these links and numbers here.
+            I&apos;m an organizer or group admin of this community, or one of them agreed, and it&apos;s okay to show these
+            links and numbers on the listing.
             <span className="text-rose-700"> *</span>
           </span>
         </label>
