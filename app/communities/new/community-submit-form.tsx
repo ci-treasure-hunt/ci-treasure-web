@@ -360,6 +360,9 @@ export function CommunitySubmitForm() {
             I&apos;m an organizer or group admin of this community, or one of them agreed, and it&apos;s okay to show these
             links and numbers on the listing.
             <span className="text-rose-700"> *</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              Group links and numbers are only shown after a quick human check, so bots can&apos;t collect them.
+            </span>
           </span>
         </label>
         {err("linksConsent")}

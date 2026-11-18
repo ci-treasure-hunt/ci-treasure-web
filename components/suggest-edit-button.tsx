@@ -162,6 +162,9 @@ export function SuggestEditButton({ communityId, communityName }: { communityId:
                     <span>
                       I&apos;m an admin of this group, or an admin agreed, and it&apos;s okay to show this link on the
                       listing.
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        Visitors only see it after a quick human check, so bots can&apos;t collect it.
+                      </span>
                     </span>
                   </label>
                 ) : null}

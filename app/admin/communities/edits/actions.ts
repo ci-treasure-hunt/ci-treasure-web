@@ -70,6 +70,39 @@ export async function resolveEditSuggestion(
   if (status !== "applied" && status !== "dismissed") return { success: false, error: "Invalid status." };
 
   const admin = createAdminClient();
+
+  // A new group link the submitter confirmed as admin (or with an admin's OK) goes public on
+  // approval. The link itself is saved in the editor first, as for every edit; this only flips the
+  // matching invite's published flag. No match means the editor step was skipped, so stop rather
+  // than mark it applied with the link still missing.
+  if (status === "applied") {
+    const { data: suggestion } = await admin
+      .from("community_edit_suggestions")
+      .select("community_id, new_value, links_consent, communities(slug)")
+      .eq("id", id)
+      .maybeSingle<{ community_id: string; new_value: string; links_consent: boolean; communities: { slug: string | null } | null }>();
+    if (suggestion?.links_consent) {
+      const submitted = new Set((suggestion.new_value.match(/https?:\/\/\S+/g) ?? []).map(inviteKey));
+      const { data: invites } = await admin
+        .from("community_invites")
+        .select("id, url")
+        .eq("community_id", suggestion.community_id);
+      const matching = (invites ?? []).filter((i) => submitted.has(inviteKey(i.url as string)));
+      if (!matching.length) {
+        return {
+          success: false,
+          error: "The admin OK'd this link, but it isn't saved on the community yet. Add it in the editor first, then mark applied.",
+        };
+      }
+      const { error: publishError } = await admin
+        .from("community_invites")
+        .update({ published: true })
+        .in("id", matching.map((i) => i.id));
+      if (publishError) return { success: false, error: publishError.message };
+      if (suggestion.communities?.slug) revalidatePath(`/communities/${suggestion.communities.slug}`);
+    }
+  }
+
   const { error } = await admin
     .from("community_edit_suggestions")
     .update({ status, admin_note: note.trim() || null, resolved_at: new Date().toISOString() })
@@ -80,4 +113,15 @@ export async function resolveEditSuggestion(
   revalidatePath("/admin/communities/edits");
   revalidatePath("/admin", "layout");
   return { success: true };
+}
+
+// Invite links arrive with share-tracking query strings (WhatsApp adds ?s=cl&p=i&...), which the
+// editor strips, so compare host + path only.
+function inviteKey(raw: string): string {
+  try {
+    const u = new URL(raw.trim());
+    return `${u.hostname.toLowerCase().replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return raw.trim();
+  }
 }

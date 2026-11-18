@@ -58,7 +58,7 @@ export default async function AdminCommunityEditsPage() {
                 {s.fields.includes(GROUP_LINK_FIELD) ? (
                   s.linksConsent ? (
                     <p className="font-semibold text-emerald-700">
-                      Group admin (or an admin agreed): OK to publish the link. Switch it to public in the editor.
+                      Group admin (or an admin agreed): save the link in the editor, then &quot;Applied&quot; makes it public.
                     </p>
                   ) : (
                     <p className="text-amber-700">No admin OK for the link: keep it private unless the link is already public.</p>
